@@ -13,7 +13,7 @@ func TestLexer(t *testing.T) {
 		token []int
 	}{
 		{"1", []int{number, -1}},
-		{"1+*;", []int{number, plus, eol, -1}},
+		{"1+;", []int{number, plus, eol, -1}},
 		{"1+:", []int{number, plus, eolq, -1}},
 		{":;", []int{eolq, eol, -1}},
 		{"1+x;", []int{number, plus, ident, eol, -1}},
