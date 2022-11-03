@@ -30,6 +30,12 @@ Ubuntu
 
 ## Installation
 
+### binaries
+
+See https://github.com/hiwane/ganrac/releases
+
+### from source code
+
 ```sh
 > go get github.com/hiwane/ganrac/cmd/ganrac
 ```
