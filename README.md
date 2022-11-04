@@ -37,7 +37,8 @@ See https://github.com/hiwane/ganrac/releases
 ### from source code
 
 ```sh
-> go get github.com/hiwane/ganrac/cmd/ganrac
+> go install github.com/hiwane/ganrac/cmd/ganrac@latest
+> # go get github.com/hiwane/ganrac/cmd/ganrac
 ```
 
 ## Demo
