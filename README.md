@@ -1,4 +1,5 @@
-![GaNRAC Logo](https://user-images.githubusercontent.com/7787544/200804776-38f1853e-62ac-494f-97c4-c4173036dcef.png)
+![GaNRAC Logo](https://user-images.githubusercontent.com/7787544/200804776-38f1853e-62ac-494f-97c4-c4173036dcef.png) ![GaNRAC Logo](https://user-images.githubusercontent.com/7787544/200834398-d8f9e757-aea4-4696-948e-4dc057001731.png)
+
 
 GaNRAC
 ======
