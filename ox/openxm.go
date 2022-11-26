@@ -3,6 +3,7 @@ package ganrac
 import (
 	"bytes"
 	"encoding/binary"
+	. "github.com/hiwane/ganrac"
 	"fmt"
 	"io"
 	"log"
@@ -115,7 +116,7 @@ type OpenXM struct {
 	sres_defined bool
 }
 
-func NewOpenXM(controlw, dataw Flusher, controlr, datar io.Reader, logger *log.Logger) *OpenXM {
+func NewOpenXM(controlw, dataw Flusher, controlr, datar io.Reader, logger *log.Logger) (*OpenXM, error) {
 	ox := new(OpenXM)
 	ox.cw = controlw
 	ox.cr = controlr
@@ -123,7 +124,13 @@ func NewOpenXM(controlw, dataw Flusher, controlr, datar io.Reader, logger *log.L
 	ox.dr = datar
 	ox.border = binary.LittleEndian
 	ox.logger = logger
-	return ox
+
+	err := ox.init()
+	if err != nil {
+		logger.Printf("ox.init failed: %w", err)
+		return nil, err
+	}
+	return ox, err
 }
 
 func (ox *OpenXM) dataRead(v interface{}) error {
@@ -150,7 +157,7 @@ func (ox *OpenXM) dataWrite(v interface{}) error {
 	return binary.Write(ox.dw, ox.border, v)
 }
 
-func (ox *OpenXM) Init() error {
+func (ox *OpenXM) init() error {
 	// byte order negotiation
 	ox.logger.Printf("ox_init() start")
 	b := make([]byte, 1)
@@ -274,14 +281,14 @@ func (ox *OpenXM) sendCMO(vv interface{}, lvmap map[Level]int32) error {
 		if v.Sign() == 0 {
 			return ox.sendCMOZero()
 		} else {
-			return ox.sendCMOZZ(v.n)
+			return ox.sendCMOZZ(v.N())
 		}
 	case *Rat:
-		return ox.sendCMOQQ(v.n)
+		return ox.sendCMOQQ(v.N())
 	case string:
 		return ox.sendCMOString(v)
 	case *String:
-		return ox.sendCMOString(v.s)
+		return ox.sendCMOString(v.S())
 	case *List:
 		return ox.sendCMOList(v)
 	case *Poly:
@@ -333,11 +340,12 @@ func (ox *OpenXM) sendCMORecPoly(p *Poly) (map[Level]int32, error) {
 		return nil, err
 	}
 
-	b := make([]bool, len(varlist))
+	varn := VarNum()
+	b := make([]bool, varn)
 	p.Indets(b)
 
 	var cnt int32 = 0
-	lvmap := make(map[Level]int32, len(varlist))
+	lvmap := make(map[Level]int32, varn)
 	for i := len(b) - 1; i >= 0; i-- {
 		if b[i] {
 			lvmap[Level(i)] = cnt
@@ -349,7 +357,7 @@ func (ox *OpenXM) sendCMORecPoly(p *Poly) (map[Level]int32, error) {
 	err = ox.dataWrite(&cnt)
 	for i := len(b) - 1; i >= 0; i-- {
 		if b[i] {
-			ox.sendCMOString(varstr(Level(i)))
+			ox.sendCMOString(VarStr(Level(i)))
 			cnt--
 		}
 	}
@@ -364,22 +372,23 @@ func (ox *OpenXM) sendCMOPoly(p *Poly, lvmap map[Level]int32) error {
 	}
 
 	var cnt int32 = 1 // 非ゼロ項数. 主係数非ゼロは確定
-	for i := 0; i < len(p.c)-1; i++ {
-		if !p.c[i].IsZero() {
+	for i := 0; i < p.Deg(p.Level()); i++ {
+		if !p.Coef(p.Level(), uint(i)).IsZero() {
 			cnt++
 		}
 	}
-	ox.logger.Printf(" --> sendCMOPoly() #mono=%d, p.lv=%d -> %d\n", cnt, p.lv, lvmap[p.lv])
-	if err := p.valid(); err != nil {
-		panic(fmt.Sprintf("sendcmo: #mono=%d, p.lv=%d\nerr=%v\np=%v", cnt, p.lv, err, p))
-	}
+	ox.logger.Printf(" --> sendCMOPoly() #mono=%d, p.lv=%d -> %d\n", cnt, p.Level(), lvmap[p.Level()])
 	err = ox.dataWrite(&cnt)
-	err = ox.dataWrite(lvmap[p.lv])
-	for i := int32(len(p.c) - 1); cnt > 0; i-- {
-		if !p.c[i].IsZero() {
+	err = ox.dataWrite(lvmap[p.Level()])
+	for i := int32(p.Deg(p.Level())); cnt > 0; i-- {
+		if i < 0 {
+			panic(fmt.Sprintf("invalid cnt=%d, p=%v", cnt, p))
+		}
+		c := p.Coef(p.Level(), uint(i))
+		if !c.IsZero() {
 			cnt--
 			err = ox.dataWrite(&i)
-			ox.sendCMO(p.c[i], lvmap)
+			ox.sendCMO(c, lvmap)
 		}
 	}
 	return err
@@ -506,9 +515,9 @@ func (ox *OpenXM) recvCMOIndeterminate() (*Poly, error) {
 	}
 	c := cc.(string)
 
-	lv, ok := varstr2lv[c]
+	lv, ok := VarStr2Lv(c)
 	if ok {
-		return varlist[lv].p, nil
+		return VarPoly(lv), nil
 	}
 
 	return nil, fmt.Errorf("unknown variable %s", c)
@@ -521,12 +530,10 @@ func (ox *OpenXM) toGObj(p interface{}) GObj {
 	case int32:
 		return NewInt(int64(cc))
 	case *big.Int:
-		bb := newInt()
-		bb.n.Set(cc)
+		bb := NewIntZ(cc)
 		return bb
 	case *big.Rat:
-		bb := newRat()
-		bb.n.Set(cc)
+		bb := NewRat(cc)
 		return bb
 	case string:
 		return NewString(cc)
@@ -547,11 +554,11 @@ func (ox *OpenXM) recvCMOPoly1Var(ringdef *List) (*Poly, error) {
 		return nil, err
 	}
 	p, _ := ringdef.Geti(int(lv))
-	plv := p.(*Poly).lv
+	plv := p.(*Poly).Level()
 
 	// asir, openxm とは再帰表現での保持方法が逆.
 	// LV の昇順→降順
-	var ret RObj = zero
+	var ret RObj = NewInt(0)
 	for m > 0 {
 		m--
 		exp, _ := ox.dataReadInt32()
@@ -561,7 +568,7 @@ func (ox *OpenXM) recvCMOPoly1Var(ringdef *List) (*Poly, error) {
 			if exp == 0 {
 				ret = Add(ret, c)
 			} else {
-				ret = Add(ret, Mul(c, newPolyVarn(plv, int(exp))))
+				ret = Add(ret, Mul(c, NewPolyVarn(plv, int(exp))))
 			}
 		}
 	}
@@ -901,3 +908,5 @@ func (ox *OpenXM) PopString() (string, error) {
 	}
 	return v.(string), err
 }
+
+

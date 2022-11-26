@@ -787,7 +787,7 @@ func (cad *CAD) sym_sqfr2(porg *Poly, cell *Cell) []*cadSqfr {
 		panic("unexpected")
 	}
 
-	pd := porg.diff(porg.lv).(*Poly)
+	pd := porg.Diff(porg.lv).(*Poly)
 	s0, t0 := cad.symde_gcd2(p, pd, cell, 0)
 	if s0 == nil { // gcd=1 => square-free
 		return []*cadSqfr{newCadSqfr(nil, porg, 1)}
@@ -827,7 +827,7 @@ func (cad *CAD) sym_sqfr(porg *Poly, cell *Cell) []*cadSqfr {
 	if !p.isIntPoly() {
 		panic("unexpected")
 	}
-	pd := porg.diff(porg.lv).(*Poly)
+	pd := porg.Diff(porg.lv).(*Poly)
 
 	s0, t0, _ := cad.symde_gcd(p, pd, cell, false)
 	if s0 == nil {

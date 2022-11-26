@@ -212,7 +212,7 @@ func vs_nu(polys []*Poly, op OP, pt *vslin_sample_point) Fof {
 	if pmul == nil {
 		v = one
 	} else {
-		v = pmul.diff(pt.lv)
+		v = pmul.Diff(pt.lv)
 	}
 	// fmt.Printf("vsnu(): v=%v: %v\n", v, v.IsNumeric())
 
@@ -500,7 +500,7 @@ func vsLinear(fof Fof, lv Level) Fof {
 
 func (qeopt QEopt) qe_vslin(fof FofQ, cond qeCond) Fof {
 	for _, q := range fof.Qs() {
-		qeopt.log(cond, 2, "qevs1", "<%s> %v\n", varstr(q), fof)
+		qeopt.log(cond, 2, "qevs1", "<%s> %v\n", VarStr(q), fof)
 		ff := vsLinear(fof, q)
 		if ff != fof {
 			return ff

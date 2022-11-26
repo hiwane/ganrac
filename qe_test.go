@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func benchmarkQE(b *testing.B, name string) {
+func benchmarkQE(b *testing.B, name string, cad bool) {
 	input := GetExampleFof(name).Input
 	g := NewGANRAC()
 	connc, connd := testConnectOx(g)
@@ -16,13 +16,17 @@ func benchmarkQE(b *testing.B, name string) {
 	defer connc.Close()
 	defer connd.Close()
 	for i := 0; i < b.N; i++ {
-		opt := NewQEopt()
-		g.QE(input, opt)
+		if cad {
+			funcCAD(g, "cad", []interface{}{input})
+		} else {
+			opt := NewQEopt()
+			g.QE(input, opt)
+		}
 	}
 }
 
 func BenchmarkAdam1(b *testing.B) {
-	benchmarkQE(b, "adam1")
+	benchmarkQE(b, "adam1", true)
 }
 
 func TestBench(t *testing.T) {

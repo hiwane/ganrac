@@ -37,7 +37,7 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond) Fof {
 				}
 				if v&EVEN_OK != 0 {
 					// 単純に次数を下げればいい．
-					qeopt.log(cond, 1, "evenI", "<%s,%#x> %v\n", varstr(q), v, fofq)
+					qeopt.log(cond, 1, "evenI", "<%s,%#x> %v\n", VarStr(q), v, fofq)
 
 					var ret Fof = falseObj
 					qff := fofq.Fml()
@@ -53,7 +53,7 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond) Fof {
 						f = f.redEven(q, v, sgn)
 						f = NewFmlAnd(f, NewAtom(NewPolyVar(q), GE))
 						f = NewExists(fofq.Qs(), f)
-						qeopt.log(cond, 1, "evenM", "<%s,%#x,%d> %v\n", varstr(q), v, sgn, f)
+						qeopt.log(cond, 1, "evenM", "<%s,%#x,%d> %v\n", VarStr(q), v, sgn, f)
 
 						varn := qeopt.varn
 						cond2 := cond

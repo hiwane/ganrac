@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/hiwane/ganrac"
+	openxm "github.com/hiwane/ganrac/ox"
 	"io"
 	"io/ioutil"
 	"log"
@@ -118,11 +119,12 @@ func main() {
 		cw := bufio.NewWriter(connc)
 		cr := bufio.NewReader(connc)
 
-		err = g.ConnectOX(cw, dw, cr, dr)
+		ox, err := openxm.NewOpenXM(cw, dw, cr, dr, g.Logger())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "connect ox failed: %s", err.Error())
 			os.Exit(1)
 		}
+		g.SetCAS(ox)
 	}
 
 	logger.Printf("START!!!!")

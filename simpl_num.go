@@ -67,7 +67,7 @@ func (m *NumRegion) Format(s fmt.State, format rune) {
 	fmt.Fprintf(s, "{")
 	sep := ""
 	for lv, vv := range m.r {
-		fmt.Fprintf(s, "%s%s:[", sep, varstr(lv))
+		fmt.Fprintf(s, "%s%s:[", sep, VarStr(lv))
 		for i, v := range vv {
 			if i != 0 {
 				fmt.Fprintf(s, ",")

@@ -1132,7 +1132,7 @@ func (cell *Cell) make_cells_i(cad *CAD, pf ProjFactor, porg *Poly) ([]*Cell, si
 		var ps []*cadSqfr
 		if hmf == PF_EVAL_YES && p.deg() == 2 {
 			// 2次のときは微分したら良いよ
-			jk := p.diff(p.lv).(*Poly)
+			jk := p.Diff(p.lv).(*Poly)
 			jk, _ = jk.pp()
 			ps = []*cadSqfr{newCadSqfr(nil, jk, 2)}
 		} else {

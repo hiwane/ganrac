@@ -253,7 +253,7 @@ func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) F
 		if _, ok := fof.(*AtomF); ok {
 			return ret
 		}
-		switch pp := poly.Sub(Mul(lc, newPolyVarn(lv, deg))).(type) {
+		switch pp := poly.Sub(Mul(lc, NewPolyVarn(lv, deg))).(type) {
 		case *Poly:
 			poly = pp
 		default:
@@ -268,7 +268,7 @@ func neqQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 	fne, fot := divide_neq(fof, lv, qeopt)
 
 	if fot == trueObj {
-		qeopt.log(cond, 3, "neq", "<%s> all %v\n", varstr(lv), fof)
+		qeopt.log(cond, 3, "neq", "<%s> all %v\n", VarStr(lv), fof)
 		return apply_neqQE(fof, lv)
 	}
 	if fne == trueObj {
@@ -301,7 +301,7 @@ func (qeopt QEopt) qe_neq(fof FofQ, cond qeCond) Fof {
 	}
 
 	for _, q := range fof.Qs() {
-		qeopt.log(cond, 2, "neq", "<%s> %v\n", varstr(q), fof)
+		qeopt.log(cond, 2, "neq", "<%s> %v\n", VarStr(q), fof)
 		ff := neqQE(fml, q, qeopt, cond)
 		if ff != fml {
 			if not {

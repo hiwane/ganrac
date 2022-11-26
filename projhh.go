@@ -177,7 +177,7 @@ func (pf *ProjFactorHH) proj_psc(cad *CAD) {
 	pf.psc = make([][]*ProjLink, deg+1)
 	p := NewPoly(pf.p.lv, deg+1)
 	copy(p.c, pf.p.c)
-	pd := p.diff(p.lv).(*Poly)
+	pd := p.Diff(p.lv).(*Poly)
 	for i := deg; i > 1; i-- {
 		p.c = p.c[:i+1]
 		pd.c = pd.c[:i]

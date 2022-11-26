@@ -56,6 +56,16 @@ Examples
   0
 `},
 		{"equiv", 2, 2, funcEquiv, false, "(fof1, fof2)\t\tfof1 is equivalent to fof2", ""},
+		{"evalcas", 1, 1, funcOXStr, true, "(str)*\t\t\tevaluate str by CAD", `
+Args
+========
+str : string
+
+Examples
+========
+  > evalcas("fctr(x^2-4);");
+  [[1,1],[x-2,1],[x+2,1]]
+`},
 		{"ex", 2, 2, funcExists, false, "(vars, FOF):\t\texistential quantifier.", `
 Args
 ========
@@ -88,6 +98,7 @@ Examples
   > not(ex([x], a*x^2+b*x+c==0));
   all([x], a*x^2+b*x+c != 0)
 `},
+/*
 		{"oxfunc", 2, 100, funcOXFunc, true, "(fname, args...)*\tcall ox-function by ox-asir", `
 Args
 ========
@@ -101,16 +112,7 @@ Examples
   > oxfunc("igcd", 8, 12);
   4
 `},
-		{"oxstr", 1, 1, funcOXStr, true, "(str)*\t\t\tevaluate str by ox-asir", `
-Args
-========
-str : string
-
-Examples
-========
-  > oxstr("fctr(x^2-4);");
-  [[1,1],[x-2,1],[x+2,1]]
-`},
+*/
 		{"print", 1, 10, funcPrint, false, "(obj [, kind, ...])\tprint object", `
 
 Examples*
@@ -299,17 +301,13 @@ func funcOXStr(g *Ganrac, name string, args []interface{}) (interface{}, error) 
 	if !ok {
 		return nil, fmt.Errorf("%s(1st arg): expected string: %d:%v", name, args[0].(GObj).Tag(), args[0])
 	}
-	g.ox.PushOxCMO(f0.s)
-	g.ox.PushOXCommand(SM_executeStringByLocalParser)
-	s, err := g.ox.PopCMO()
-	if err != nil {
-		return nil, fmt.Errorf("%s(): popCMO failed %w", name, err)
-	}
-	gob := g.ox.toGObj(s)
 
-	return gob, nil
+	return g.ox.Eval(f0.s)
+
+
 }
 
+/*
 func funcOXFunc(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	f0, ok := args[0].(*String)
 	if !ok {
@@ -328,6 +326,7 @@ func funcOXFunc(g *Ganrac, name string, args []interface{}) (interface{}, error)
 
 	return gob, nil
 }
+*/
 
 func funcOXDiscrim(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	c, ok := args[1].(*Poly)

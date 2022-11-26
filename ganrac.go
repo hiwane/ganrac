@@ -23,7 +23,7 @@ type Ganrac struct {
 	sones, sfuns       []token
 	history            []interface{}
 	builtin_func_table []func_table
-	ox                 *OpenXM
+	ox                 CAS
 	logger             *log.Logger
 	verbose            int
 	verbose_cad        int
@@ -139,9 +139,12 @@ func (g *Ganrac) SetLogger(logger *log.Logger) {
 	g.logger = logger
 }
 
-func (g *Ganrac) ConnectOX(cw, dw Flusher, cr, dr io.Reader) error {
-	g.ox = NewOpenXM(cw, dw, cr, dr, g.logger)
-	return g.ox.Init()
+func (g *Ganrac) Logger() *log.Logger {
+	return g.logger
+}
+
+func (g *Ganrac) SetCAS(cas CAS) {
+	g.ox = cas
 }
 
 func (g *Ganrac) log(lv int, format string, a ...interface{}) {

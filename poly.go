@@ -22,11 +22,11 @@ func NewPolyVar(lv Level) *Poly {
 	if int(lv) < len(varlist) {
 		return varlist[lv].p
 	} else {
-		return newPolyVarn(lv, 1)
+		return NewPolyVarn(lv, 1)
 	}
 }
 
-func newPolyVarn(lv Level, deg int) *Poly {
+func NewPolyVarn(lv Level, deg int) *Poly {
 	// return x[lv]^deg
 	p := NewPoly(lv, deg+1)
 	for i := 0; i < deg; i++ {
@@ -204,6 +204,10 @@ func (z *Poly) Tag() uint {
 	return TAG_POLY
 }
 
+func (z *Poly) Level() Level {
+	return z.lv
+}
+
 func (z *Poly) hasVar(lv Level) bool {
 	if z.lv < lv {
 		return false
@@ -303,7 +307,7 @@ func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string) {
 				}
 			}
 			if i > 0 {
-				fmt.Fprintf(b, "%s", varstr(z.lv))
+				fmt.Fprintf(b, "%s", VarStr(z.lv))
 				if i >= 10 && mul == " " { // TeX
 					fmt.Fprintf(b, "^{%d}", i)
 				} else if i > 1 {
@@ -590,7 +594,7 @@ func sdivlt(x, y *Poly) RObj {
 	panic("toooooo")
 }
 
-func (x *Poly) sdiv(y *Poly) RObj {
+func (x *Poly) Sdiv(y *Poly) RObj {
 	// assume: y is a factor of x
 	var ret RObj = zero
 	for i := len(x.c); i >= 0; i-- {
@@ -992,13 +996,13 @@ func (z *Poly) hasSameTerm(pp RObj, lowest bool) bool {
 	return true
 }
 
-func (z *Poly) diff(lv Level) RObj {
+func (z *Poly) Diff(lv Level) RObj {
 	// 微分
 	if z.lv > lv {
 		p := NewPoly(z.lv, len(z.c))
 		for i, c := range z.c {
 			if cp, ok := c.(*Poly); ok {
-				p.c[i] = cp.diff(lv)
+				p.c[i] = cp.Diff(lv)
 			} else {
 				p.c[i] = zero
 			}
@@ -1137,7 +1141,7 @@ func (forg *Poly) _quorem(g *Poly) (RObj, RObj) {
 		}
 		var qc RObj
 		if len(f.c) > len(g.c) {
-			qc = Mul(newPolyVarn(g.lv, len(f.c)-len(g.c)), c)
+			qc = Mul(NewPolyVarn(g.lv, len(f.c)-len(g.c)), c)
 		} else {
 			qc = c
 		}

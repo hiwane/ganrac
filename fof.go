@@ -1031,19 +1031,19 @@ func (p *ForAll) Format(b fmt.State, format rune) {
 			} else {
 				fmt.Fprintf(b, ",")
 			}
-			fmt.Fprintf(b, "%s", varstr(lv))
+			fmt.Fprintf(b, "%s", VarStr(lv))
 		}
 		fmt.Fprintf(b, "], ")
 		p.fml.Format(b, format)
 		fmt.Fprintf(b, "%s)%s", esc_sgr(31), esc_sgr(0))
 	case FORMAT_TEX:
 		for _, lv := range p.q {
-			fmt.Fprintf(b, "\\forall %s ", varstr(lv))
+			fmt.Fprintf(b, "\\forall %s ", VarStr(lv))
 		}
 		p.fml.Format(b, format)
 	case FORMAT_QEPCAD:
 		for _, lv := range p.q {
-			fmt.Fprintf(b, "(A %s)", varstr(lv))
+			fmt.Fprintf(b, "(A %s)", VarStr(lv))
 		}
 		p.fml.Format(b, format)
 	case FORMAT_DUMP: // dump
@@ -1085,19 +1085,19 @@ func (p *Exists) Format(b fmt.State, format rune) {
 			} else {
 				fmt.Fprintf(b, ",")
 			}
-			fmt.Fprintf(b, "%s", varstr(lv))
+			fmt.Fprintf(b, "%s", VarStr(lv))
 		}
 		fmt.Fprintf(b, "], ")
 		p.fml.Format(b, format)
 		fmt.Fprintf(b, "%s)%s", esc_sgr(32), esc_sgr(0))
 	case FORMAT_TEX: // Tex
 		for _, lv := range p.q {
-			fmt.Fprintf(b, "\\exists %s ", varstr(lv))
+			fmt.Fprintf(b, "\\exists %s ", VarStr(lv))
 		}
 		p.fml.Format(b, format)
 	case FORMAT_QEPCAD:
 		for _, lv := range p.q {
-			fmt.Fprintf(b, "(E %s)", varstr(lv))
+			fmt.Fprintf(b, "(E %s)", VarStr(lv))
 		}
 		p.fml.Format(b, format)
 	case FORMAT_DUMP: // dump

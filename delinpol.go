@@ -90,7 +90,7 @@ func (cad *CAD) need_delineating_poly(cell *Cell, pf ProjFactor) bool {
 		b := make([]*Poly, 0)
 		for _, p := range a {
 			for j := Level(0); j <= cell.lv; j++ { // 微分対象
-				switch q := p.diff(j).(type) {
+				switch q := p.Diff(j).(type) {
 				case *Poly:
 					switch qc := cell.reduce(q).(type) {
 					case *Poly:
@@ -120,7 +120,7 @@ func (cad *CAD) need_delineating_poly(cell *Cell, pf ProjFactor) bool {
 						return true
 					}
 				}
-				// fmt.Printf("ndp.p=%v\n", cell.reduce(p.diff(j)))
+				// fmt.Printf("ndp.p=%v\n", cell.reduce(p.Diff(j)))
 			}
 		}
 		// fmt.Printf("b=%v\n", b)

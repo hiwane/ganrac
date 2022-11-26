@@ -19,6 +19,12 @@ func newRat() *Rat {
 	return v
 }
 
+func NewRat(c *big.Rat) *Rat {
+	v := new(Rat)
+	v.n.Set(c)
+	return v
+}
+
 func NewRatInt64(num, den int64) *Rat {
 	v := new(Rat)
 	v.n = big.NewRat(num, den)
@@ -38,6 +44,10 @@ func (x *Rat) numtag() uint {
 func (x *Rat) Equals(y interface{}) bool {
 	c, ok := y.(*Rat)
 	return ok && x.n.Cmp(c.n) == 0
+}
+
+func (x *Rat) N() *big.Rat {
+	return x.n
 }
 
 func (z *Rat) normal() RObj {

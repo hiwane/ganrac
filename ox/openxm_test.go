@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"net"
 	"time"
+	"github.com/hiwane/ganrac"
 )
 
-func testConnectOx(g *Ganrac) (net.Conn, net.Conn) {
+func testConnectOx(g *ganrac.Ganrac) (net.Conn, net.Conn) {
 	cport := "localhost:1234"
 	dport := "localhost:4321"
 	connc, err := net.Dial("tcp", cport)
@@ -27,6 +28,12 @@ func testConnectOx(g *Ganrac) (net.Conn, net.Conn) {
 	cw := bufio.NewWriter(connc)
 	cr := bufio.NewReader(connc)
 
-	g.ConnectOX(cw, dw, cr, dr)
+	ox, err := NewOpenXM(cw, dw, cr, dr, g.Logger())
+	if err != nil {
+		connc.Close()
+		connd.Close()
+		return nil, nil
+	}
+	g.SetCAS(ox)
 	return connc, connd
 }
