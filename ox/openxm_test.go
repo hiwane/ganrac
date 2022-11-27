@@ -2,9 +2,9 @@ package ganrac
 
 import (
 	"bufio"
+	"github.com/hiwane/ganrac"
 	"net"
 	"time"
-	"github.com/hiwane/ganrac"
 )
 
 func testConnectOx(g *ganrac.Ganrac) (net.Conn, net.Conn) {

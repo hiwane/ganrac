@@ -98,21 +98,21 @@ Examples
   > not(ex([x], a*x^2+b*x+c==0));
   all([x], a*x^2+b*x+c != 0)
 `},
-/*
-		{"oxfunc", 2, 100, funcOXFunc, true, "(fname, args...)*\tcall ox-function by ox-asir", `
-Args
-========
-fname : string, function name of ox-server
-args  : arguments of the function
+		/*
+		   		{"oxfunc", 2, 100, funcOXFunc, true, "(fname, args...)*\tcall ox-function by ox-asir", `
+		   Args
+		   ========
+		   fname : string, function name of ox-server
+		   args  : arguments of the function
 
-Examples
-========
-  > oxfunc("deg", x^2-1, x);
-  2
-  > oxfunc("igcd", 8, 12);
-  4
-`},
-*/
+		   Examples
+		   ========
+		     > oxfunc("deg", x^2-1, x);
+		     2
+		     > oxfunc("igcd", 8, 12);
+		     4
+		   `},
+		*/
 		{"print", 1, 10, funcPrint, false, "(obj [, kind, ...])\tprint object", `
 
 Examples*
@@ -226,9 +226,9 @@ func (g *Ganrac) callFunction(funcname string, args []interface{}) (interface{},
 	return nil, fmt.Errorf("unknown function: %s", funcname)
 }
 
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 // 論理式
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 func funcNot(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	f, ok := args[0].(Fof)
 	if !ok {
@@ -293,9 +293,9 @@ func funcForEx(forex bool, name string, args []interface{}) (interface{}, error)
 	return NewQuantifier(forex, lv, f1), nil
 }
 
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 // OpenXM
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 func funcOXStr(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	f0, ok := args[0].(*String)
 	if !ok {
@@ -303,7 +303,6 @@ func funcOXStr(g *Ganrac, name string, args []interface{}) (interface{}, error) 
 	}
 
 	return g.ox.Eval(f0.s)
-
 
 }
 
@@ -422,9 +421,9 @@ func funcOXSres(g *Ganrac, name string, args []interface{}) (interface{}, error)
 	return g.ox.Sres(f, h, x.lv, int32(j.Int64())), nil
 }
 
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 // CAD
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 func funcExample(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	str := ""
 	if len(args) == 1 {
@@ -564,9 +563,9 @@ func funcVS(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	return fml, nil
 }
 
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 // util
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 func funcPrint(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	switch cc := args[0].(type) {
 	case *CAD:
@@ -663,9 +662,9 @@ func funcTime(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 // poly
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 func funcSubst(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if len(args)%2 != 1 {
 		return nil, fmt.Errorf("%s() invalid args", name)
@@ -903,9 +902,9 @@ func funcIntv(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	}
 }
 
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 // integer
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 func funcIGCD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	a, ok := args[0].(*Int)
 	if !ok {

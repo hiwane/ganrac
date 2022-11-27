@@ -86,8 +86,8 @@ func (sfc *CADSfc) add_conflicting_pair(ctrue, cfalse *Cell) {
 }
 
 /*
- * split K into the lists K L and K N , the leaf nodes and non-leaf nodes, respec-
- tively, in K .
+* split K into the lists K L and K N , the leaf nodes and non-leaf nodes, respec-
+tively, in K .
 */
 func (sfc *CADSfc) pdqv22_split_leaf(cells []*Cell, min, max int) ([]*Cell, int) {
 	t := 0

@@ -204,7 +204,8 @@ func (p *FmlOr) redEven(lv Level, v, sgn int) Fof {
 }
 
 /*
- * p.Deg() == 1
+  - p.Deg() == 1
+
 // (a + b*sqrt(x)) / d == 0 <=> ab <= 0 && a^2 == b^2*x
 // (a + b*sqrt(x)) / d <= 0 <=> ad <= 0 && a^2 >= b^2*x || bd <= 0 && a^2 <= b^2*x
 // (a + b*sqrt(x)) / d <  0 <=> ad <  0 && a^2 >  b^2*x || bd <= 0 && (a*d < 0 || a^2 < b^2*x)

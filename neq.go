@@ -115,11 +115,11 @@ func apply_neqQE(fof Fof, lv Level) Fof {
 }
 
 /*
- * fof: inequational constraints
- * atom: f <= 0 or f >= 0: f is univariate.
- *
- * Returns: qff which is equivalent to ex([x], f <= 0 && fof_neq)
- :        : nil if fails
+* fof: inequational constraints
+* atom: f <= 0 or f >= 0: f is univariate.
+*
+* Returns: qff which is equivalent to ex([x], f <= 0 && fof_neq)
+:        : nil if fails
 */
 func apply_neqQE_atom_univ(fof, qffneq Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 	// fmt.Printf("univ: %s AND %s\n", fof, atom)
@@ -173,11 +173,11 @@ func apply_neqQE_atom_univ(fof, qffneq Fof, atom *Atom, lv Level, qeopt QEopt, c
 }
 
 /*
- * fof: inequational constraints
- * atom: f <= 0 or f >= 0
- *
- * Returns: qff which is equivalent to ex([x], f <= 0 && fof_neq)
- :        : nil if fails
+* fof: inequational constraints
+* atom: f <= 0 or f >= 0
+*
+* Returns: qff which is equivalent to ex([x], f <= 0 && fof_neq)
+:        : nil if fails
 */
 func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 	// fmt.Printf("atom: %s AND %s\n", fof, atom)

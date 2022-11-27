@@ -3,8 +3,8 @@ package ganrac
 import (
 	"bytes"
 	"encoding/binary"
-	. "github.com/hiwane/ganrac"
 	"fmt"
+	. "github.com/hiwane/ganrac"
 	"io"
 	"log"
 	"math/big"
@@ -908,5 +908,3 @@ func (ox *OpenXM) PopString() (string, error) {
 	}
 	return v.(string), err
 }
-
-
