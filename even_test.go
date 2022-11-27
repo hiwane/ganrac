@@ -10,13 +10,12 @@ func TestEvenSimpl(t *testing.T) {
 	var algo algo_t = QEALGO_SMPL_EVEN
 
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip Test%s... (no ox)\n", funcname)
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 	vars := []Level{0, 1, 2, 3, 4, 5}
 
 	for ii, ss := range []struct {

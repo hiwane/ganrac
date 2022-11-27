@@ -7,13 +7,12 @@ import (
 
 func TestNeqQE(t *testing.T) {
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestNeqQE... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	for ii, ss := range []struct {
 		input  Fof

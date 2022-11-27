@@ -8,13 +8,12 @@ import (
 func benchmarkQE(b *testing.B, name string, cad bool) {
 	input := GetExampleFof(name).Input
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestNeqQE... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 	for i := 0; i < b.N; i++ {
 		if cad {
 			funcCAD(g, "cad", []interface{}{input})

@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-func testConnectOx(g *ganrac.Ganrac) (net.Conn, net.Conn) {
+func testConnectOx(g *ganrac.Ganrac) *OpenXM {
 	cport := "localhost:1234"
 	dport := "localhost:4321"
 	connc, err := net.Dial("tcp", cport)
 	if err != nil {
-		return nil, nil
+		return nil
 	}
 
 	time.Sleep(time.Second / 20)
@@ -20,20 +20,15 @@ func testConnectOx(g *ganrac.Ganrac) (net.Conn, net.Conn) {
 	connd, err := net.Dial("tcp", dport)
 	if err != nil {
 		connc.Close()
-		return nil, nil
+		return nil
 	}
 
-	dw := bufio.NewWriter(connd)
-	dr := bufio.NewReader(connd)
-	cw := bufio.NewWriter(connc)
-	cr := bufio.NewReader(connc)
-
-	ox, err := NewOpenXM(cw, dw, cr, dr, g.Logger())
+	ox, err := NewOpenXM(connc, connd, g.Logger())
 	if err != nil {
 		connc.Close()
 		connd.Close()
-		return nil, nil
+		return nil
 	}
 	g.SetCAS(ox)
-	return connc, connd
+	return ox
 }

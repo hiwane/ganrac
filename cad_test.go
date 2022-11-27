@@ -7,13 +7,12 @@ import (
 
 func TestCADeasy(t *testing.T) {
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestCADeasy... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	x := NewPolyVar(0)
 	y := NewPolyVar(1)

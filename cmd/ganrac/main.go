@@ -103,27 +103,23 @@ func main() {
 			fmt.Fprintf(os.Stderr, "connect control [%s] failed: %s\n", *cport, err.Error())
 			os.Exit(1)
 		}
-		defer connc.Close()
 
 		time.Sleep(time.Second * 1)
 
 		connd, err := net.Dial("tcp", *dport)
 		if err != nil {
+			connc.Close()
 			fmt.Fprintf(os.Stderr, "connect data [%s] failed: %s\n", *dport, err.Error())
 			os.Exit(1)
 		}
-		defer connd.Close()
 
-		dw := bufio.NewWriter(connd)
-		dr := bufio.NewReader(connd)
-		cw := bufio.NewWriter(connc)
-		cr := bufio.NewReader(connc)
-
-		ox, err := openxm.NewOpenXM(cw, dw, cr, dr, g.Logger())
+		ox, err := openxm.NewOpenXM(connc, connd, g.Logger())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "connect ox failed: %s", err.Error())
 			os.Exit(1)
 		}
+
+		defer ox.Close()
 		g.SetCAS(ox)
 	}
 

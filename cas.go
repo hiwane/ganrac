@@ -16,4 +16,6 @@ type CAS interface {
 	Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool)
 
 	Eval(p string) (GObj, error)
+
+	Close() error
 }

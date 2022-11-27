@@ -1,6 +1,7 @@
 package ganrac
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"log"
 	"math/big"
+	"net"
 )
 
 // http://www.math.sci.kobe-u.ac.jp/OpenXM/Current/index-spec.html
@@ -109,6 +111,8 @@ type Flusher interface {
 type OpenXM struct {
 	cw, dw       Flusher
 	cr, dr       io.Reader
+	connc        net.Conn
+	connd        net.Conn
 	serial       int32
 	border       binary.ByteOrder
 	logger       *log.Logger
@@ -116,12 +120,19 @@ type OpenXM struct {
 	sres_defined bool
 }
 
-func NewOpenXM(controlw, dataw Flusher, controlr, datar io.Reader, logger *log.Logger) (*OpenXM, error) {
+func NewOpenXM(connc, connd net.Conn, logger *log.Logger) (*OpenXM, error) {
+	dataw := bufio.NewWriter(connd)
+	datar := bufio.NewReader(connd)
+	controlw := bufio.NewWriter(connc)
+	controlr := bufio.NewReader(connc)
+
 	ox := new(OpenXM)
 	ox.cw = controlw
 	ox.cr = controlr
 	ox.dw = dataw
 	ox.dr = datar
+	ox.connd = connd
+	ox.connc = connc
 	ox.border = binary.LittleEndian
 	ox.logger = logger
 
@@ -131,6 +142,12 @@ func NewOpenXM(controlw, dataw Flusher, controlr, datar io.Reader, logger *log.L
 		return nil, err
 	}
 	return ox, err
+}
+
+func (ox *OpenXM) Close() error {
+	ox.connd.Close()
+	ox.connc.Close()
+	return nil
 }
 
 func (ox *OpenXM) dataRead(v interface{}) error {
