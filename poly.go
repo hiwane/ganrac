@@ -248,18 +248,18 @@ func (z *Poly) Format(s fmt.State, format rune) {
 	case FORMAT_SRC: // source
 		z.write_src(s)
 	case FORMAT_TEX, FORMAT_QEPCAD:
-		z.write(s, format, false, " ")
+		z.write(s, format, false, " ", true)
 	default:
 		if p, ok := s.Precision(); ok {
 			ss := fmt.Sprintf("%v", z)
 			fmt.Fprintf(s, "%.*s", p, ss)
 		} else {
-			z.write(s, format, false, "*")
+			z.write(s, format, false, "*", format != FORMAT_INDEX)
 		}
 	}
 }
 
-func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string) {
+func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string, vars bool) {
 	// out_sgn 主係数で + の出力が必要ですよ
 	for i := len(z.c) - 1; i >= 0; i-- {
 		if z.c[i].IsZero() {
@@ -289,7 +289,7 @@ func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string) {
 				}
 			} else if p, ok := z.c[i].(*Poly); ok {
 				if p.isMono() { // 括弧不要
-					p.write(b, format, i != len(z.c)-1 || out_sgn, mul)
+					p.write(b, format, i != len(z.c)-1 || out_sgn, mul, vars)
 					if i > 0 {
 						fmt.Fprintf(b, "%s", mul)
 					}
@@ -299,15 +299,19 @@ func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string) {
 							fmt.Fprintf(b, "+")
 						}
 						fmt.Fprintf(b, "(")
-						p.write(b, format, false, mul)
+						p.write(b, format, false, mul, vars)
 						fmt.Fprintf(b, ")%s", mul)
 					} else {
-						p.write(b, format, true, mul)
+						p.write(b, format, true, mul, vars)
 					}
 				}
 			}
 			if i > 0 {
-				fmt.Fprintf(b, "%s", VarStr(z.lv))
+				if vars {
+					fmt.Fprintf(b, "%s", VarStr(z.lv))
+				} else {
+					fmt.Fprintf(b, "x%d", z.lv)
+				}
 				if i >= 10 && mul == " " { // TeX
 					fmt.Fprintf(b, "^{%d}", i)
 				} else if i > 1 {
@@ -1216,6 +1220,11 @@ func (p *Poly) primpart() *Poly {
 	// assume: p in Z[X]
 	c := p.content(nil)
 	return p.Div(c).(*Poly)
+}
+
+func (p *Poly) PPC() (*Poly, *Int) {
+	c := p.content(nil)
+	return p.Div(c).(*Poly), c
 }
 
 func (p *Poly) Cmp(q *Poly) int {

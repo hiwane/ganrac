@@ -210,7 +210,7 @@ func (x *Int) Format(s fmt.State, format rune) {
 		}
 		f.SetInt(x.n)
 		f.Format(s, format)
-	case FORMAT_DUMP, FORMAT_TEX, FORMAT_QEPCAD:
+	case FORMAT_DUMP, FORMAT_TEX, FORMAT_QEPCAD, FORMAT_INDEX:
 		x.n.Format(s, 'd')
 	case FORMAT_SRC:
 		if x.n.IsInt64() {

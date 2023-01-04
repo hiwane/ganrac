@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/hiwane/ganrac"
-	openxm "github.com/hiwane/ganrac/ox"
+	openxm "github.com/hiwane/ganrac/cas/ox"
 	"io"
 	"io/ioutil"
 	"log"

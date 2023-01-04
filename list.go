@@ -63,6 +63,14 @@ func (z *List) Set(ii *Int, v GObj) error {
 	return nil
 }
 
+func (z *List) Seti(i int, v GObj) error {
+	if i < 0 || i >= len(z.v) {
+		return fmt.Errorf("list index out of range")
+	}
+	z.v[i] = v
+	return nil
+}
+
 func (z *List) Get(ii *Int) (GObj, error) {
 	ilen := NewInt(int64(len(z.v)))
 	if ii.Sign() < 0 || ii.Cmp(ilen) >= 0 {
@@ -72,11 +80,21 @@ func (z *List) Get(ii *Int) (GObj, error) {
 	return z.v[m], nil
 }
 
-func (z *List) Geti(i int) (GObj, error) {
-	if i < 0 || i >= len(z.v) {
-		return nil, fmt.Errorf("list index out of range")
+func (z *List) Geti(idx ...int) (GObj, error) {
+
+	var r GObj = z
+	var ok bool
+	for j, i := range idx {
+		z, ok = r.(*List)
+		if !ok {
+			return nil, fmt.Errorf("not a list (%d,%d)", j, i)
+		}
+		if i < 0 || i >= len(z.v) {
+			return nil, fmt.Errorf("list index out of range")
+		}
+		r = z.v[i]
 	}
-	return z.v[i], nil
+	return r, nil
 }
 
 func (z *List) Len() int {
@@ -103,6 +121,16 @@ func (z *List) Indets(b []bool) {
 			q.Indets(b)
 		}
 	}
+}
+
+func (z *List) Swap(i, j int) error {
+	if i < 0 || i >= len(z.v) || j < 0 || j >= len(z.v) {
+		return fmt.Errorf("list index out of range")
+	}
+	v := z.v[i]
+	z.v[i] = z.v[j]
+	z.v[j] = v
+	return nil
 }
 
 func (z *List) Append(a GObj) {

@@ -6,6 +6,15 @@ package ganrac
 
 type CAS interface {
 	Gcd(p, q *Poly) RObj
+
+	/* asir format
+	 * Factor(p) = [[c, 1], [q2, n2], [q3, n3], ..., [qm, nm]]
+	 *  where
+	 *     c in Q and
+	 * 	   q2, ..., qm in Q[X] and
+	 * 	   n2, ..., nm in N and
+	 *     p = c* q2^n2 * q3^n3 * ... * qm^nm
+	 */
 	Factor(p *Poly) *List
 
 	Discrim(p *Poly, lv Level) RObj
