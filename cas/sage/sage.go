@@ -23,6 +23,7 @@ type Sage struct {
 	pstop    *C.PyObject
 	pGC      *C.PyObject
 	pGCD     *C.PyObject
+	pValid   *C.PyObject
 	pFactor  *C.PyObject
 	pVarInit *C.PyObject
 	ganrac   *Ganrac
@@ -44,7 +45,8 @@ func (sage *Sage) Close() error {
 
 	if sage.is_gc {
 		fmt.Printf("sage.Close(): tracemalloc.stop()\n")
-		callFunction(sage.pstop)
+		r := callFunction(sage.pstop)
+		C.Py_DecRef(r)
 	}
 
 	// C.Py_Finalize()
@@ -78,6 +80,7 @@ import os
 import tracemalloc
 
 def gan_snapstart():
+	print("tracemalloc.start(py)")
 	tracemalloc.start()
 	return
 
@@ -88,6 +91,15 @@ def gan_snapstop():
 def gan_gc():
 	gc.collect()
 	return str(sum([stat.size for stat in tracemalloc.take_snapshot().statistics('filename')]))
+
+def gan_valid(v):
+	print(f"      :   valid(?) v={v}, dict={isinstance(v, dict)} bool={'x0' in v}", flush=True)
+	return 'x0' in v
+
+	if 'x0' in v:
+		return True
+	print(f"v={v} in gan_valid()", flush=True)
+	return False
 
 def varinit(num):
 	d = {}
@@ -104,6 +116,7 @@ def gan_factor(polystr: str, vardic: dict):
 	return str(G)
 
 def gan_gcd(p, q, vardic: dict):
+	# print(f"      :   called gcd vd={vardic}")
 	if 'x0' not in vardic:
 		with open("/tmp/ganrac-sage.log", "a") as fp:
 			print(vardic, file=fp)
@@ -166,6 +179,7 @@ def gan_gcd(p, q, vardic: dict):
 		{"gan_snapstart", &psnapstr},
 		{"gan_snapstop", &sage.pstop},
 		{"gan_gc", &sage.pGC},
+		{"gan_valid", &sage.pValid},
 		{"gan_gcd", &sage.pGCD},
 		{"gan_factor", &sage.pFactor},
 		{"varinit", &sage.pVarInit},
@@ -178,12 +192,12 @@ def gan_gcd(p, q, vardic: dict):
 	}
 
 	if sage.is_gc {
-		fmt.Printf("tracemalloc.start()")
+		fmt.Printf("NewSage() call tracemalloc.start()\n")
 		r := callFunction(psnapstr)
-		fmt.Printf(", r=%p %T\n", r, r)
+		C.Py_DecRef(r)
 	}
 
-	fmt.Printf("end NewSage()\n")
+	fmt.Printf("NewSage() end\n")
 	return sage, nil
 }
 
@@ -195,14 +209,31 @@ func (sage *Sage) GC() error {
 	var ms runtime.MemStats
 	runtime.ReadMemStats(&ms)
 
+	n, _ := runtime.MemProfile(nil, true)
+
 	rets := "boo"
 	if true {
 		ret := callFunction(sage.pGC)
 		defer C.Py_DecRef(ret)
 		rets = toGoString(ret)
 	}
-	fmt.Printf("GC<%5d> py=%9s, go=%9d, %9d\n", sage.cnt, rets, ms.Alloc, ms.HeapAlloc)
+	fmt.Printf("GC<%5d> py=%9s, go=%9d, %9d, %9d\n", sage.cnt, rets, ms.Alloc, ms.HeapAlloc, n)
 	return nil
+}
+
+func (sage *Sage) valid(pc uintptr, file string, line int, ok bool) {
+	if true {
+		return
+	}
+	if sage.varlist != nil {
+		ret := callFunction(sage.pValid, sage.varlist)
+		fmt.Printf("<%5d:%d> ret=%T: %p\n", line, sage.cnt, ret, ret)
+		if ret == nil {
+			panic("stop")
+			return
+		}
+		C.Py_DecRef(ret)
+	}
 }
 
 /* 変数リストを構成する. 他の sage 関数呼び出しでも共有する */
@@ -222,13 +253,13 @@ func (sage *Sage) varp(polys ...*Poly) error {
 		if sage.varlist != nil {
 			C.Py_DecRef(sage.varlist)
 		}
-		C.Py_IncRef(ret)
-		sage.varlist = ret
+		sage.varlist = C.Py_NewRef(ret)
 		sage.varnum = n
 		// fmt.Printf("@@ varinit: updated %d\n", n)
 	} else {
 		// fmt.Printf("@@ varinit: %d < %d\n", sage.varnum, n)
 	}
+	sage.valid(runtime.Caller(0))
 	return nil
 }
 
@@ -237,9 +268,9 @@ func (sage *Sage) toGaNRAC(s string) interface{} {
 	u, err := sage.ganrac.Eval(strings.NewReader(s))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "sage.toGaNRAC(%s) failed: %s.", s, err.Error())
-		return u
+		return nil
 	}
-	return nil
+	return u
 }
 
 func (sage *Sage) EvalRObj(s string) RObj {
@@ -260,7 +291,6 @@ func (sage *Sage) EvalList(s string) *List {
 	if u == nil {
 		return nil
 	}
-
 	if uu, ok := u.(*List); ok {
 		return uu
 	} else {
@@ -278,31 +308,37 @@ func (sage *Sage) Gcd(p, q *Poly) RObj {
 		C.PyErr_Print()
 		return nil
 	}
+	sage.valid(runtime.Caller(0))
 
 	// 変数はすべて xi 形式にする
 	ps := toPyString(fmt.Sprintf("%I", p))
+	sage.valid(runtime.Caller(0))
 	qs := toPyString(fmt.Sprintf("%I", q))
 	// fmt.Printf("ps=%s qs=%p\n", fmt.Sprintf("%I", p), qs)
 
-	ret := callFunction(sage.pGCD, ps, qs, sage.varlist)
+	sage.valid(runtime.Caller(0))
+	// C.Py_IncRef(sage.varlist)
+	ret := callFunction(sage.pGCD, ps, qs, C.Py_NewRef(sage.varlist))
+	sage.valid(runtime.Caller(0))
 	if ret == nil {
-		fmt.Fprintf(os.Stderr, "call object failed pGCD")
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pGCD\n", sage.cnt)
 		C.PyErr_Print()
 		return nil
 	}
+	sage.valid(runtime.Caller(0))
 	defer C.Py_DecRef(ret)
 
+	sage.valid(runtime.Caller(0))
 	retstr := toGoString(ret)
+	sage.valid(runtime.Caller(0))
 	if strings.HasPrefix(retstr, "none") {
-		panic("stop..... varlist is broken. " + retstr + ".")
+		panic(fmt.Sprintf("<%d> stop..... varlist is broken. %s.", sage.cnt, retstr))
 	}
-	u := sage.EvalRObj(retstr)
-	return u
+	sage.valid(runtime.Caller(0))
+	return sage.EvalRObj(retstr)
 }
 
 func (sage *Sage) Factor(q *Poly) *List {
-	fmt.Printf("Factor(%s) start!\n", q)
-
 	err := sage.varp(q)
 	if err != nil {
 		fmt.Printf("varp() failed: %s.\n", err.Error())
@@ -315,15 +351,16 @@ func (sage *Sage) Factor(q *Poly) *List {
 
 	ret := callFunction(sage.pFactor, ps, sage.varlist)
 	if ret == nil {
-		fmt.Fprintf(os.Stderr, "call object failed pFactor")
+		fmt.Fprintf(os.Stderr, "call object failed pFactor\n")
 		C.PyErr_Print()
 		return nil
 	}
+	defer C.Py_DecRef(ret)
 
 	rets := toGoString(ret)
 	uu := sage.EvalList(rets)
 	if uu == nil {
-		fmt.Fprintf(os.Stderr, "sage.Factor eval(%s) failed.", rets)
+		fmt.Fprintf(os.Stderr, "sage.Factor eval() failed: %s.\n", rets)
 		return nil
 	}
 	// 第１項を数要素にする
