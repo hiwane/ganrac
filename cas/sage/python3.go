@@ -39,6 +39,17 @@ func callFunction(pFunc *C.PyObject, argv ...*C.PyObject) *C.PyObject {
 	return C.PyObject_CallObject(pFunc, atuple)
 }
 
+func callFunctionv(pFunc *C.PyObject, v int, argv ...*C.PyObject) *C.PyObject {
+	atuple := C.PyTuple_New(C.long(len(argv) + 1))
+
+	C.PyTuple_SetItem(atuple, C.long(0), C.PyLong_FromLong(C.long(v)))
+	for i, v := range argv {
+		C.PyTuple_SetItem(atuple, C.long(i + 1), v)
+	}
+	defer C.Py_DecRef(atuple)
+	return C.PyObject_CallObject(pFunc, atuple)
+}
+
 /*
  * python 文字列へ変換する
  */

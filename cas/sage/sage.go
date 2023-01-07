@@ -28,7 +28,6 @@ type Sage struct {
 	pVarInit *C.PyObject
 	ganrac   *Ganrac
 
-	varlist *C.PyObject
 	varnum  int
 
 	cnt   int
@@ -92,15 +91,6 @@ def gan_gc():
 	gc.collect()
 	return str(sum([stat.size for stat in tracemalloc.take_snapshot().statistics('filename')]))
 
-def gan_valid(v):
-	print(f"      :   valid(?) v={v}, dict={isinstance(v, dict)} bool={'x0' in v}", flush=True)
-	return 'x0' in v
-
-	if 'x0' in v:
-		return True
-	print(f"v={v} in gan_valid()", flush=True)
-	return False
-
 def varinit(num):
 	d = {}
 	for n in range(num):
@@ -108,24 +98,16 @@ def varinit(num):
 		d[v] = sage.all.var(v)
 	return d
 
-def gan_factor(polystr: str, vardic: dict):
+def gan_factor(varn: int, polystr: str):
+	vardic = varinit(varn)
 	F = sage.all.sage_eval(polystr, locals=vardic)
 	G = F.factor_list()
 	for i in range(len(G)):
 		G[i] = list(G[i])
 	return str(G)
 
-def gan_gcd(p, q, vardic: dict):
-	# print(f"      :   called gcd vd={vardic}")
-	if 'x0' not in vardic:
-		with open("/tmp/ganrac-sage.log", "a") as fp:
-			print(vardic, file=fp)
-		if os.path.exists("/tmp/ganrac.log"):
-			with open("/tmp/ganrac.log") as fp:
-				for line in fp:
-					print("ganrac.log: " + line)
-
-		return "none" + str(vardic)
+def gan_gcd(varn: int, p, q):
+	vardic = varinit(varn)
 	F = sage.all.sage_eval(p, locals=vardic)
 	G = sage.all.sage_eval(q, locals=vardic)
 	return str(sage.all.gcd(F, G))
@@ -179,7 +161,6 @@ def gan_gcd(p, q, vardic: dict):
 		{"gan_snapstart", &psnapstr},
 		{"gan_snapstop", &sage.pstop},
 		{"gan_gc", &sage.pGC},
-		{"gan_valid", &sage.pValid},
 		{"gan_gcd", &sage.pGCD},
 		{"gan_factor", &sage.pFactor},
 		{"varinit", &sage.pVarInit},
@@ -221,46 +202,15 @@ func (sage *Sage) GC() error {
 	return nil
 }
 
-func (sage *Sage) valid(pc uintptr, file string, line int, ok bool) {
-	if true {
-		return
-	}
-	if sage.varlist != nil {
-		ret := callFunction(sage.pValid, sage.varlist)
-		fmt.Printf("<%5d:%d> ret=%T: %p\n", line, sage.cnt, ret, ret)
-		if ret == nil {
-			panic("stop")
-			return
-		}
-		C.Py_DecRef(ret)
-	}
-}
-
-/* 変数リストを構成する. 他の sage 関数呼び出しでも共有する */
-func (sage *Sage) varp(polys ...*Poly) error {
-	n := sage.varnum
+/* 変数の最大レベルを返す */
+func (sage *Sage) varn(polys ...*Poly) int {
+	n := 0
 	for _, p := range polys {
 		if n < int(p.Level())+1 {
 			n = int(p.Level() + 1)
 		}
 	}
-	if sage.varnum < n || true {
-		pn := C.PyLong_FromLong(C.long(n))
-		ret := callFunction(sage.pVarInit, pn)
-		if ret == nil {
-			return fmt.Errorf("init varlist failed: %d.", n)
-		}
-		if sage.varlist != nil {
-			C.Py_DecRef(sage.varlist)
-		}
-		sage.varlist = C.Py_NewRef(ret)
-		sage.varnum = n
-		// fmt.Printf("@@ varinit: updated %d\n", n)
-	} else {
-		// fmt.Printf("@@ varinit: %d < %d\n", sage.varnum, n)
-	}
-	sage.valid(runtime.Caller(0))
-	return nil
+	return n + 1
 }
 
 func (sage *Sage) toGaNRAC(s string) interface{} {
@@ -302,54 +252,36 @@ func (sage *Sage) EvalList(s string) *List {
 func (sage *Sage) Gcd(p, q *Poly) RObj {
 
 	// fmt.Printf("Gcd(%s,%s) start!\n", p, q)
-	err := sage.varp(p, q)
-	if err != nil {
-		fmt.Printf("varp() failed: %s.\n", err.Error())
-		C.PyErr_Print()
-		return nil
-	}
-	sage.valid(runtime.Caller(0))
+	varn := sage.varn(p, q)
 
 	// 変数はすべて xi 形式にする
 	ps := toPyString(fmt.Sprintf("%I", p))
-	sage.valid(runtime.Caller(0))
 	qs := toPyString(fmt.Sprintf("%I", q))
 	// fmt.Printf("ps=%s qs=%p\n", fmt.Sprintf("%I", p), qs)
 
-	sage.valid(runtime.Caller(0))
-	// C.Py_IncRef(sage.varlist)
-	ret := callFunction(sage.pGCD, ps, qs, C.Py_NewRef(sage.varlist))
-	sage.valid(runtime.Caller(0))
+	ret := callFunctionv(sage.pGCD, varn, ps, qs)
+
 	if ret == nil {
 		fmt.Fprintf(os.Stderr, "<%d> call object failed pGCD\n", sage.cnt)
 		C.PyErr_Print()
 		return nil
 	}
-	sage.valid(runtime.Caller(0))
 	defer C.Py_DecRef(ret)
 
-	sage.valid(runtime.Caller(0))
 	retstr := toGoString(ret)
-	sage.valid(runtime.Caller(0))
 	if strings.HasPrefix(retstr, "none") {
 		panic(fmt.Sprintf("<%d> stop..... varlist is broken. %s.", sage.cnt, retstr))
 	}
-	sage.valid(runtime.Caller(0))
 	return sage.EvalRObj(retstr)
 }
 
 func (sage *Sage) Factor(q *Poly) *List {
-	err := sage.varp(q)
-	if err != nil {
-		fmt.Printf("varp() failed: %s.\n", err.Error())
-		C.PyErr_Print()
-		return nil
-	}
+	varn := sage.varn(q)
 
 	p, cont := q.PPC()
 	ps := toPyString(fmt.Sprintf("%I", p)) // 変数はすべて xi 形式にする
 
-	ret := callFunction(sage.pFactor, ps, sage.varlist)
+	ret := callFunctionv(sage.pFactor, varn, ps)
 	if ret == nil {
 		fmt.Fprintf(os.Stderr, "call object failed pFactor\n")
 		C.PyErr_Print()
