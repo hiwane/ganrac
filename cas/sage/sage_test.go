@@ -19,3 +19,15 @@ func TestFactor(t *testing.T) {
 
 	cas.FactorTest(g, sage, t)
 }
+
+func TestResultant(t *testing.T) {
+	funcname := "TestResultant"
+	g := ganrac.NewGANRAC()
+	sage, err := NewSage(g, "/tmp/ganrac.log")
+	if err != nil {
+		fmt.Printf("skip %s... init sage failed\n", funcname)
+		return
+	}
+
+	cas.ResultantTest(g, sage, t)
+}

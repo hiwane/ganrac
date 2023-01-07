@@ -19,16 +19,23 @@ import (
 )
 
 type Sage struct {
-	pModule  *C.PyObject
-	pstop    *C.PyObject
-	pGC      *C.PyObject
-	pGCD     *C.PyObject
-	pValid   *C.PyObject
-	pFactor  *C.PyObject
-	pVarInit *C.PyObject
-	ganrac   *Ganrac
+	pModule    *C.PyObject
+	pstop      *C.PyObject
+	pGC        *C.PyObject
+	pGCD       *C.PyObject
+	pResultant *C.PyObject
+	pDiscrim   *C.PyObject
+	pPsc       *C.PyObject
+	pSres      *C.PyObject
+	pGB        *C.PyObject
+	pReduce    *C.PyObject
+	pEval      *C.PyObject
+	pValid     *C.PyObject
+	pFactor    *C.PyObject
+	pVarInit   *C.PyObject
+	ganrac     *Ganrac
 
-	varnum  int
+	varnum int
 
 	cnt   int
 	is_gc bool
@@ -111,6 +118,35 @@ def gan_gcd(varn: int, p, q):
 	F = sage.all.sage_eval(p, locals=vardic)
 	G = sage.all.sage_eval(q, locals=vardic)
 	return str(sage.all.gcd(F, G))
+
+def gan_res(varn: int, p, q, x):
+	vardic = varinit(varn)
+	F = sage.all.sage_eval(p, locals=vardic)
+	G = sage.all.sage_eval(q, locals=vardic)
+	X = vardic[x]
+	return str(F.resultant(G, X))
+
+def gan_discrim(varn: int, p, x):
+	vardic = varinit(varn)
+	F = sage.all.sage_eval(p, locals=vardic)
+	G = sage.all.sage_eval(p, locals=vardic)
+	X = vardic[x]
+	return str(F.discrim(X))
+
+def gan_psc(varn: int, p, q, x, j):
+	return ""
+
+def gan_sres(varn: int, p, q, x, j):
+	return ""
+
+def gan_gb(varn: int, p, vars, n):
+	return ""
+
+def gan_reduce(varn: int, p, gb, vars, n):
+	return ""
+
+def gan_eval(varn: int, s):
+	return ""
 `
 
 	/*
@@ -162,6 +198,13 @@ def gan_gcd(varn: int, p, q):
 		{"gan_snapstop", &sage.pstop},
 		{"gan_gc", &sage.pGC},
 		{"gan_gcd", &sage.pGCD},
+		{"gan_res", &sage.pResultant},
+		{"gan_discrim", &sage.pDiscrim},
+		{"gan_psc", &sage.pPsc},
+		{"gan_sres", &sage.pSres},
+		{"gan_gb", &sage.pGB},
+		{"gan_reduce", &sage.pReduce},
+		{"gan_eval", &sage.pEval},
 		{"gan_factor", &sage.pFactor},
 		{"varinit", &sage.pVarInit},
 	} {
@@ -198,7 +241,7 @@ func (sage *Sage) GC() error {
 		defer C.Py_DecRef(ret)
 		rets = toGoString(ret)
 	}
-	fmt.Printf("GC<%5d> py=%9s, go=%9d, %9d, %9d\n", sage.cnt, rets, ms.Alloc, ms.HeapAlloc, n)
+	fmt.Printf("GC<%7d> py=%9s, go=%9d, %9d, %9d\n", sage.cnt, rets, ms.Alloc, ms.HeapAlloc, n)
 	return nil
 }
 
@@ -325,20 +368,41 @@ func (sage *Sage) Discrim(p *Poly, lv Level) RObj {
 	return NewInt(1)
 }
 func (sage *Sage) Resultant(p *Poly, q *Poly, lv Level) RObj {
-	return NewInt(1)
+	varn := sage.varn(p, q)
+
+	// 変数はすべて xi 形式にする
+	ps := toPyString(fmt.Sprintf("%I", p))
+	qs := toPyString(fmt.Sprintf("%I", q))
+	xs := toPyString(fmt.Sprintf("x%d", lv))
+
+	ret := callFunctionv(sage.pResultant, varn, ps, qs, xs)
+	if ret == nil {
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pResultant\n", sage.cnt)
+		C.PyErr_Print()
+		return nil
+	}
+	defer C.Py_DecRef(ret)
+
+	retstr := toGoString(ret)
+	return sage.EvalRObj(retstr)
 }
+
 func (sage *Sage) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 	return NewInt(1)
 }
+
 func (sage *Sage) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
 	return NewInt(1)
 }
+
 func (sage *Sage) GB(p *List, vars *List, n int) *List {
 	return NewList()
 }
+
 func (sage *Sage) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 	return NewInt(1), true
 }
+
 func (sage *Sage) Eval(p string) (GObj, error) {
 	return nil, fmt.Errorf("unsupported")
 }

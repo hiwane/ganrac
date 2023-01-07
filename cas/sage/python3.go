@@ -44,7 +44,7 @@ func callFunctionv(pFunc *C.PyObject, v int, argv ...*C.PyObject) *C.PyObject {
 
 	C.PyTuple_SetItem(atuple, C.long(0), C.PyLong_FromLong(C.long(v)))
 	for i, v := range argv {
-		C.PyTuple_SetItem(atuple, C.long(i + 1), v)
+		C.PyTuple_SetItem(atuple, C.long(i+1), v)
 	}
 	defer C.Py_DecRef(atuple)
 	return C.PyObject_CallObject(pFunc, atuple)
