@@ -31,3 +31,27 @@ func TestResultant(t *testing.T) {
 
 	cas.ResultantTest(g, sage, t)
 }
+
+func TestDiscrim(t *testing.T) {
+	funcname := "TestDiscrim"
+	g := ganrac.NewGANRAC()
+	sage, err := NewSage(g, "/tmp/ganrac.log")
+	if err != nil {
+		fmt.Printf("skip %s... init sage failed\n", funcname)
+		return
+	}
+
+	cas.DiscrimTest(g, sage, t)
+}
+
+func TestGBReduce(t *testing.T) {
+	funcname := "TestGBReduce"
+	g := ganrac.NewGANRAC()
+	sage, err := NewSage(g, "/tmp/ganrac.log")
+	if err != nil {
+		fmt.Printf("skip %s... init sage failed\n", funcname)
+		return
+	}
+
+	cas.GBRedTest(g, sage, t)
+}

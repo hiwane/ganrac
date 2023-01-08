@@ -127,11 +127,12 @@ def gan_res(varn: int, p, q, x):
 	return str(F.resultant(G, X))
 
 def gan_discrim(varn: int, p, x):
-	vardic = varinit(varn)
+	V = ['x' + str(i) for i in range(varn)]
+	P = sage.all.PolynomialRing(sage.all.QQ, V)
+	vardic = {V[i]: v for i, v in enumerate(P.gens())}
 	F = sage.all.sage_eval(p, locals=vardic)
-	G = sage.all.sage_eval(p, locals=vardic)
 	X = vardic[x]
-	return str(F.discrim(X))
+	return str(F.discriminant(X))
 
 def gan_psc(varn: int, p, q, x, j):
 	return ""
@@ -139,11 +140,42 @@ def gan_psc(varn: int, p, q, x, j):
 def gan_sres(varn: int, p, q, x, j):
 	return ""
 
-def gan_gb(varn: int, p, vars, n):
-	return ""
+def gan_gb(polys, vars, n):
+	"""
+	>>> P = sage.all.PolynomialRing(sage.all.QQ, ('x', 'y', 'z'))
+	>>> x, y, z = P.gens()
+	>>> I = sage.all.ideal(x**5 + y**4 + z**3 - 1,  x**3 + y**3 + z**2 - 1)
+	>>> G = I.groebner_basis()
+	>>> (x**2).reduce(G)
+	x^2
+	>>> (x**2).reduce(I)
+	x^2
+	"""
+	V = vars
+	if 0 < n < len(vars):
+		order = f'degrevlex({n}),degrevlex({len(vars) - n})'
+	else:
+		order = 'degrevlex'
+	P = sage.all.PolynomialRing(sage.all.QQ, V, order=order)
+	vardic = {V[i]: v for i, v in enumerate(P.gens())}
+	F = sage.all.sage_eval(polys, locals=vardic)
+	I = sage.all.ideal(F)
+	G = I.groebner_basis()
+	print(G)
+	return str(G)
 
-def gan_reduce(varn: int, p, gb, vars, n):
-	return ""
+def gan_reduce(p, gb, vars, n):
+	V = vars
+	if 0 < n < len(vars):
+		order = f'degrevlex({n}),degrevlex({len(vars) - n})'
+	else:
+		order = 'degrevlex'
+	P = sage.all.PolynomialRing(sage.all.QQ, V, order=order)
+	vardic = {V[i]: v for i, v in enumerate(P.gens())}
+	F = sage.all.sage_eval(p, locals=vardic)
+	G = sage.all.sage_eval(gb, locals=vardic)
+	I = sage.all.ideal(G)
+	return str(F.reduce(G))
 
 def gan_eval(varn: int, s):
 	return ""
@@ -365,7 +397,22 @@ func (sage *Sage) Factor(q *Poly) *List {
 }
 
 func (sage *Sage) Discrim(p *Poly, lv Level) RObj {
-	return NewInt(1)
+	varn := sage.varn(p)
+
+	// 変数はすべて xi 形式にする
+	ps := toPyString(fmt.Sprintf("%I", p))
+	xs := toPyString(fmt.Sprintf("x%d", lv))
+
+	ret := callFunctionv(sage.pDiscrim, varn, ps, xs)
+	if ret == nil {
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pDiscrim\n", sage.cnt)
+		C.PyErr_Print()
+		return nil
+	}
+	defer C.Py_DecRef(ret)
+
+	retstr := toGoString(ret)
+	return sage.EvalRObj(retstr)
 }
 func (sage *Sage) Resultant(p *Poly, q *Poly, lv Level) RObj {
 	varn := sage.varn(p, q)
@@ -395,12 +442,52 @@ func (sage *Sage) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
 	return NewInt(1)
 }
 
+func (sage *Sage) toPyVars(vars *List) *C.PyObject {
+	vs := C.PyTuple_New(C.long(vars.Len()))
+	for i := 0; i < vars.Len(); i++ {
+		v, _ := vars.Geti(i)
+		C.PyTuple_SetItem(vs, C.long(i), toPyString(fmt.Sprintf("x%d", v.(*Poly).Level())))
+	}
+	return vs
+}
+
 func (sage *Sage) GB(p *List, vars *List, n int) *List {
-	return NewList()
+	// 変数はすべて xi 形式にする
+	ps := toPyString(fmt.Sprintf("%I", p))
+	ns := C.PyLong_FromLong(C.long(n))
+
+	vs := sage.toPyVars(vars)
+	defer C.Py_DecRef(vs)
+
+	ret := callFunction(sage.pGB, ps, vs, ns)
+	if ret == nil {
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pGB\n", sage.cnt)
+		C.PyErr_Print()
+		return nil
+	}
+	defer C.Py_DecRef(ret)
+
+	retstr := toGoString(ret)
+	return sage.EvalList(retstr)
 }
 
 func (sage *Sage) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
-	return NewInt(1), true
+	ps := toPyString(fmt.Sprintf("%I", p))
+	gbs := toPyString(fmt.Sprintf("%I", gb))
+	vs := sage.toPyVars(vars)
+	defer C.Py_DecRef(vs)
+	ns := C.PyLong_FromLong(C.long(n))
+
+	ret := callFunction(sage.pReduce, ps, gbs, vs, ns)
+	if ret == nil {
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pGB\n", sage.cnt)
+		C.PyErr_Print()
+		return p, false
+	}
+	defer C.Py_DecRef(ret)
+
+	retstr := toGoString(ret)
+	return sage.EvalRObj(retstr), false
 }
 
 func (sage *Sage) Eval(p string) (GObj, error) {

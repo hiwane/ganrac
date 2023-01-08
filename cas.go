@@ -22,6 +22,8 @@ type CAS interface {
 	Psc(p *Poly, q *Poly, lv Level, j int32) RObj
 	Sres(p *Poly, q *Poly, lv Level, k int32) RObj
 	GB(p *List, vars *List, n int) *List
+
+	/* returns reduce(p, gb), sgn < 0 */
 	Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool)
 
 	Eval(p string) (GObj, error)

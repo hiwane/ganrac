@@ -1,7 +1,7 @@
 package cas
 
 /*
- * test for factor()
+ * test for Resultant()
  */
 import (
 	"github.com/hiwane/ganrac"
