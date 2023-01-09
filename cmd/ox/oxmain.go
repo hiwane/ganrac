@@ -1,11 +1,12 @@
 package main
 
 import (
+	openxm "github.com/hiwane/ganrac/cas/ox"
+
 	"bufio"
 	"flag"
 	"fmt"
 	"github.com/hiwane/ganrac"
-	openxm "github.com/hiwane/ganrac/cas/ox"
 	"io"
 	"io/ioutil"
 	"log"
@@ -78,12 +79,11 @@ func main() {
 
 	flag.Parse()
 
-	in := bufio.NewReader(os.Stdin)
 	if !*quiet {
 		if gitCommit == "" {
-			fmt.Printf("GaNRAC. see help();\n")
+			fmt.Printf("GaNRAC [OX]. see help();\n")
 		} else {
-			fmt.Printf("GaNRAC version %s. see help();\n", gitCommit)
+			fmt.Printf("GaNRAC [OX] revision %s. see help();\n", gitCommit)
 		}
 	}
 	g := ganrac.NewGANRAC()
@@ -125,6 +125,7 @@ func main() {
 
 	logger.Printf("START!!!!")
 	g.Eval(strings.NewReader(fmt.Sprintf("verbose(%d,%d);", *verbose, *cad_verbose)))
+	in := bufio.NewReader(os.Stdin)
 	for {
 		if _, err := os.Stdout.WriteString("> "); err != nil {
 			fmt.Fprintf(os.Stderr, "WriteString: %s", err)

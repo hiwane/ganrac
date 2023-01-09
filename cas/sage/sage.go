@@ -47,7 +47,6 @@ func (sage *Sage) Inc(n int) int {
 }
 
 func (sage *Sage) Close() error {
-	fmt.Printf("sage.Close(): start\n")
 
 	if sage.is_gc {
 		fmt.Printf("sage.Close(): tracemalloc.stop()\n")
@@ -57,7 +56,6 @@ func (sage *Sage) Close() error {
 
 	// C.Py_Finalize()
 	// fmt.Printf("sage.Close(): end finalize()\n")
-	fmt.Printf("sage.Close(): end pstop()\n")
 	return nil
 }
 
@@ -68,7 +66,7 @@ func NewSage(g *Ganrac, fname string) (*Sage, error) {
 
 	sage := new(Sage)
 	sage.ganrac = g
-	sage.is_gc = true
+	sage.is_gc = false
 
 	/*
 	   [<Signals.SIGINT: 2>, <cyfunction python_check_interrupt at 0x7f41066a0ee0>]
@@ -156,7 +154,6 @@ def gan_psc(varn: int, p, q, x, J):
 	for D in range(N, -1, -1):
 		BI = G.coefficient({X: D})
 		for I in range(min([M - J, L + D - N - 1])):
-			print([I+N-J,N-D+I,BI])
 			S[I+N-J, N-D+I] = BI
 	for I in range(M - J - 1, max([0, M-J-1-J])-1, -1):
 		S[I+N-J, L-1] = G.coefficient({X: I-(M-J-1)+J});
@@ -215,7 +212,6 @@ def gan_gb(polys, vars, n):
 	F = sage.all.sage_eval(polys, locals=vardic)
 	I = sage.all.ideal(F)
 	G = I.groebner_basis()
-	print(G)
 	return str(G)
 
 def gan_reduce(p, gb, vars, n):
@@ -261,13 +257,11 @@ def gan_eval(varn: int, s):
 	po = C.PyImport_ExecCodeModule(pName, po) // ganrac module として str を実行
 	if po == nil {
 		if err := C.PyErr_Occurred(); err != nil {
-			fmt.Printf("errrrro on PyImport_ExecCodeModule()\n")
 			C.PyErr_Print()
-			return nil, fmt.Errorf("PyImport_ExecCodeModule failed")
+			return nil, fmt.Errorf("PyImport_ExecCodeModule failed.")
 		}
 	}
 
-	fmt.Printf("pname=%v: %s, po=%p\n", pName, mname, po)
 	sage.pModule = C.PyImport_ImportModule(pName)
 	if sage.pModule == nil {
 		return nil, fmt.Errorf("import module %s failed", mname)
@@ -275,7 +269,6 @@ def gan_eval(varn: int, s):
 
 	var psnapstr *C.PyObject
 
-	fmt.Printf("loadFunction\n")
 	for _, tbl := range []struct {
 		fname string
 		pos   **C.PyObject
@@ -307,7 +300,6 @@ def gan_eval(varn: int, s):
 		C.Py_DecRef(r)
 	}
 
-	fmt.Printf("NewSage() end\n")
 	return sage, nil
 }
 
