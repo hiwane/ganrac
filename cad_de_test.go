@@ -21,13 +21,12 @@ import (
 func TestSymSqfr(t *testing.T) {
 	// ox は必要ないのだけど．
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestSymSqfr... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	fof := NewQuantifier(false, []Level{3}, NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 1), NewInt(1)), NewInt(1)), NewInt(1)), GT))
 	cad, err := NewCAD(fof, g)

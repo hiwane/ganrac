@@ -46,6 +46,7 @@ func ParseInt(s string, base int) *Int {
 		return nil
 	}
 }
+
 func (x *Int) numTag() uint {
 	return NTAG_INT
 }
@@ -53,6 +54,10 @@ func (x *Int) numTag() uint {
 func (x *Int) Equals(y interface{}) bool {
 	c, ok := y.(*Int)
 	return ok && x.n.Cmp(c.n) == 0
+}
+
+func (x *Int) N() *big.Int {
+	return x.n
 }
 
 func (x *Int) Add(y RObj) RObj {
@@ -205,7 +210,7 @@ func (x *Int) Format(s fmt.State, format rune) {
 		}
 		f.SetInt(x.n)
 		f.Format(s, format)
-	case FORMAT_DUMP, FORMAT_TEX, FORMAT_QEPCAD:
+	case FORMAT_DUMP, FORMAT_TEX, FORMAT_QEPCAD, FORMAT_INDEX:
 		x.n.Format(s, 'd')
 	case FORMAT_SRC:
 		if x.n.IsInt64() {

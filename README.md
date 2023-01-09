@@ -8,7 +8,10 @@ GaNRAC
 
 ### Requirements
 
-- [ox-asir](http://www.math.sci.kobe-u.ac.jp/OpenXM/)
+- [ox-asir](http://www.math.sci.kobe-u.ac.jp/OpenXM/) or
+- [SageMath](https://www.sagemath.org/)
+
+#### install ox-asir
 
 CentOS
 ```sh

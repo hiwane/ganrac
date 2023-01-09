@@ -68,13 +68,12 @@ func testSameFormAndOrFctr(output, expect Fof) bool {
 func TestSimplFctr(t *testing.T) {
 
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
+	ox := testConnectOx(g)
 	if g.ox == nil {
 		fmt.Printf("skip TestSimplFctr... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	x := NewPolyVar(0)
 	y := NewPolyVar(1)

@@ -1,6 +1,8 @@
 package main
 
 import (
+	openxm "github.com/hiwane/ganrac/cas/ox"
+
 	"bufio"
 	"flag"
 	"fmt"
@@ -77,12 +79,11 @@ func main() {
 
 	flag.Parse()
 
-	in := bufio.NewReader(os.Stdin)
 	if !*quiet {
 		if gitCommit == "" {
-			fmt.Printf("GaNRAC. see help();\n")
+			fmt.Printf("GaNRAC [OX]. see help();\n")
 		} else {
-			fmt.Printf("GaNRAC version %s. see help();\n", gitCommit)
+			fmt.Printf("GaNRAC [OX] revision %s. see help();\n", gitCommit)
 		}
 	}
 	g := ganrac.NewGANRAC()
@@ -102,31 +103,29 @@ func main() {
 			fmt.Fprintf(os.Stderr, "connect control [%s] failed: %s\n", *cport, err.Error())
 			os.Exit(1)
 		}
-		defer connc.Close()
 
 		time.Sleep(time.Second * 1)
 
 		connd, err := net.Dial("tcp", *dport)
 		if err != nil {
+			connc.Close()
 			fmt.Fprintf(os.Stderr, "connect data [%s] failed: %s\n", *dport, err.Error())
 			os.Exit(1)
 		}
-		defer connd.Close()
 
-		dw := bufio.NewWriter(connd)
-		dr := bufio.NewReader(connd)
-		cw := bufio.NewWriter(connc)
-		cr := bufio.NewReader(connc)
-
-		err = g.ConnectOX(cw, dw, cr, dr)
+		ox, err := openxm.NewOpenXM(connc, connd, g.Logger())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "connect ox failed: %s", err.Error())
 			os.Exit(1)
 		}
+
+		defer ox.Close()
+		g.SetCAS(ox)
 	}
 
 	logger.Printf("START!!!!")
 	g.Eval(strings.NewReader(fmt.Sprintf("verbose(%d,%d);", *verbose, *cad_verbose)))
+	in := bufio.NewReader(os.Stdin)
 	for {
 		if _, err := os.Stdout.WriteString("> "); err != nil {
 			fmt.Fprintf(os.Stderr, "WriteString: %s", err)

@@ -8,13 +8,12 @@ import (
 func TestSimplReduce(t *testing.T) {
 	g := NewGANRAC()
 	g.verbose = 0
-	connc, connd := testConnectOx(g)
+	ox := testConnectOx(g)
 	if g.ox == nil {
 		fmt.Printf("skip TestSimplReduce... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	opt := NewQEopt()
 	opt.Algo = 0 // CAD で評価する

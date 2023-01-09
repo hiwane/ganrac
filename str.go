@@ -19,6 +19,10 @@ func (s *String) String() string {
 	return "\"" + s.s + "\""
 }
 
+func (s *String) S() string {
+	return s.s
+}
+
 func (s *String) Tag() uint {
 	return TAG_STR
 }

@@ -2,6 +2,7 @@ package ganrac
 
 import (
 	"fmt"
+	. "github.com/hiwane/ganrac"
 )
 
 func (ox *OpenXM) Gcd(p, q *Poly) RObj {
@@ -20,18 +21,18 @@ func (ox *OpenXM) Factor(p *Poly) *List {
 }
 
 func (ox *OpenXM) Discrim(p *Poly, lv Level) RObj {
-	dp := p.diff(lv)
+	dp := p.Diff(lv)
 	ox.ExecFunction("res", NewPolyVar(lv), p, dp)
 	qq, _ := ox.PopCMO()
 	q := ox.toGObj(qq).(RObj)
-	n := p.deg()
+	n := p.Deg(p.Level())
 	if (n & 0x2) != 0 {
 		q = q.Neg()
 	}
 	// 主係数で割る
-	switch pc := p.c[n].(type) {
+	switch pc := p.Coef(p.Level(), uint(n)).(type) {
 	case *Poly:
-		return q.(*Poly).sdiv(pc)
+		return q.(*Poly).Sdiv(pc)
 	case NObj:
 		return q.Div(pc)
 	default:
@@ -46,7 +47,7 @@ func (ox *OpenXM) Resultant(p *Poly, q *Poly, lv Level) RObj {
 	if err != nil {
 		fmt.Printf("resultant %s\n", err.Error())
 	} else if qq == nil {
-		return zero
+		return NewInt(0)
 	}
 	return ox.toGObj(qq).(RObj)
 }
@@ -97,7 +98,7 @@ func (ox *OpenXM) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 		fmt.Printf("err: psc2 %s\n", err.Error())
 		return nil
 	} else if qq == nil {
-		return zero
+		return NewInt(0)
 	}
 	return ox.toGObj(qq).(RObj)
 }
@@ -151,7 +152,7 @@ func (ox *OpenXM) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
 		fmt.Printf("err: sres2 %s\n", err.Error())
 		return nil
 	} else if qq == nil {
-		return zero
+		return NewInt(0)
 	}
 	return ox.toGObj(qq).(RObj)
 }
@@ -161,14 +162,14 @@ func (ox *OpenXM) GB(p *List, vars *List, n int) *List {
 	var err error
 
 	if n == 0 {
-		err = ox.ExecFunction("nd_gr", p, vars, zero, zero)
+		err = ox.ExecFunction("nd_gr", p, vars, NewInt(0), NewInt(0))
 	} else {
 		// block order
 		vn := NewList(
-			NewList(zero, NewInt(int64(vars.Len()-n))),
-			NewList(zero, NewInt(int64(n))))
+			NewList(NewInt(0), NewInt(int64(vars.Len()-n))),
+			NewList(NewInt(0), NewInt(int64(n))))
 
-		err = ox.ExecFunction("nd_gr", p, vars, zero, vn)
+		err = ox.ExecFunction("nd_gr", p, vars, NewInt(0), vn)
 	}
 	if err != nil {
 		panic(fmt.Sprintf("gr failed: %v", err.Error()))
@@ -188,12 +189,12 @@ func (ox *OpenXM) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 	var err error
 
 	if n == 0 {
-		err = ox.ExecFunction("p_true_nf", p, gb, vars, zero)
+		err = ox.ExecFunction("p_true_nf", p, gb, vars, NewInt(0))
 	} else {
 		// block order
 		vn := NewList(
-			NewList(zero, NewInt(int64(vars.Len()-n))),
-			NewList(zero, NewInt(int64(n))))
+			NewList(NewInt(0), NewInt(int64(vars.Len()-n))),
+			NewList(NewInt(0), NewInt(int64(n))))
 
 		err = ox.ExecFunction("p_true_nf", p, gb, vars, vn)
 	}
@@ -218,4 +219,15 @@ func (ox *OpenXM) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 	m, _ = gob.Geti(0)
 
 	return m.(RObj), sgn
+}
+
+func (ox *OpenXM) Eval(p string) (GObj, error) {
+	ox.PushOxCMO(p)
+	ox.PushOXCommand(SM_executeStringByLocalParser)
+	s, err := ox.PopCMO()
+	if err != nil {
+		return nil, fmt.Errorf("popCMO failed %w", err)
+	}
+	gob := ox.toGObj(s)
+	return gob, nil
 }

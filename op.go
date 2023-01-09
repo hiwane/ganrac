@@ -17,12 +17,25 @@ type varInfo struct {
 	p *Poly
 }
 
-func varstr(lv Level) string {
+func VarStr(lv Level) string {
 	if 0 <= lv && int(lv) < len(varlist) {
 		return varlist[lv].v
 	} else {
 		return fmt.Sprintf("$%d", lv)
 	}
+}
+
+func VarPoly(lv Level) *Poly {
+	return varlist[lv].p
+}
+
+func VarNum() int {
+	return len(varlist)
+}
+
+func VarStr2Lv(s string) (Level, bool) {
+	lv, ok := varstr2lv[s]
+	return lv, ok
 }
 
 func var2lv(v string) (Level, error) {

@@ -22,11 +22,11 @@ func NewPolyVar(lv Level) *Poly {
 	if int(lv) < len(varlist) {
 		return varlist[lv].p
 	} else {
-		return newPolyVarn(lv, 1)
+		return NewPolyVarn(lv, 1)
 	}
 }
 
-func newPolyVarn(lv Level, deg int) *Poly {
+func NewPolyVarn(lv Level, deg int) *Poly {
 	// return x[lv]^deg
 	p := NewPoly(lv, deg+1)
 	for i := 0; i < deg; i++ {
@@ -204,6 +204,10 @@ func (z *Poly) Tag() uint {
 	return TAG_POLY
 }
 
+func (z *Poly) Level() Level {
+	return z.lv
+}
+
 func (z *Poly) hasVar(lv Level) bool {
 	if z.lv < lv {
 		return false
@@ -244,18 +248,18 @@ func (z *Poly) Format(s fmt.State, format rune) {
 	case FORMAT_SRC: // source
 		z.write_src(s)
 	case FORMAT_TEX, FORMAT_QEPCAD:
-		z.write(s, format, false, " ")
+		z.write(s, format, false, " ", true)
 	default:
 		if p, ok := s.Precision(); ok {
 			ss := fmt.Sprintf("%v", z)
 			fmt.Fprintf(s, "%.*s", p, ss)
 		} else {
-			z.write(s, format, false, "*")
+			z.write(s, format, false, "*", format != FORMAT_INDEX)
 		}
 	}
 }
 
-func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string) {
+func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string, vars bool) {
 	// out_sgn 主係数で + の出力が必要ですよ
 	for i := len(z.c) - 1; i >= 0; i-- {
 		if z.c[i].IsZero() {
@@ -285,7 +289,7 @@ func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string) {
 				}
 			} else if p, ok := z.c[i].(*Poly); ok {
 				if p.isMono() { // 括弧不要
-					p.write(b, format, i != len(z.c)-1 || out_sgn, mul)
+					p.write(b, format, i != len(z.c)-1 || out_sgn, mul, vars)
 					if i > 0 {
 						fmt.Fprintf(b, "%s", mul)
 					}
@@ -295,15 +299,19 @@ func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string) {
 							fmt.Fprintf(b, "+")
 						}
 						fmt.Fprintf(b, "(")
-						p.write(b, format, false, mul)
+						p.write(b, format, false, mul, vars)
 						fmt.Fprintf(b, ")%s", mul)
 					} else {
-						p.write(b, format, true, mul)
+						p.write(b, format, true, mul, vars)
 					}
 				}
 			}
 			if i > 0 {
-				fmt.Fprintf(b, "%s", varstr(z.lv))
+				if vars {
+					fmt.Fprintf(b, "%s", VarStr(z.lv))
+				} else {
+					fmt.Fprintf(b, "x%d", z.lv)
+				}
 				if i >= 10 && mul == " " { // TeX
 					fmt.Fprintf(b, "^{%d}", i)
 				} else if i > 1 {
@@ -590,7 +598,7 @@ func sdivlt(x, y *Poly) RObj {
 	panic("toooooo")
 }
 
-func (x *Poly) sdiv(y *Poly) RObj {
+func (x *Poly) Sdiv(y *Poly) RObj {
 	// assume: y is a factor of x
 	var ret RObj = zero
 	for i := len(x.c); i >= 0; i-- {
@@ -992,13 +1000,13 @@ func (z *Poly) hasSameTerm(pp RObj, lowest bool) bool {
 	return true
 }
 
-func (z *Poly) diff(lv Level) RObj {
+func (z *Poly) Diff(lv Level) RObj {
 	// 微分
 	if z.lv > lv {
 		p := NewPoly(z.lv, len(z.c))
 		for i, c := range z.c {
 			if cp, ok := c.(*Poly); ok {
-				p.c[i] = cp.diff(lv)
+				p.c[i] = cp.Diff(lv)
 			} else {
 				p.c[i] = zero
 			}
@@ -1137,7 +1145,7 @@ func (forg *Poly) _quorem(g *Poly) (RObj, RObj) {
 		}
 		var qc RObj
 		if len(f.c) > len(g.c) {
-			qc = Mul(newPolyVarn(g.lv, len(f.c)-len(g.c)), c)
+			qc = Mul(NewPolyVarn(g.lv, len(f.c)-len(g.c)), c)
 		} else {
 			qc = c
 		}
@@ -1212,6 +1220,11 @@ func (p *Poly) primpart() *Poly {
 	// assume: p in Z[X]
 	c := p.content(nil)
 	return p.Div(c).(*Poly)
+}
+
+func (p *Poly) PPC() (*Poly, *Int) {
+	c := p.content(nil)
+	return p.Div(c).(*Poly), c
 }
 
 func (p *Poly) Cmp(q *Poly) int {

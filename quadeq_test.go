@@ -7,13 +7,12 @@ import (
 
 func TestLinEq(t *testing.T) {
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestLinEq... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	p1 := NewPolyCoef(3, -3, NewPolyCoef(2, 0, 1))                   // z*w == 3
 	p2 := NewPolyCoef(3, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)) // x*w+y
@@ -82,13 +81,12 @@ func TestLinEq(t *testing.T) {
 
 func TestQuadEq1(t *testing.T) {
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestQuadEq1... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	z := NewPolyCoef(2, 0, 1)                                            // 主係数
 	p1 := NewPolyCoef(3, -5, NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1)) // z*w^2+y*w-5
@@ -184,13 +182,12 @@ func TestQuadEq1(t *testing.T) {
 
 func TestQuadEq2(t *testing.T) {
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestQuadEq2... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	z := NewPolyCoef(2, 0, 1)                                             // 主係数
 	p1 := NewPolyCoef(3, -3, -2, z)                                       // z*w^2-2*w-3

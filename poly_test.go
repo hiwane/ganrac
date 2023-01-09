@@ -441,7 +441,7 @@ func TestPolyDiff(t *testing.T) {
 			NewInt(1),
 		},
 	} {
-		c := s.p.diff(s.lv)
+		c := s.p.Diff(s.lv)
 		if err := c.valid(); err != nil {
 			t.Errorf("f[%d]=%v, actual=%v: %v", s.lv, s.p, c, err)
 		}
@@ -509,14 +509,14 @@ func TestSdiv(t *testing.T) {
 			NewPolyVar(1),
 		},
 	} {
-		q := s.x.sdiv(s.y)
+		q := s.x.Sdiv(s.y)
 		if q == nil || !q.Equals(s.expect) {
 			t.Errorf("\ninputx=%v\ninputy=%v\nexpect=%v\noutput=%v", s.x, s.y, s.expect, q)
 			continue
 		}
 
 		if qqq, ok := s.expect.(*Poly); ok && qqq.lv == s.x.lv {
-			q = s.x.sdiv(s.expect.(*Poly))
+			q = s.x.Sdiv(s.expect.(*Poly))
 			if q == nil || !q.Equals(s.y) {
 				t.Errorf("\ninputx=%v\ninputy=%v\nexpect=%v\noutput=%v", s.x, s.y, s.expect, q)
 				continue

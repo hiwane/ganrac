@@ -11,7 +11,7 @@ func (sfc *CADSfc) add_ds_proj(lv Level, pf ProjFactor) {
 	p := pf.P()
 
 	for p.deg() > 1 {
-		p = p.diff(lv).(*Poly)
+		p = p.Diff(lv).(*Poly)
 		sfc.cad.log(3, "    add_ds_proj: %v\n", p)
 		sfc.cad.addPoly(p, false)
 	}

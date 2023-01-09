@@ -543,7 +543,7 @@ func (cell *Cell) Fprint(b io.Writer, args ...interface{}) error {
 	case "cell":
 		fmt.Fprintf(b, "--- information about the cell %v %p ---\n", cell.Index(), cell)
 		fmt.Fprintf(b, "lv=%d:%s, de=%v, exdeg=%d, truth=%d sgn=%d\n",
-			cell.lv, varstr(cell.lv), cell.de, cell.ex_deg, cell.truth, cell.sgn_of_left)
+			cell.lv, VarStr(cell.lv), cell.de, cell.ex_deg, cell.truth, cell.sgn_of_left)
 		var num int
 		if cell.children == nil {
 			num = -1

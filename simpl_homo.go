@@ -87,12 +87,12 @@ func (p *Poly) homo_reconstruct(lv Level, lvs Levels, tdeg int) RObj {
 		} else if c, ok := cc.(*Poly); ok {
 			cc = c.homo_reconstruct(lv, lvs, d)
 		} else if d > 0 {
-			xn := newPolyVarn(lv, d)
+			xn := NewPolyVarn(lv, d)
 			xn.c[d] = cc
 			cc = xn
 		}
 		if i > 0 {
-			x := newPolyVarn(p.lv, i)
+			x := NewPolyVarn(p.lv, i)
 			q = Add(q, Mul(x, cc))
 		} else {
 			q = Add(q, cc)
@@ -297,7 +297,7 @@ func (qeopt QEopt) homo_solve(amat [][]int, bmat, x []int) bool {
 
 func (qeopt QEopt) qe_homo_free(fof FofQ, cond qeCond, d []int, lv Level) Fof {
 	// lv: free variable.
-	qeopt.log(cond, 2, "qehom", "<%s> %v %v\n", varstr(lv), fof, d)
+	qeopt.log(cond, 2, "qehom", "<%s> %v %v\n", VarStr(lv), fof, d)
 
 	// cond を新しい変数に置き換える
 	varn := qeopt.varn

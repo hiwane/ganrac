@@ -2,19 +2,19 @@ package ganrac
 
 import (
 	"fmt"
+	. "github.com/hiwane/ganrac"
 	"testing"
 )
 
 func TestAsirDiscrim(t *testing.T) {
 
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestAsirDiscrim... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	for _, s := range []struct {
 		lv     Level
@@ -26,7 +26,7 @@ func TestAsirDiscrim(t *testing.T) {
 			NewPolyCoef(2, NewPolyCoef(1, 0, 0, 1), NewPolyCoef(0, 0, -4)), // b^2-4ac
 		},
 	} {
-		output := g.ox.Discrim(s.input, s.lv)
+		output := ox.Discrim(s.input, s.lv)
 		if !output.Equals(s.expect) {
 			t.Errorf("lv=%d\ninput =%v\nexpect=%v\noutput=%v\n", s.lv, s.input, s.expect, output)
 		}
@@ -38,13 +38,12 @@ func TestAsirSres(t *testing.T) {
 	// Hoon Hong, The computer J., 1993
 
 	g := NewGANRAC()
-	connc, connd := testConnectOx(g)
-	if g.ox == nil {
+	ox := testConnectOx(g)
+	if ox == nil {
 		fmt.Printf("skip TestAsirSres... (no ox)\n")
 		return
 	}
-	defer connc.Close()
-	defer connd.Close()
+	defer ox.Close()
 
 	// > vars(x,u,v,w);
 	// > A = u*x^2+v*x+1;
@@ -70,11 +69,10 @@ func TestAsirSres(t *testing.T) {
 		{A, C, 0, TC},
 		{A, C, 1, SC},
 	} {
-		o := g.ox.Sres(ss.p, ss.q, 0, ss.k)
+		o := ox.Sres(ss.p, ss.q, 0, ss.k)
 		if !o.Equals(ss.expect) {
 			t.Errorf("invalid <%d,%d>\ninput=%v\nexpect=%v\noutput=%v\n",
 				ii, ss.k, ss.q, ss.expect, o)
 		}
 	}
-
 }
