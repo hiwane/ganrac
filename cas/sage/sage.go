@@ -105,6 +105,12 @@ def varinit(num):
 		d[v] = sage.all.var(v)
 	return d
 
+def polyringinit(varn):
+	V = ['x' + str(i) for i in range(varn)]
+	P = sage.all.PolynomialRing(sage.all.QQ, V)
+	vardic = {V[i]: v for i, v in enumerate(P.gens())}
+	return P, vardic
+
 def gan_factor(varn: int, polystr: str):
 	vardic = varinit(varn)
 	F = sage.all.sage_eval(polystr, locals=vardic)
@@ -127,21 +133,69 @@ def gan_res(varn: int, p, q, x):
 	return str(F.resultant(G, X))
 
 def gan_discrim(varn: int, p, x):
-	V = ['x' + str(i) for i in range(varn)]
-	P = sage.all.PolynomialRing(sage.all.QQ, V)
-	vardic = {V[i]: v for i, v in enumerate(P.gens())}
+	P, vardic = polyringinit(varn)
 	F = sage.all.sage_eval(p, locals=vardic)
 	X = vardic[x]
 	return str(F.discriminant(X))
 
-def gan_psc(varn: int, p, q, x, j):
-	return ""
+def gan_psc(varn: int, p, q, x, J):
+	P, vardic = polyringinit(varn)
+	F = sage.all.sage_eval(p, locals=vardic)
+	G = sage.all.sage_eval(q, locals=vardic)
+	X = vardic['x' + str(x)]
+	M = F.degree(X)
+	N = G.degree(X)
+	L = M+N-2*J;
+	S = sage.all.Matrix(P, nrows=L, ncols=L)
+	for D in range(M, -1, -1):
+		AI = F.coefficient({X: D})
+		for I in range(min([N - J, L + D - M - 1])):
+			S[I, M-D+I] = AI
+	for I in range(N - J - 1, max([0, (N-J-1)-J]) -1, -1):
+		S[I, L-1] = F.coefficient({X: I-(N-J-1)+J});
+	for D in range(N, -1, -1):
+		BI = G.coefficient({X: D})
+		for I in range(min([M - J, L + D - N - 1])):
+			print([I+N-J,N-D+I,BI])
+			S[I+N-J, N-D+I] = BI
+	for I in range(M - J - 1, max([0, M-J-1-J])-1, -1):
+		S[I+N-J, L-1] = G.coefficient({X: I-(M-J-1)+J});
 
-def gan_sres(varn: int, p, q, x, j):
-	return ""
+	return str(S.det())
+
+def gan_comb(A, B):
+	C = 1
+	for I in range(1, B+1):
+		C *= (A - I + 1)
+		C //= I
+	return C
+
+def gan_sres(varn: int, p, q, x, K):
+	P, vardic = polyringinit(varn)
+	F = sage.all.sage_eval(p, locals=vardic)
+	G = sage.all.sage_eval(q, locals=vardic)
+	X = vardic['x' + str(x)]
+	M = F.degree(X)
+	N = G.degree(X)
+	L = N - K
+	S = sage.all.Matrix(P, nrows=L+1, ncols=L+1)
+	CMK = gan_comb(M, K + 1)
+	for J in range(L):
+		S[0, J] = F.coefficient({X: M-J})
+		for I in range(1, L-J):
+			S[I, I+J] = S[0, J]
+		if 0 <= L - J <= L:
+			S[L-J, L] = (CMK - gan_comb(M-J, K+1)) * S[0, J]
+		S[L, J] = G.coefficient({X: N - J})
+	J = L
+	if M-J >= 0:
+		S[0, L] = (CMK - gan_comb(M - J, K + 1)) * F.coefficient({X: M-J})
+	S[L, L] = CMK * G.coefficient({X: K})
+	return str(S.det())
 
 def gan_gb(polys, vars, n):
 	"""
+	https://doc.sagemath.org/html/en/reference/polynomial_rings/sage/rings/polynomial/multi_polynomial_ideal.html
 	>>> P = sage.all.PolynomialRing(sage.all.QQ, ('x', 'y', 'z'))
 	>>> x, y, z = P.gens()
 	>>> I = sage.all.ideal(x**5 + y**4 + z**3 - 1,  x**3 + y**3 + z**2 - 1)
@@ -435,11 +489,42 @@ func (sage *Sage) Resultant(p *Poly, q *Poly, lv Level) RObj {
 }
 
 func (sage *Sage) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
-	return NewInt(1)
+	// sage.all.Matrix([[x,y],[z,w]]).det()
+	varn := sage.varn(p, q)
+	ps := toPyString(fmt.Sprintf("%I", p))
+	qs := toPyString(fmt.Sprintf("%I", q))
+	lvs := C.PyLong_FromLong(C.long(lv))
+	js := C.PyLong_FromLong(C.long(j))
+
+	ret := callFunctionv(sage.pPsc, varn, ps, qs, lvs, js)
+	if ret == nil {
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pPsc\n", sage.cnt)
+		C.PyErr_Print()
+		return nil
+	}
+	defer C.Py_DecRef(ret)
+
+	retstr := toGoString(ret)
+	return sage.EvalRObj(retstr)
 }
 
 func (sage *Sage) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
-	return NewInt(1)
+	varn := sage.varn(p, q)
+	ps := toPyString(fmt.Sprintf("%I", p))
+	qs := toPyString(fmt.Sprintf("%I", q))
+	lvs := C.PyLong_FromLong(C.long(lv))
+	ks := C.PyLong_FromLong(C.long(k))
+
+	ret := callFunctionv(sage.pSres, varn, ps, qs, lvs, ks)
+	if ret == nil {
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pSres\n", sage.cnt)
+		C.PyErr_Print()
+		return nil
+	}
+	defer C.Py_DecRef(ret)
+
+	retstr := toGoString(ret)
+	return sage.EvalRObj(retstr)
 }
 
 func (sage *Sage) toPyVars(vars *List) *C.PyObject {
@@ -480,7 +565,7 @@ func (sage *Sage) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 
 	ret := callFunction(sage.pReduce, ps, gbs, vs, ns)
 	if ret == nil {
-		fmt.Fprintf(os.Stderr, "<%d> call object failed pGB\n", sage.cnt)
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pReduce\n", sage.cnt)
 		C.PyErr_Print()
 		return p, false
 	}
@@ -491,5 +576,22 @@ func (sage *Sage) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 }
 
 func (sage *Sage) Eval(p string) (GObj, error) {
-	return nil, fmt.Errorf("unsupported")
+	ps := toPyString(p)
+	ret := callFunction(sage.pEval, ps) // 変数設定は??
+	if ret == nil {
+		C.PyErr_Print()
+		return nil, fmt.Errorf("<%d> call object failed pEval\n", sage.cnt)
+	}
+	defer C.Py_DecRef(ret)
+
+	retstr := toGoString(ret)
+	s := sage.toGaNRAC(retstr)
+	if s == nil {
+		return nil, fmt.Errorf("Sage: returns null")
+	}
+	if sg, ok := s.(GObj); ok {
+		return sg, nil
+	} else {
+		return nil, fmt.Errorf("Sage: unsupported " + retstr)
+	}
 }

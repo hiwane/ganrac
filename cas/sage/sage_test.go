@@ -55,3 +55,28 @@ func TestGBReduce(t *testing.T) {
 
 	cas.GBRedTest(g, sage, t)
 }
+
+func TestPsc(t *testing.T) {
+	funcname := "TestPsc"
+	g := ganrac.NewGANRAC()
+	sage, err := NewSage(g, "/tmp/ganrac.log")
+	if err != nil {
+		fmt.Printf("skip %s... init sage failed\n", funcname)
+		return
+	}
+
+	cas.PscTest(g, sage, t)
+}
+
+func TestSres(t *testing.T) {
+	funcname := "TestSres"
+	g := ganrac.NewGANRAC()
+	sage, err := NewSage(g, "/tmp/ganrac.log")
+	if err != nil {
+		t.Errorf("stop")
+		fmt.Printf("skip %s... init sage failed\n", funcname)
+		return
+	}
+
+	cas.SresTest(g, sage, t)
+}

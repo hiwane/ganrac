@@ -19,8 +19,17 @@ type CAS interface {
 
 	Discrim(p *Poly, lv Level) RObj
 	Resultant(p *Poly, q *Poly, lv Level) RObj
+
+	/* principal subresultant coefficient */
 	Psc(p *Poly, q *Poly, lv Level, j int32) RObj
+
+	/*
+	 * slope resultant
+	 * H. Hong. Quantifier elimination for formulas constrained by quadratic equations
+	 */
 	Sres(p *Poly, q *Poly, lv Level, k int32) RObj
+
+	/* groebner basis */
 	GB(p *List, vars *List, n int) *List
 
 	/* returns reduce(p, gb), sgn < 0 */
