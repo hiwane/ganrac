@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/hiwane/ganrac"
-	"github.com/hiwane/ganrac/cas"
+	castest "github.com/hiwane/ganrac/cas/test"
 )
 
 func TestFactor(t *testing.T) {
@@ -17,7 +17,7 @@ func TestFactor(t *testing.T) {
 		return
 	}
 
-	cas.FactorTest(g, sage, t)
+	castest.FactorTest(g, sage, t)
 }
 
 func TestResultant(t *testing.T) {
@@ -29,7 +29,7 @@ func TestResultant(t *testing.T) {
 		return
 	}
 
-	cas.ResultantTest(g, sage, t)
+	castest.ResultantTest(g, sage, t)
 }
 
 func TestDiscrim(t *testing.T) {
@@ -41,7 +41,7 @@ func TestDiscrim(t *testing.T) {
 		return
 	}
 
-	cas.DiscrimTest(g, sage, t)
+	castest.DiscrimTest(g, sage, t)
 }
 
 func TestGBReduce(t *testing.T) {
@@ -53,7 +53,7 @@ func TestGBReduce(t *testing.T) {
 		return
 	}
 
-	cas.GBRedTest(g, sage, t)
+	castest.GBRedTest(g, sage, t)
 }
 
 func TestPsc(t *testing.T) {
@@ -65,7 +65,7 @@ func TestPsc(t *testing.T) {
 		return
 	}
 
-	cas.PscTest(g, sage, t)
+	castest.PscTest(g, sage, t)
 }
 
 func TestSres(t *testing.T) {
@@ -78,5 +78,5 @@ func TestSres(t *testing.T) {
 		return
 	}
 
-	cas.SresTest(g, sage, t)
+	castest.SresTest(g, sage, t)
 }
