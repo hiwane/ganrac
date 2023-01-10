@@ -194,7 +194,7 @@ func NewCAD(prenex_formula Fof, g *Ganrac) (*CAD, error) {
 		return nil, err
 	}
 	if g.ox == nil {
-		return nil, fmt.Errorf("ox is required")
+		return nil, fmt.Errorf("CAS is required")
 	}
 	switch prenex_formula.(type) {
 	case *AtomT, *AtomF:
