@@ -1,22 +1,22 @@
-package ganrac
+package ganrac_test
 
 import (
 	"fmt"
+	. "github.com/hiwane/ganrac"
 	"testing"
 )
 
 func benchmarkQE(b *testing.B, name string, cad bool) {
 	input := GetExampleFof(name).Input
-	g := NewGANRAC()
-	ox := testConnectOx(g)
-	if ox == nil {
-		fmt.Printf("skip TestNeqQE... (no ox)\n")
+	g := makeCAS(nil)
+	if g == nil {
+		fmt.Printf("skip benchmarkQE... (no cas)\n")
 		return
 	}
-	defer ox.Close()
+	defer g.Close()
 	for i := 0; i < b.N; i++ {
 		if cad {
-			funcCAD(g, "cad", []interface{}{input})
+			FuncCAD(g, "cad", []interface{}{input})
 		} else {
 			opt := NewQEopt()
 			g.QE(input, opt)

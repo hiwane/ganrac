@@ -1,19 +1,18 @@
-package ganrac
+package ganrac_test
 
 import (
 	"fmt"
+	. "github.com/hiwane/ganrac"
 	"testing"
 )
 
 func TestSimplReduce(t *testing.T) {
-	g := NewGANRAC()
-	g.verbose = 0
-	ox := testConnectOx(g)
-	if g.ox == nil {
-		fmt.Printf("skip TestSimplReduce... (no ox)\n")
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip TestSimplReduce... (no cas)\n")
 		return
 	}
-	defer ox.Close()
+	defer g.Close()
 
 	opt := NewQEopt()
 	opt.Algo = 0 // CAD で評価する
@@ -27,46 +26,46 @@ func TestSimplReduce(t *testing.T) {
 		expect Fof // simplified input
 	}{
 		{
-			newFmlAnds(NewAtom(x, EQ), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, x), 1), GT)), // x==0 && z+x*y>0
-			newFmlAnds(NewAtom(x, EQ), NewAtom(z, GT)),                                       // x==0 && z>0
+			NewFmlAnds(NewAtom(x, EQ), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, x), 1), GT)), // x==0 && z+x*y>0
+			NewFmlAnds(NewAtom(x, EQ), NewAtom(z, GT)),                                       // x==0 && z>0
 		}, {
-			newFmlAnds(NewAtom(y, EQ), NewAtom(NewPolyCoef(1, 1, 1), GT)), // y==0 && y+1 > 0
-			newFmlAnds(NewAtom(y, EQ)),                                    // y==0
+			NewFmlAnds(NewAtom(y, EQ), NewAtom(NewPolyCoef(1, 1, 1), GT)), // y==0 && y+1 > 0
+			NewFmlAnds(NewAtom(y, EQ)),                                    // y==0
 		}, {
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(1, -1, 0, 2), EQ),
 				NewAtom(NewPolyCoef(1, 1, 1), EQ)), // 2*y^2+1=0 && y+1 = 0
-			falseObj,
+			FalseObj,
 		}, {
-			newFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), EQ),
+			NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), EQ),
 				NewQuantifier(false, []Level{0}, NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 1)), 1), EQ))), // x==0 && ex([x], z+x*y==0)
 			nil,
 		}, {
-			newFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), EQ), NewQuantifier(false, []Level{0}, NewAtom(NewPolyCoef(0, 1, 1), GT))),
+			NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), EQ), NewQuantifier(false, []Level{0}, NewAtom(NewPolyCoef(0, 1, 1), GT))),
 			NewAtom(NewPolyCoef(0, 0, 1), EQ),
 		}, {
-			newFmlAnds( // x==0 && z==0 && ex([x], z+y+x==0)
+			NewFmlAnds( // x==0 && z==0 && ex([x], z+y+x==0)
 				NewAtom(NewPolyCoef(0, 0, 1), EQ),
 				NewAtom(NewPolyCoef(2, 2, 1), EQ),
 				NewQuantifier(false, []Level{0},
 					NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 1), 1), 1), EQ))),
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(0, 0, 1), EQ),
 				NewAtom(NewPolyCoef(2, 2, 1), EQ),
 				NewQuantifier(false, []Level{0},
 					NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 1), 1), EQ))),
 		}, {
 			// x==0 && ex([w], x*w^2+y*w+1==0 && y*w^3+z*w+x==0 && w-1<=0)
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(0, 0, 1), EQ),
-				NewQuantifier(false, []Level{3}, newFmlAnds(
+				NewQuantifier(false, []Level{3}, NewFmlAnds(
 					NewAtom(NewPolyCoef(3, 1, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)), EQ),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(0, 0, 1), NewPolyCoef(2, 0, 1), 0, NewPolyCoef(1, 0, 1)), EQ),
 					NewAtom(NewPolyCoef(3, -1, 1), LE)))),
 			// x==0 && ex([w], y*w+1==0 && y*w^3+z*w==0 && w-1<=0)
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(0, 0, 1), EQ),
-				NewQuantifier(false, []Level{3}, newFmlAnds(
+				NewQuantifier(false, []Level{3}, NewFmlAnds(
 					NewAtom(NewPolyCoef(3, 1, NewPolyCoef(1, 0, 1)), EQ),
 					NewAtom(NewPolyCoef(3, 0, NewPolyCoef(2, 0, 1), 0, NewPolyCoef(1, 0, 1)), EQ),
 					NewAtom(NewPolyCoef(3, -1, 1), LE)))),
@@ -83,13 +82,13 @@ func TestSimplReduce(t *testing.T) {
 			{ss.input.Not(), ss.expect.Not()},
 		} {
 			// fmt.Printf("[%d,%d] s=%v\n", ii, jj, s.input)
-			inf := newReduceInfo()
-			o := s.input.simplReduce(g, inf)
-			if testSameFormAndOr(o, s.expect) {
+			inf := NewReduceInfo()
+			o := SimplReduce(s.input, g, inf)
+			if TTestSameFormAndOr(o, s.expect) {
 				continue
 			}
 
-			u := newFmlEquiv(o, s.expect)
+			u := NewFmlEquiv(o, s.expect)
 			switch uqe := g.QE(u, opt).(type) {
 			case *AtomT:
 				continue

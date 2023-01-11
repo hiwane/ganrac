@@ -81,7 +81,7 @@ func TestRealRoot(t *testing.T) {
 	} {
 		lv := Level(0)
 		pp := NewPolyInts(lv, s.p...)
-		qq := pp.subsXinv()
+		qq := pp.SubsXinv()
 		if s.p[0] == 0 {
 			qq = qq.Mul(NewPolyVar(lv)).(*Poly)
 		}

@@ -1201,7 +1201,7 @@ func (p *Poly) content(k *Int) *Int {
 			if c.Equals(zero) {
 				p.c[i] = zero
 			} else if k == nil {
-				k = c
+				k = c.Abs().(*Int)
 			} else {
 				k = k.Gcd(c)
 			}

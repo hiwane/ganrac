@@ -1,7 +1,6 @@
 package ganrac
 
 import (
-	"bufio"
 	"github.com/hiwane/ganrac"
 	"net"
 	"time"

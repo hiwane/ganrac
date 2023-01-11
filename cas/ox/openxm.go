@@ -138,7 +138,7 @@ func NewOpenXM(connc, connd net.Conn, logger *log.Logger) (*OpenXM, error) {
 
 	err := ox.init()
 	if err != nil {
-		logger.Printf("ox.init failed: %w", err)
+		logger.Printf("ox.init failed: %s", err.Error())
 		return nil, err
 	}
 	return ox, err

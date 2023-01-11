@@ -79,6 +79,12 @@ func NewGANRAC() *Ganrac {
 	return g
 }
 
+func (g *Ganrac) Close() {
+	if g.ox != nil {
+		g.ox.Close()
+	}
+}
+
 func (g *Ganrac) addHisto(o interface{}) {
 	g.history = append(g.history, o)
 	if len(g.history) > 10 {

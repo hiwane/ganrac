@@ -48,6 +48,14 @@ func NewQEopt() *QEopt {
 	return o
 }
 
+func (qeopt *QEopt) AddAlgo(algo algo_t) {
+	qeopt.Algo |= algo
+}
+
+func (qeopt *QEopt) DelAlgo(algo algo_t) {
+	qeopt.Algo &= ^algo
+}
+
 func getQEoptStr(algo int64) string {
 	switch algo {
 	case QEALGO_EQQUAD:

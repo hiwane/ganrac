@@ -478,11 +478,7 @@ func TestModularKaratsubaDivide(t *testing.T) {
 			}
 			xd.c[d] = Uint(1)
 			v := f1.mul_mod(xd, p)
-			fmt.Printf("f1=%v\n", f1)
-			fmt.Printf("xd=%v\n", xd)
-			fmt.Printf("v1=%v\n", v)
 			v = v.add_mod(f0, p)
-			fmt.Printf("v2=%v\n", v)
 			y = v.sub_mod(f, p)
 			if !y.IsZero() {
 				t.Errorf("zero.2 <%d,%d,%d>\nf =%v\nf1=%v\nf0=%v\nv =%v\ny =%v\n", d, seed, p, f, f1, f0, v, y)

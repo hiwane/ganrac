@@ -1,27 +1,24 @@
-package ganrac
+package ganrac_test
 
 import (
 	"fmt"
+	. "github.com/hiwane/ganrac"
 	"testing"
 )
 
 func TestLinEq(t *testing.T) {
-	g := NewGANRAC()
-	ox := testConnectOx(g)
-	if ox == nil {
-		fmt.Printf("skip TestLinEq... (no ox)\n")
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip TestLinEq... (no cas)\n")
 		return
 	}
-	defer ox.Close()
+	defer g.Close()
 
 	p1 := NewPolyCoef(3, -3, NewPolyCoef(2, 0, 1))                   // z*w == 3
 	p2 := NewPolyCoef(3, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)) // x*w+y
 	z := NewPolyCoef(2, 0, 1)
 
-	tbl := new(fof_quad_eq)
-	tbl.g = g
-	tbl.p = p1
-	tbl.lv = Level(3)
+	tbl := NewFofQuadEq(g, p1, 3)
 
 	opt := NewQEopt()
 	opt.Algo &= ^(QEALGO_EQLIN | QEALGO_EQQUAD)
@@ -38,10 +35,10 @@ func TestLinEq(t *testing.T) {
 		// ex([w], z*w==3 && x*w+y op 0)
 		{
 			EQ,
-			newFmlAnds(NewAtom(NewPolyCoef(2, 0, 1), NE), NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 3), NewPolyCoef(1, 0, 1)), EQ)),
+			NewFmlAnds(NewAtom(NewPolyCoef(2, 0, 1), NE), NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 3), NewPolyCoef(1, 0, 1)), EQ)),
 		}, {
 			NE,
-			newFmlAnds(NewAtom(NewPolyCoef(2, 0, 1), NE), NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 3), NewPolyCoef(1, 0, 1)), NE)),
+			NewFmlAnds(NewAtom(NewPolyCoef(2, 0, 1), NE), NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 3), NewPolyCoef(1, 0, 1)), NE)),
 		}, {
 			LT,
 			NewAtom(NewPolyCoef(2, 0, NewPolyCoef(0, 0, 3), NewPolyCoef(1, 0, 1)), LT),
@@ -51,16 +48,16 @@ func TestLinEq(t *testing.T) {
 		},
 	} {
 		a := NewAtom(p2, ss.op)
-		tbl.sgn_lcp = 1
-		opos := NewFmlAnd(a.qe_quadeq(qe_lineq, tbl), NewAtom(z, GT))
+		tbl.SetSgnLcp(1)
+		opos := NewFmlAnd(QeLinEq(a, tbl), NewAtom(z, GT))
 
-		tbl.sgn_lcp = -1
-		oneg := NewFmlAnd(a.qe_quadeq(qe_lineq, tbl), NewAtom(z, LT))
+		tbl.SetSgnLcp(-1)
+		oneg := NewFmlAnd(QeLinEq(a, tbl), NewAtom(z, LT))
 
 		o := NewFmlOr(opos, oneg)
 
-		fof := NewQuantifier(true, []Level{0, 1, 2}, newFmlEquiv(o, ss.expect))
-		cad, _ := funcCAD(tbl.g, "cad", []interface{}{fof})
+		fof := NewQuantifier(true, []Level{0, 1, 2}, NewFmlEquiv(o, ss.expect))
+		cad, _ := FuncCAD(g, "cad", []interface{}{fof})
 		switch cmp := cad.(type) {
 		case *AtomT:
 			break
@@ -69,7 +66,7 @@ func TestLinEq(t *testing.T) {
 			return
 		}
 
-		switch cmp := tbl.g.QE(fof, opt).(type) {
+		switch cmp := g.QE(fof, opt).(type) {
 		case *AtomT:
 			continue
 		default:
@@ -80,22 +77,18 @@ func TestLinEq(t *testing.T) {
 }
 
 func TestQuadEq1(t *testing.T) {
-	g := NewGANRAC()
-	ox := testConnectOx(g)
-	if ox == nil {
-		fmt.Printf("skip TestQuadEq1... (no ox)\n")
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip TestQuadEq1... (no cas)\n")
 		return
 	}
-	defer ox.Close()
+	defer g.Close()
 
 	z := NewPolyCoef(2, 0, 1)                                            // 主係数
 	p1 := NewPolyCoef(3, -5, NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1)) // z*w^2+y*w-5
 	p2 := NewPolyCoef(3, -3, NewPolyCoef(0, 0, 1))                       // x*w-3;
 
-	tbl := new(fof_quad_eq)
-	tbl.g = g
-	tbl.p = p1
-	tbl.lv = Level(3)
+	tbl := NewFofQuadEq(g, p1, 3)
 
 	opt := NewQEopt()
 	opt.Algo &= ^(QEALGO_EQLIN | QEALGO_EQQUAD)
@@ -117,33 +110,33 @@ func TestQuadEq1(t *testing.T) {
 	}{
 		// ex([w], p1 = 0 && p2 op 0)
 		{EQ,
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(0, 0, 1), NE),
 				NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -5), 3), NE),
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, -5), NewPolyCoef(0, 0, 3)), 9), EQ)),
 		}, {NE, // 1
-			newFmlAnds(NewAtom(z, NE), NewAtom(d, GE),
+			NewFmlAnds(NewAtom(z, NE), NewAtom(d, GE),
 				NewFmlOr(NewAtom(d, GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -10), 3), NE))),
 		}, {GT, // 2
-			NewFmlAnd(dge, newFmlOrs(
-				newFmlAnds(
+			NewFmlAnd(dge, NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(z, LT),
 					NewAtom(NewPolyCoef(1, 0, NewPolyCoef(0, 0, -10), 3), LT)),
 				NewAtom(Mul(r, z), LT))),
 		}, {LE, // 3
-			newFmlAnds(dge, NewAtom(z, NE),
-				newFmlOrs(
+			NewFmlAnds(dge, NewAtom(z, NE),
+				NewFmlOrs(
 					NewAtom(z, GT),
 					NewAtom(r, GE),
 					NewAtom(NewPolyCoef(1, 0, NewPolyCoef(0, 0, -10), 3), GT))),
 		}, {LT, // 4
-			newFmlAnds(dge, NewAtom(z, NE), newFmlOrs(
+			NewFmlAnds(dge, NewAtom(z, NE), NewFmlOrs(
 				NewAtom(z, GT),
 				NewAtom(r, GT),
 				NewAtom(NewPolyCoef(1, 0, NewPolyCoef(0, 0, -10), 3), GT))),
 		}, {GE, // 5
-			NewFmlAnd(dge, newFmlOrs(
-				newFmlAnds(
+			NewFmlAnd(dge, NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(z, LT),
 					NewAtom(NewPolyCoef(1, 0, NewPolyCoef(0, 0, -10), 3), LT)),
 				NewFmlAnd(
@@ -151,25 +144,25 @@ func TestQuadEq1(t *testing.T) {
 		},
 	} {
 		a := NewAtom(p2, ss.op)
-		var o Fof = falseObj
+		var o Fof = FalseObj
 		for _, sgns := range [][]int{
 			{+1, +1},
 			{+1, -1},
 			{-1, +1},
 			{-1, -1}} {
-			tbl.sgn_lcp = sgns[0]
-			tbl.sgn_s = sgns[1]
+			tbl.SetSgnLcp(sgns[0])
+			tbl.SetSgnS(sgns[1])
 			op := GT
 			if sgns[0] < 0 {
 				op = LT
 			}
-			opp := NewFmlAnd(a.qe_quadeq(qe_quadeq, tbl), NewAtom(z, op))
+			opp := NewFmlAnd(QeQuadEq(a, tbl), NewAtom(z, op))
 			fmt.Printf("<%d,%2d,%2d> %v\n", ii, sgns[0], sgns[1], opp)
 			o = NewFmlOr(o, opp)
 		}
 
-		fof := NewQuantifier(true, []Level{0, 1, 2}, newFmlEquiv(NewFmlAnd(o, dge), ss.expect))
-		switch cmp := tbl.g.QE(fof, opt).(type) {
+		fof := NewQuantifier(true, []Level{0, 1, 2}, NewFmlEquiv(NewFmlAnd(o, dge), ss.expect))
+		switch cmp := g.QE(fof, opt).(type) {
 		case *AtomT:
 			continue
 		default:
@@ -181,22 +174,18 @@ func TestQuadEq1(t *testing.T) {
 }
 
 func TestQuadEq2(t *testing.T) {
-	g := NewGANRAC()
-	ox := testConnectOx(g)
-	if ox == nil {
-		fmt.Printf("skip TestQuadEq2... (no ox)\n")
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip TestQuadEq2... (no cas)\n")
 		return
 	}
-	defer ox.Close()
+	defer g.Close()
 
 	z := NewPolyCoef(2, 0, 1)                                             // 主係数
 	p1 := NewPolyCoef(3, -3, -2, z)                                       // z*w^2-2*w-3
 	p2 := NewPolyCoef(3, NewPolyCoef(1, -3, -1), 0, NewPolyCoef(0, 0, 1)) // x*w^2-y-3
 
-	tbl := new(fof_quad_eq)
-	tbl.g = g
-	tbl.p = p1
-	tbl.lv = Level(3)
+	tbl := NewFofQuadEq(g, p1, 3)
 
 	// (y^2+6*y+9)*z^2+(-6*x*y-18*x)*z-4*x*y+9*x^2-12*x
 	r := NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, -12, 9), NewPolyCoef(0, 0, -4)), NewPolyCoef(1, NewPolyCoef(0, 0, -18), NewPolyCoef(0, 0, -6)), NewPolyCoef(1, 9, 6, 1))
@@ -218,10 +207,10 @@ func TestQuadEq2(t *testing.T) {
 	}{
 		// ex([w], z*w==3 && x*w+y op 0)
 		{EQ,
-			newFmlAnds(dge, NewAtom(z, NE), NewAtom(r, EQ)),
+			NewFmlAnds(dge, NewAtom(z, NE), NewAtom(r, EQ)),
 		}, {GT,
-			newFmlAnds(dge, NewAtom(z, NE),
-				newFmlOrs(NewAtom(r, LT),
+			NewFmlAnds(dge, NewAtom(z, NE),
+				NewFmlOrs(NewAtom(r, LT),
 					NewFmlAnd(
 						NewAtom(z, GT),
 						NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, -3), NewPolyCoef(1, 3, 1)), LT)),
@@ -232,24 +221,24 @@ func TestQuadEq2(t *testing.T) {
 	} {
 		a := NewAtom(p2, ss.op)
 
-		var o Fof = falseObj
+		var o Fof = FalseObj
 		for _, sgns := range [][]int{
 			{+1, +1},
 			{+1, -1},
 			{-1, +1},
 			{-1, -1}} {
-			tbl.sgn_lcp = sgns[0]
-			tbl.sgn_s = sgns[1]
+			tbl.SetSgnLcp(sgns[0])
+			tbl.SetSgnS(sgns[1])
 			op := GT
 			if sgns[0] < 0 {
 				op = LT
 			}
-			opp := NewFmlAnd(a.qe_quadeq(qe_quadeq, tbl), NewAtom(z, op))
+			opp := NewFmlAnd(QeQuadEq(a, tbl), NewAtom(z, op))
 			o = NewFmlOr(o, opp)
 		}
 
-		fof := NewQuantifier(true, []Level{0, 1, 2}, newFmlEquiv(NewFmlAnd(o, dge), ss.expect))
-		switch cmp := tbl.g.QE(fof, opt).(type) {
+		fof := NewQuantifier(true, []Level{0, 1, 2}, NewFmlEquiv(NewFmlAnd(o, dge), ss.expect))
+		switch cmp := g.QE(fof, opt).(type) {
 		case *AtomT:
 			continue
 		default:

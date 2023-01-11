@@ -98,7 +98,7 @@ func (z *Poly) descartesSignRules() int {
 	return np
 }
 
-func (q *Poly) subsXinv() *Poly {
+func (q *Poly) SubsXinv() *Poly {
 	// if f(0)!=0: return x^n f(1/x)
 	// if f(0)==0: return x^(n-1) f(1/x)
 	// where n = deg(q)
@@ -134,7 +134,7 @@ func (p *Poly) convertRange(low *BinInt) *Poly {
 			panic(err)
 		}
 	}
-	q = q.subsXinv()
+	q = q.SubsXinv()
 	if err := q.valid(); err != nil {
 		fmt.Printf("p=%v\n", p)
 		fmt.Printf("q=%v\n", q)

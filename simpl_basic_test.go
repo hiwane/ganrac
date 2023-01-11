@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func testSameFormAndOr(output, expect Fof) bool {
+func TTestSameFormAndOr(output, expect Fof) bool {
 	// 形として同じか.
 	// QE によるチェックでは等価性は確認できるが簡単化はわからない
 	output = output.normalize()
@@ -35,14 +35,14 @@ func testSameFormAndOr(output, expect Fof) bool {
 	case *FmlAnd:
 		ee := expect.(*FmlAnd)
 		for i := 0; i < len(oo.fml); i++ {
-			if !testSameFormAndOr(oo.fml[i], ee.fml[i]) {
+			if !TTestSameFormAndOr(oo.fml[i], ee.fml[i]) {
 				return false
 			}
 		}
 	case *FmlOr:
 		ee := expect.(*FmlOr)
 		for i := 0; i < len(oo.fml); i++ {
-			if !testSameFormAndOr(oo.fml[i], ee.fml[i]) {
+			if !TTestSameFormAndOr(oo.fml[i], ee.fml[i]) {
 				return false
 			}
 		}
@@ -255,7 +255,7 @@ func TestSimplBasicAndOr2(t *testing.T) {
 
 			output = input.simplBasic(trueObj, falseObj)
 			// 項の数が一致する.
-			if !testSameFormAndOr(output, expect) {
+			if !TTestSameFormAndOr(output, expect) {
 				t.Errorf("%d:%d: not same form:\ninput =`%v`\noutput=`%v`\nexpect=`%v`", i, ii, input, output, expect)
 				return
 			}
@@ -283,7 +283,7 @@ func TestSimplBasicAndOr2(t *testing.T) {
 
 			output = input.simplBasic(trueObj, falseObj)
 
-			if !testSameFormAndOr(output, expect) {
+			if !TTestSameFormAndOr(output, expect) {
 				t.Errorf("%d: not same form:\ninput =`%v`\noutput=`%v`\nexpect=`%v`", i, input, output, expect)
 				return
 			}
@@ -344,7 +344,7 @@ func TestSimplSmartAndOrn(t *testing.T) {
 		},
 	} {
 		output := s.input.simplBasic(trueObj, falseObj)
-		if !testSameFormAndOr(output, s.expect) {
+		if !TTestSameFormAndOr(output, s.expect) {
 			t.Errorf("%d: not same form:\ninput =`%v`\noutput=`%v`\nexpect=`%v`", i, s.input, output, s.expect)
 			continue
 		}

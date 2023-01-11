@@ -1,21 +1,20 @@
-package ganrac
+package ganrac_test
 
 import (
 	"fmt"
+	. "github.com/hiwane/ganrac"
 	"testing"
 )
 
-func TestEvenSimpl(t *testing.T) {
+func TestEvenSimpl(t *testing.T) {	// @TEST @TODO
 	funcname := "EvenSimpl"
-	var algo algo_t = QEALGO_SMPL_EVEN
 
-	g := NewGANRAC()
-	ox := testConnectOx(g)
-	if ox == nil {
-		fmt.Printf("skip Test%s... (no ox)\n", funcname)
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip TestEvenSimpl... (no cas)\n")
 		return
 	}
-	defer ox.Close()
+	defer g.Close()
 	vars := []Level{0, 1, 2, 3, 4, 5}
 
 	for ii, ss := range []struct {
@@ -25,28 +24,28 @@ func TestEvenSimpl(t *testing.T) {
 		{
 			// ex([x], a*x^2+b >= 0);
 			NewQuantifier(false, []Level{2}, NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE)),
-			newFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(1, 0, 1), GE)),
+			NewFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(1, 0, 1), GE)),
 		},
 		{
 			// ex([x], a*x^2+b >= 0 && c*x^2+d >= 0);
 			// <==>
 			// [ a > 0 /\ c > 0 ] \/ [ a > 0 /\ d >= 0 /\ a d - b c >= 0 ] \/ [ c > 0 /\ d < 0 /\ a d - b c <= 0 ] \/ [ b >= 0 /\ d >= 0 ]
-			NewQuantifier(false, []Level{4}, newFmlAnds(
+			NewQuantifier(false, []Level{4}, NewFmlAnds(
 				NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), 0, NewPolyCoef(2, 0, 1)), GE))),
-			newFmlOrs(
-				newFmlAnds(
+			NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(2, 0, 1), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), GE)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, 0, 1), LT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), LE)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, 0, 1), GE))),
 		},
@@ -54,13 +53,13 @@ func TestEvenSimpl(t *testing.T) {
 			// ex([x], a*x^2+b >= 0 && x > 2);
 			// <==>
 			// a > 0 \/ b + 4 a > 0 \/ [ a = 0 /\ b + 4 a = 0 ]
-			NewQuantifier(false, []Level{2}, newFmlAnds(
+			NewQuantifier(false, []Level{2}, NewFmlAnds(
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(2, -2, 1), GT))),
-			newFmlOrs(
+			NewFmlOrs(
 				NewAtom(NewPolyCoef(0, 0, 1), GT),
 				NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 4), 1), GT),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), EQ),
 					NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 4), 1), EQ))),
 		},
@@ -68,10 +67,10 @@ func TestEvenSimpl(t *testing.T) {
 			// ex([x], a*x^2+b >= 0 && x > -2);
 			// <==>
 			// a > 0 \/ b >= 0
-			NewQuantifier(false, []Level{2}, newFmlAnds(
+			NewQuantifier(false, []Level{2}, NewFmlAnds(
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(2, +2, 1), GT))),
-			newFmlOrs(
+			NewFmlOrs(
 				NewAtom(NewPolyCoef(0, 0, 1), GT),
 				NewAtom(NewPolyCoef(1, 0, 1), GE)),
 		},
@@ -80,12 +79,12 @@ func TestEvenSimpl(t *testing.T) {
 			// <==>
 			// a > 0 \/ 9 b + 4 a > 0 \/ [ a = 0 /\ 9 b + 4 a = 0 ]
 			// a > 0 || 9*b+4*a > 0 || (a == 0 && 9*b+4*a==0);
-			NewQuantifier(false, []Level{3}, newFmlAnds(
+			NewQuantifier(false, []Level{3}, NewFmlAnds(
 				NewAtom(NewPolyCoef(3, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(3, -2, 3), GT))),
-			newFmlOrs(
+			NewFmlOrs(
 				NewAtom(NewPolyCoef(0, 0, 1), GT),
-				NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 4), 9), GT), newFmlAnds(
+				NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 4), 9), GT), NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), EQ),
 					NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 4), 9), EQ))),
 		},
@@ -94,49 +93,49 @@ func TestEvenSimpl(t *testing.T) {
 			// <==>
 			// a > 0 \/ a c^2 + 9 b > 0 \/ [ a = 0 /\ a c^2 + 9 b = 0 ] \/ [ b >= 0 /\ c < 0 ]
 			// a > 0 || a*c^2+9*b > 0 || (a == 0 && a*c^2+9*b == 0) || (b >= 0 && c < 0);
-			NewQuantifier(false, []Level{3}, newFmlAnds(
+			NewQuantifier(false, []Level{3}, NewFmlAnds(
 				NewAtom(NewPolyCoef(3, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, -1), 3), GT))),
-			newFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 9), 0, NewPolyCoef(0, 0, 1)), GT), newFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), EQ), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 9), 0, NewPolyCoef(0, 0, 1)), EQ)), newFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), GE), NewAtom(NewPolyCoef(2, 0, 1), LT))),
+			NewFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 9), 0, NewPolyCoef(0, 0, 1)), GT), NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), EQ), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 9), 0, NewPolyCoef(0, 0, 1)), EQ)), NewFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), GE), NewAtom(NewPolyCoef(2, 0, 1), LT))),
 		},
 		{
 			// (E x) [ a x^2 + b >= 0 /\ c x > 7 ].
 			// <==>
 			// c /= 0 /\ [ a > 0 \/ b c^2 + 49 a > 0 \/ [ b = 0 /\ b c^2 + 49 a = 0 ] ]
 			// c != 0 && (a > 0 || b*c^2+49*a > 0 || (b == 0 && b*c^2+49*a == 0));
-			NewQuantifier(false, []Level{3}, newFmlAnds(NewAtom(NewPolyCoef(3, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE), NewAtom(NewPolyCoef(3, -7, NewPolyCoef(2, 0, 1)), GT))),
-			newFmlAnds(NewAtom(NewPolyCoef(2, 0, 1), NE), newFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 49), 0, NewPolyCoef(1, 0, 1)), GT), newFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), EQ), NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 49), 0, NewPolyCoef(1, 0, 1)), EQ)))),
+			NewQuantifier(false, []Level{3}, NewFmlAnds(NewAtom(NewPolyCoef(3, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE), NewAtom(NewPolyCoef(3, -7, NewPolyCoef(2, 0, 1)), GT))),
+			NewFmlAnds(NewAtom(NewPolyCoef(2, 0, 1), NE), NewFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 49), 0, NewPolyCoef(1, 0, 1)), GT), NewFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), EQ), NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 49), 0, NewPolyCoef(1, 0, 1)), EQ)))),
 		},
 		{
 			// (E x) [ a x^2 + b >= 0 /\ c  x + d > 0 ].
 			// <==>
 			// [ a >= 0 /\ c > 0 /\ a d^2 + b c^2 = 0 ] \/ [ a >= 0 /\ c < 0 /\ a d^2 + b c^2 = 0 ] \/ [ d > 0 /\ a d^2 + b c^2 > 0 ] \/ [ a > 0 /\ a d^2 + b c^2 < 0 ] \/ [ c > 0 /\ a d^2 + b c^2 > 0 ] \/ [ b >= 0 /\ d > 0 ] \/ [ c < 0 /\ a d^2 + b c^2 > 0 ]
 
-			NewQuantifier(false, []Level{4}, newFmlAnds(
+			NewQuantifier(false, []Level{4}, NewFmlAnds(
 				NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1)), GT))),
-			newFmlOrs(
-				newFmlAnds(
+			NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GE),
 					NewAtom(NewPolyCoef(2, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), EQ)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GE),
 					NewAtom(NewPolyCoef(2, 0, 1), LT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), EQ)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(3, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), LT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, 0, 1), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), LT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GT))),
 		},
@@ -144,23 +143,23 @@ func TestEvenSimpl(t *testing.T) {
 			// (E x) [ a x^2 + b >= 0 /\ c  x + d >= 0 ].
 			// <==>
 			// [ d >= 0 /\ a d^2 + b c^2 > 0 ] \/ [ a > 0 /\ a d^2 + b c^2 <= 0 ] \/ [ c > 0 /\ a d^2 + b c^2 >= 0 ] \/ [ b >= 0 /\ d >= 0 ] \/ [ c < 0 /\ a d^2 + b c^2 >= 0 ]
-			NewQuantifier(false, []Level{4}, newFmlAnds(
+			NewQuantifier(false, []Level{4}, NewFmlAnds(
 				NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1)), GE))),
-			newFmlOrs(
-				newFmlAnds(
+			NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(3, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), LE)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GE)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, 0, 1), GE)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), LT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GE))),
 		},
@@ -168,31 +167,31 @@ func TestEvenSimpl(t *testing.T) {
 			// (E x) [ a x^2 + b >= 0 /\ c  x + d < 0 ].
 			// <==>
 			// [ a >= 0 /\ c > 0 /\ a d^2 + b c^2 = 0 ] \/ [ a >= 0 /\ c < 0 /\ a d^2 + b c^2 = 0 ] \/ [ a > 0 /\ a d^2 + b c^2 < 0 ] \/ [ a > 0 /\ d < 0 ] \/ [ c > 0 /\ a d^2 + b c^2 > 0 ] \/ [ c < 0 /\ a d^2 + b c^2 > 0 ] \/ [ b >= 0 /\ d < 0 ]
-			NewQuantifier(false, []Level{4}, newFmlAnds(
+			NewQuantifier(false, []Level{4}, NewFmlAnds(
 				NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1)), LT))),
-			newFmlOrs(
-				newFmlAnds(
+			NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GE),
 					NewAtom(NewPolyCoef(2, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), EQ)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GE),
 					NewAtom(NewPolyCoef(2, 0, 1), LT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), EQ)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), LT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, 0, 1), LT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), LT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, 0, 1), LT))),
 		},
@@ -200,23 +199,23 @@ func TestEvenSimpl(t *testing.T) {
 			// (E x) [ a x^2 + b >= 0 /\ c  x + d <= 0 ].
 			// <==>
 			// [ a > 0 /\ a d^2 + b c^2 < 0 ] \/ [ a > 0 /\ d <= 0 ] \/ [ c > 0 /\ a d^2 + b c^2 >= 0 ] \/ [ c < 0 /\ a d^2 + b c^2 >= 0 ] \/ [ b >= 0 /\ d <= 0 ]
-			NewQuantifier(false, []Level{4}, newFmlAnds(
+			NewQuantifier(false, []Level{4}, NewFmlAnds(
 				NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1)), LE))),
-			newFmlOrs(
-				newFmlAnds(
+			NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), LT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, 0, 1), LE)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GE)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, 0, 1), LT),
 					NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GE)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, 0, 1), LE))),
 		},
@@ -225,17 +224,17 @@ func TestEvenSimpl(t *testing.T) {
 			// <==>
 			// a d^2 + b c^2 >= 0 /\ [ c /= 0 \/ [ b >= 0 /\ d = 0 ] \/ [ a > 0 /\ a d^2 + b c^2 = 0 ] ]
 
-			NewQuantifier(false, []Level{4}, newFmlAnds(
+			NewQuantifier(false, []Level{4}, NewFmlAnds(
 				NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1)), EQ))),
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), GE),
-				newFmlOrs(
+				NewFmlOrs(
 					NewAtom(NewPolyCoef(2, 0, 1), NE),
-					newFmlAnds(
+					NewFmlAnds(
 						NewAtom(NewPolyCoef(1, 0, 1), GE),
 						NewAtom(NewPolyCoef(3, 0, 1), EQ)),
-					newFmlAnds(
+					NewFmlAnds(
 						NewAtom(NewPolyCoef(0, 0, 1), GT),
 						NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 1)), 0, NewPolyCoef(0, 0, 1)), EQ)))),
 		},
@@ -243,40 +242,40 @@ func TestEvenSimpl(t *testing.T) {
 			// (E x) [ a x^2 + b >= 0 /\ c  x + d /= 0 ].
 			// <==>
 			// [ a = 0 /\ b >= 0 /\ c > 0 ] \/ [ a = 0 /\ b >= 0 /\ c < 0 ] \/ [ a > 0 /\ c > 0 ] \/ [ a > 0 /\ c < 0 ] \/ [ b > 0 /\ c > 0 ] \/ [ b > 0 /\ c < 0 ] \/ [ a > 0 /\ d > 0 ] \/ [ a > 0 /\ d < 0 ] \/ [ b >= 0 /\ d > 0 ] \/ [ b >= 0 /\ d < 0 ]
-			NewQuantifier(false, []Level{4}, newFmlAnds(
+			NewQuantifier(false, []Level{4}, NewFmlAnds(
 				NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1)), NE))),
-			newFmlOrs(
-				newFmlAnds(
+			NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), EQ),
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(2, 0, 1), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), EQ),
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(2, 0, 1), LT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(2, 0, 1), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(2, 0, 1), LT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GT),
 					NewAtom(NewPolyCoef(2, 0, 1), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GT),
 					NewAtom(NewPolyCoef(2, 0, 1), LT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, 0, 1), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(3, 0, 1), LT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, 0, 1), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(1, 0, 1), GE),
 					NewAtom(NewPolyCoef(3, 0, 1), LT))),
 		},
@@ -284,11 +283,12 @@ func TestEvenSimpl(t *testing.T) {
 		f := ss.input.(FofQ)
 
 		opt := NewQEopt()
-		var cond qeCond
-		opt.qe_init(g, f)
-		cond.qecond_init()
+		cond := NewQeCond()
+		opt.Qe_init(g, f)
+		fmt.Printf("go even simple!! %s\n", f)
 
-		h := opt.qe_evenq(f, cond)
+		h := opt.Qe_evenq(f, *cond)
+		fmt.Printf("even simple!! %s\n", h)
 		if h == nil {
 			if ss.expect != nil {
 				t.Errorf("ii=%d, %s not worked: %v", ii, funcname, ss.input)
@@ -300,17 +300,19 @@ func TestEvenSimpl(t *testing.T) {
 		} else {
 
 			opt2 := NewQEopt()
-			opt2.Algo &= ^algo // 使わない
-			u := NewQuantifier(true, vars, newFmlEquiv(ss.expect, h))
+			opt2.DelAlgo(QEALGO_SMPL_EVEN) // 使わない
+			u := NewQuantifier(true, vars, NewFmlEquiv(ss.expect, h))
 			// fmt.Printf("u=%v\n", u)
+			fmt.Printf("go even check %s\n", u)
 			if _, ok := g.QE(u, opt2).(*AtomT); !ok {
 				t.Errorf("ii=%d %s\ninput= %v.\nexpect= %v.\nactual= %v.\n", ii, funcname, ss.input, ss.expect, h)
 				break
 			}
 		}
+		fmt.Printf("go even simple!!! not %s\n", f)
 
 		fnot := f.Not()
-		hnot := opt.qe_evenq(fnot, cond)
+		hnot := opt.Qe_evenq(fnot, *cond)
 		if hnot == nil {
 			if ss.expect != nil {
 				t.Errorf("ii=%d, %s.not not worked: %v", ii, funcname, ss.input)
@@ -321,8 +323,8 @@ func TestEvenSimpl(t *testing.T) {
 			continue
 		} else {
 			opt2 := NewQEopt()
-			opt2.Algo &= ^algo // 使わない
-			u := NewQuantifier(true, vars, newFmlEquiv(ss.expect.Not(), hnot))
+			opt2.DelAlgo(QEALGO_SMPL_EVEN) // 使わない
+			u := NewQuantifier(true, vars, NewFmlEquiv(ss.expect.Not(), hnot))
 			// fmt.Printf("u=%v\n", u)
 			if _, ok := g.QE(u, opt2).(*AtomT); ok {
 				continue

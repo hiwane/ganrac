@@ -55,12 +55,12 @@ func TestSimplComm1(t *testing.T) {
 			{ss.input.Not(), ss.expect.Not()},
 		} {
 			output := s.input.simplComm()
-			if testSameFormAndOr(output, s.expect) {
+			if TTestSameFormAndOr(output, s.expect) {
 				continue
 			}
 
 			out2 := output.simplBasic(trueObj, falseObj)
-			if testSameFormAndOr(out2, s.expect) {
+			if TTestSameFormAndOr(out2, s.expect) {
 				continue
 			}
 

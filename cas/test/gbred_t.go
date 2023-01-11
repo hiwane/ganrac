@@ -58,8 +58,13 @@ func gbRedTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T,
 			}
 
 			u, _ := cas.Reduce(q.(*ganrac.Poly), gb, vars, n)
-			if !u.Equals(p) {
-				t.Errorf("ii=(%d,%d,%d)\nexpect=%s\nactual=%s", ii, jj, kk, pstr, u)
+			if up, ok := u.(*ganrac.Poly); ok {
+				u, _ = up.PPC()
+			}
+			px, _ := p.PPC()
+
+			if !u.Equals(px) {
+				t.Errorf("ii=(%d,%d,%d)\np=%s\ngb=%s\nexpect=%s\nactual=%s", ii, jj, kk, px, gb, pstr, u)
 			}
 		}
 	}

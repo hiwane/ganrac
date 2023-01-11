@@ -42,6 +42,7 @@ func (inf *reduce_info) isQ(lv Level) bool {
 
 func (inf *reduce_info) Reduce(g *Ganrac, p *Poly) (RObj, bool) {
 	n := 0 // 一時的に変数リストを増やす
+	fmt.Printf("[1] p[%d]=%v, varb=%v, %s\n", p.lv, p, inf.varb, inf.vars)
 	if int(p.lv) >= len(inf.varb) {
 		b := make([]bool, p.lv+1)
 		copy(b, inf.varb)
@@ -54,6 +55,7 @@ func (inf *reduce_info) Reduce(g *Ganrac, p *Poly) (RObj, bool) {
 			n++
 		}
 	}
+	fmt.Printf("[2] p=%v, varb=%v, %s\n", p, inf.varb, inf.vars)
 
 	r, neg := g.ox.Reduce(p, inf.eqns, inf.vars, inf.qn+n)
 	inf.vars.v = inf.vars.v[:inf.vars.Len()-n] // 元に戻す
@@ -290,6 +292,7 @@ func simplReduceQ(g *Ganrac, inf *reduce_info, p FofQ) Fof {
 			}
 		}
 	}
+	fmt.Printf("[x] p=%v, varb=%v, %s\n", p, inf.varb, inf.vars)
 
 	fml := p.Fml().simplReduce(g, inf)
 	if fml == p.Fml() {

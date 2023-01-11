@@ -1,18 +1,18 @@
-package ganrac
+package ganrac_test
 
 import (
 	"fmt"
+	. "github.com/hiwane/ganrac"
 	"testing"
 )
 
 func TestCADeasy(t *testing.T) {
-	g := NewGANRAC()
-	ox := testConnectOx(g)
-	if ox == nil {
-		fmt.Printf("skip TestCADeasy... (no ox)\n")
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip TestCADeasy... (no cas)\n")
 		return
 	}
-	defer ox.Close()
+	defer g.Close()
 
 	x := NewPolyVar(0)
 	y := NewPolyVar(1)
@@ -25,22 +25,22 @@ func TestCADeasy(t *testing.T) {
 			NewQuantifier(true, []Level{0},
 				NewQuantifier(false, []Level{1},
 					NewAtom(x.Sub(y), EQ))),
-			t_true,
+			T_true,
 		}, {
 			NewQuantifier(false, []Level{0},
 				NewQuantifier(true, []Level{1},
 					NewAtom(x.Sub(y), EQ))),
-			t_false,
+			T_false,
 		}, {
 			NewQuantifier(false, []Level{0, 1},
 				NewFmlAnd(NewAtom(x.Mul(x).Add(y.Mul(y)).Add(NewInt(-9)), LE),
 					NewAtom(x.Mul(x).Add(NewInt(-5)), GT))),
-			t_true,
+			T_true,
 		}, {
 			NewQuantifier(false, []Level{0, 1},
 				NewFmlAnd(NewAtom(NewPolyCoef(0, -2, 0, 1), EQ),
 					NewAtom(NewPolyCoef(1, NewInt(-1), NewPolyCoef(0, -2, 0, 1)), EQ))),
-			t_false,
+			T_false,
 			//		}, { exAdam1().Input, 1,
 		},
 	} {
@@ -52,8 +52,8 @@ func TestCADeasy(t *testing.T) {
 		cad.Projection(0)
 		cad.Lift()
 
-		if cad.root.truth != s.root_truth {
-			t.Errorf("\ninput =%v\nexpect=%v\noutput=%v\n", s.input, s.root_truth, cad.root.truth)
+		if cad.Root().Truth() != s.root_truth {
+			t.Errorf("\ninput =%v\nexpect=%v\noutput=%v\n", s.input, s.root_truth, cad.Root().Truth())
 		}
 	}
 }

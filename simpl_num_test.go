@@ -1,20 +1,20 @@
-package ganrac
+package ganrac_test
 
 import (
 	"fmt"
+	. "github.com/hiwane/ganrac"
 	"testing"
 )
 
 func TestSimplNum(t *testing.T) {
 
-	g := NewGANRAC()
 	SetColordFml(true)
-	ox := testConnectOx(g)
-	if ox == nil {
-		fmt.Printf("skip TestSimplNum... (no ox)\n")
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip TestSimplNum... (no cas)\n")
 		return
 	}
-	defer ox.Close()
+	defer g.Close()
 
 	for ii, ss := range []struct {
 		a      Fof
@@ -23,54 +23,54 @@ func TestSimplNum(t *testing.T) {
 		{
 			// adam2-1 && projection
 			// 4*y^2+4*x^2-1<=0 && y^2-y+x^2-x==2
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 100), 0, 100), LE),
 				NewAtom(NewPolyCoef(1, NewPolyCoef(0, -2, -1, 1), -1, 1), EQ)),
-			falseObj,
+			FalseObj,
 		}, {
 			// adam2-1 && projection
 			// x>0 && y>0 && 4*y^2+4*x^2-1<=0 && y^2-y+x^2-x==2
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(0, 0, 1), GT),
 				NewAtom(NewPolyCoef(1, 0, 1), GT),
 				NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 4), 0, 4), LE), NewAtom(NewPolyCoef(1, NewPolyCoef(0, -2, -1, 1), -1, 1), EQ)),
-			falseObj,
+			FalseObj,
 		}, {
 			// (x-1)*(x-3)>=0 && x*(x-4) >= 0
-			newFmlAnds(NewAtom(NewPolyCoef(0, 3, -4, 1), GE), NewAtom(NewPolyCoef(0, 0, -4, 1), GE)),
+			NewFmlAnds(NewAtom(NewPolyCoef(0, 3, -4, 1), GE), NewAtom(NewPolyCoef(0, 0, -4, 1), GE)),
 			// x*(x-4) >= 0
 			NewAtom(NewPolyCoef(0, 0, -4, 1), GE),
 		}, {
 			// all([x], (2*x^2-1>=0 && (x>0 || x+1<0)) || (x^2-1<=0 && (x<0 || 2*x^2-1<0)))
-			newFmlOrs(
-				newFmlAnds(
+			NewFmlOrs(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, -1, 0, 2), GE),
-					newFmlOrs(
+					NewFmlOrs(
 						NewAtom(NewPolyCoef(0, 0, 1), GT),
 						NewAtom(NewPolyCoef(0, 1, 1), LT)))),
 			nil,
 		}, {
 			// all([x], (2*x^2-1>=0 && (x>0 || x+1<0)) || (x^2-1<=0 && (x<0 || 2*x^2-1<0)))
-			NewQuantifier(true, []Level{0}, newFmlOrs(newFmlAnds(NewAtom(NewPolyCoef(0, -1, 0, 2), GE), newFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(0, 1, 1), LT))), newFmlAnds(NewAtom(NewPolyCoef(0, -1, 0, 1), LE), newFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), LT), NewAtom(NewPolyCoef(0, -1, 0, 2), LT))))),
+			NewQuantifier(true, []Level{0}, NewFmlOrs(NewFmlAnds(NewAtom(NewPolyCoef(0, -1, 0, 2), GE), NewFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(0, 1, 1), LT))), NewFmlAnds(NewAtom(NewPolyCoef(0, -1, 0, 1), LE), NewFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), LT), NewAtom(NewPolyCoef(0, -1, 0, 2), LT))))),
 			nil,
 		}, {
 			NewAtom(NewPolyCoef(0, 1, 0, 1), GT),
-			trueObj,
+			TrueObj,
 		}, {
 			NewAtom(NewPolyCoef(0, 1, 0, 1), LE),
-			falseObj,
+			FalseObj,
 		}, {
 			// (x-2)^2 >= 10 && (x-1)^2 >= 2
-			newFmlAnds(NewAtom(NewPolyCoef(0, -6, -4, 1), GE), NewAtom(NewPolyCoef(0, -1, -2, 1), GE)),
+			NewFmlAnds(NewAtom(NewPolyCoef(0, -6, -4, 1), GE), NewAtom(NewPolyCoef(0, -1, -2, 1), GE)),
 			// (x-2)^2 >= 10
 			NewAtom(NewPolyCoef(0, -6, -4, 1), GE),
 		}, {
 			// x>2 && x^2+y^2 > 1
-			newFmlAnds(NewAtom(NewPolyCoef(0, -2, 1), GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 1), 0, 1), GT)),
+			NewFmlAnds(NewAtom(NewPolyCoef(0, -2, 1), GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 1), 0, 1), GT)),
 			NewAtom(NewPolyCoef(0, -2, 1), GT), // x>2
 		}, {
-			newFmlAnds(NewAtom(NewPolyCoef(1, -1, 1), GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 0, 1), LT)),
-			newFmlAnds(NewAtom(NewPolyCoef(1, -1, 1), GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 0, 1), LT)),
+			NewFmlAnds(NewAtom(NewPolyCoef(1, -1, 1), GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 0, 1), LT)),
+			NewFmlAnds(NewAtom(NewPolyCoef(1, -1, 1), GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 0, 1), LT)),
 		},
 	} {
 		if ss.expect == nil {
@@ -85,7 +85,7 @@ func TestSimplNum(t *testing.T) {
 			{ss.a.Not(), ss.expect.Not()},
 		} {
 			// fmt.Printf("===== in=%v\n", s.a)
-			o, tf, ff := s.a.simplNum(g, nil, nil)
+			o, tf, ff := SimplNum(s.a, g, nil, nil)
 			// fmt.Printf("i=%v\n", s.a)
 			// fmt.Printf("o=%v\n", o)
 			if !o.Equals(s.expect) {
@@ -111,16 +111,16 @@ func TestSimplNumUniPoly(test *testing.T) {
 			OP_TRUE,
 		},
 	} {
-		t := newNumRegion()
+		t := NewNumRegion()
 		for i := 0; i+1 < len(s.t); i += 2 {
-			t.r[lv] = append(t.r[lv], &ninterval{s.t[i], s.t[i+1]})
+			t.Append(lv, s.t[i], s.t[i+1])
 		}
-		f := newNumRegion()
+		f := NewNumRegion()
 		for i := 0; i+1 < len(s.f); i += 2 {
-			f.r[lv] = append(f.r[lv], &ninterval{s.f[i], s.f[i+1]})
+			f.Append(lv, s.f[i], s.f[i+1])
 		}
 
-		op, pos, neg := s.a.simplNumUniPoly(t, f)
+		op, pos, neg := s.a.SimplNumUniPoly(t, f)
 		if op != s.op {
 			test.Errorf("a=%v, t=%v, f=%v\nexpect=%v\nactual=%v\npos=%v\nneg=%v\n",
 				s.a, t, f, s.op, op, pos, neg)

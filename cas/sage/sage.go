@@ -37,8 +37,9 @@ type Sage struct {
 
 	varnum int
 
-	cnt   int
-	is_gc bool
+	cnt     int
+	is_gc   bool
+	verbose bool
 }
 
 func (sage *Sage) Inc(n int) int {
@@ -67,6 +68,7 @@ func NewSage(g *Ganrac, fname string) (*Sage, error) {
 	sage := new(Sage)
 	sage.ganrac = g
 	sage.is_gc = false
+	sage.verbose = false
 
 	/*
 	   [<Signals.SIGINT: 2>, <cyfunction python_check_interrupt at 0x7f41066a0ee0>]
@@ -77,7 +79,10 @@ func NewSage(g *Ganrac, fname string) (*Sage, error) {
 	// TypeError: signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object
 	str = `
 import signal
-signal.signal(8, signal.SIG_DFL)
+try:
+	signal.signal(8, signal.SIG_DFL)
+except Exception:
+	pass
 import sage.all
 import gc
 import os
@@ -207,11 +212,14 @@ def gan_gb(polys, vars, n):
 		order = f'degrevlex({n}),degrevlex({len(vars) - n})'
 	else:
 		order = 'degrevlex'
+	if len(vars) == 1:
+		V += ("y",)
 	P = sage.all.PolynomialRing(sage.all.QQ, V, order=order)
 	vardic = {V[i]: v for i, v in enumerate(P.gens())}
 	F = sage.all.sage_eval(polys, locals=vardic)
 	I = sage.all.ideal(F)
 	G = I.groebner_basis()
+	G = [g / g.content() for g in G]
 	return str(G)
 
 def gan_reduce(p, gb, vars, n):
@@ -220,12 +228,23 @@ def gan_reduce(p, gb, vars, n):
 		order = f'degrevlex({n}),degrevlex({len(vars) - n})'
 	else:
 		order = 'degrevlex'
-	P = sage.all.PolynomialRing(sage.all.QQ, V, order=order)
+	if len(vars) == 1:
+		V += ("y",)
+	try:
+		P = sage.all.PolynomialRing(sage.all.QQ, V, order=order)
+	except Exception as e:
+		print(vars)
+		print(V)
+		raise
+
 	vardic = {V[i]: v for i, v in enumerate(P.gens())}
 	F = sage.all.sage_eval(p, locals=vardic)
 	G = sage.all.sage_eval(gb, locals=vardic)
 	I = sage.all.ideal(G)
-	return str(F.reduce(G))
+	U = F.reduce(G)
+	if U != 0:
+		U /= U.content()
+	return str(U)
 
 def gan_eval(varn: int, s):
 	return ""
@@ -371,8 +390,9 @@ func (sage *Sage) EvalList(s string) *List {
 }
 
 func (sage *Sage) Gcd(p, q *Poly) RObj {
-
-	// fmt.Printf("Gcd(%s,%s) start!\n", p, q)
+	if sage.verbose {
+		fmt.Printf("Gcd(%s,%s) start!\n", p, q)
+	}
 	varn := sage.varn(p, q)
 
 	// 変数はすべて xi 形式にする
@@ -397,6 +417,9 @@ func (sage *Sage) Gcd(p, q *Poly) RObj {
 }
 
 func (sage *Sage) Factor(q *Poly) *List {
+	if sage.verbose {
+		fmt.Printf("Factor(%s) start!\n", q)
+	}
 	varn := sage.varn(q)
 
 	p, cont := q.PPC()
@@ -443,6 +466,9 @@ func (sage *Sage) Factor(q *Poly) *List {
 }
 
 func (sage *Sage) Discrim(p *Poly, lv Level) RObj {
+	if sage.verbose {
+		fmt.Printf("Discrim(%s) start!\n", p)
+	}
 	varn := sage.varn(p)
 
 	// 変数はすべて xi 形式にする
@@ -461,6 +487,9 @@ func (sage *Sage) Discrim(p *Poly, lv Level) RObj {
 	return sage.EvalRObj(retstr)
 }
 func (sage *Sage) Resultant(p *Poly, q *Poly, lv Level) RObj {
+	if sage.verbose {
+		fmt.Printf("Resultant(%s) start!\n", p)
+	}
 	varn := sage.varn(p, q)
 
 	// 変数はすべて xi 形式にする
@@ -501,6 +530,9 @@ func (sage *Sage) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 }
 
 func (sage *Sage) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
+	if sage.verbose {
+		fmt.Printf("Sres(%s) start!\n", p)
+	}
 	varn := sage.varn(p, q)
 	ps := toPyString(fmt.Sprintf("%I", p))
 	qs := toPyString(fmt.Sprintf("%I", q))
@@ -529,6 +561,9 @@ func (sage *Sage) toPyVars(vars *List) *C.PyObject {
 }
 
 func (sage *Sage) GB(p *List, vars *List, n int) *List {
+	if sage.verbose {
+		fmt.Printf("GB(%s) start!\n", p)
+	}
 	// 変数はすべて xi 形式にする
 	ps := toPyString(fmt.Sprintf("%I", p))
 	ns := C.PyLong_FromLong(C.long(n))
@@ -549,9 +584,23 @@ func (sage *Sage) GB(p *List, vars *List, n int) *List {
 }
 
 func (sage *Sage) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
+	if sage.verbose {
+		fmt.Printf("Reduce(%s) start!\n", p)
+	}
 	ps := toPyString(fmt.Sprintf("%I", p))
 	gbs := toPyString(fmt.Sprintf("%I", gb))
 	vs := sage.toPyVars(vars)
+	for i := 0; i < vars.Len(); i++ {
+		_vi, _ := vars.Geti(i)
+		vi := _vi.(RObj)
+		for j := i + 1; j < vars.Len(); j++ {
+			_vj, _ := vars.Geti(j)
+			vj := _vj.(RObj)
+			if vi.Equals(vj) {
+				fmt.Printf("[%d,%d] %s\n", i, j, vars)
+			}
+		}
+	}
 	defer C.Py_DecRef(vs)
 	ns := C.PyLong_FromLong(C.long(n))
 
@@ -568,6 +617,9 @@ func (sage *Sage) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 }
 
 func (sage *Sage) Eval(p string) (GObj, error) {
+	if sage.verbose {
+		fmt.Printf("Eval(%s) start!\n", p)
+	}
 	ps := toPyString(p)
 	ret := callFunction(sage.pEval, ps) // 変数設定は??
 	if ret == nil {

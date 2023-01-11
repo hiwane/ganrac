@@ -4,7 +4,6 @@ package cas
  * test for factor()
  */
 import (
-	"fmt"
 	"github.com/hiwane/ganrac"
 	"testing"
 )
@@ -27,7 +26,7 @@ func factorTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T, ii int, input, e
 		t.Errorf("ii=%d, execute failed %s.", ii, input)
 		return
 	}
-	fmt.Printf("factor(%s) = %s\n", input, act)
+	// fmt.Printf("factor(%s) = %s\n", input, act)
 
 	if exp.Len() != act.Len() {
 		t.Errorf("ii=%d, invalid len expect=%d, actual=%d\nexpect=%s\nactual=%s\n",
