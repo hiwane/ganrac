@@ -194,11 +194,11 @@ func (p *FmlOr) Fmls() []Fof {
 }
 
 func (p *FmlAnd) gen(fml []Fof) Fof {
-	return newFmlAnds(fml...)
+	return NewFmlAnds(fml...)
 }
 
 func (p *FmlOr) gen(fml []Fof) Fof {
-	return newFmlOrs(fml...)
+	return NewFmlOrs(fml...)
 }
 
 func (p *FmlAnd) isAnd() bool {
@@ -932,7 +932,7 @@ func (p *FmlAnd) Format(b fmt.State, format rune) {
 		}
 		fmt.Fprintf(b, "))")
 	case FORMAT_SRC: // source
-		fmt.Fprintf(b, "newFmlAnds(")
+		fmt.Fprintf(b, "NewFmlAnds(")
 		for i, f := range p.fml {
 			if i != 0 {
 				fmt.Fprintf(b, ",")
@@ -999,7 +999,7 @@ func (p *FmlOr) Format(b fmt.State, format rune) {
 		}
 		fmt.Fprintf(b, "))")
 	case FORMAT_SRC: // source
-		fmt.Fprintf(b, "newFmlOrs(")
+		fmt.Fprintf(b, "NewFmlOrs(")
 		for i, f := range p.fml {
 			if i != 0 {
 				fmt.Fprintf(b, ",")
@@ -1442,7 +1442,7 @@ func NewAtom(p RObj, op OP) Fof {
 	return a
 }
 
-func newFmlAnds(pp ...Fof) Fof {
+func NewFmlAnds(pp ...Fof) Fof {
 	var q Fof = trueObj
 	for _, p := range pp {
 		q = NewFmlAnd(q, p)
@@ -1450,7 +1450,7 @@ func newFmlAnds(pp ...Fof) Fof {
 	return q
 }
 
-func newFmlOrs(pp ...Fof) Fof {
+func NewFmlOrs(pp ...Fof) Fof {
 	var q Fof = falseObj
 	for _, p := range pp {
 		q = NewFmlOr(q, p)
@@ -1627,7 +1627,7 @@ func newFmlImplies(f1, f2 Fof) Fof {
 	return NewFmlOr(f1.Not(), f2)
 }
 
-func newFmlEquiv(f1, f2 Fof) Fof {
+func NewFmlEquiv(f1, f2 Fof) Fof {
 	return NewFmlAnd(newFmlImplies(f1, f2), newFmlImplies(f2, f1))
 }
 
@@ -1936,7 +1936,7 @@ func (p *FmlAnd) nonPrenex() Fof {
 	for i, f := range p.fml {
 		fml[i] = f.nonPrenex()
 	}
-	return newFmlAnds(fml...)
+	return NewFmlAnds(fml...)
 }
 
 func (p *FmlOr) nonPrenex() Fof {
@@ -1944,7 +1944,7 @@ func (p *FmlOr) nonPrenex() Fof {
 	for i, f := range p.fml {
 		fml[i] = f.nonPrenex()
 	}
-	return newFmlOrs(fml...)
+	return NewFmlOrs(fml...)
 }
 
 func nonPrenexQ(forex bool, qq []Level, sfml Fof) Fof {
@@ -1979,13 +1979,13 @@ func nonPrenexQ(forex bool, qq []Level, sfml Fof) Fof {
 	var fmliq Fof
 	switch sfml.(type) {
 	case *FmlAnd:
-		fmliq = newFmlAnds(fmli...)
+		fmliq = NewFmlAnds(fmli...)
 		fmliq = NewQuantifier(forex, qq, fmliq)
-		return NewFmlAnd(fmliq, newFmlAnds(fmlo...))
+		return NewFmlAnd(fmliq, NewFmlAnds(fmlo...))
 	case *FmlOr:
-		fmliq = newFmlOrs(fmli...)
+		fmliq = NewFmlOrs(fmli...)
 		fmliq = NewQuantifier(forex, qq, fmliq)
-		return NewFmlOr(fmliq, newFmlOrs(fmlo...))
+		return NewFmlOr(fmliq, NewFmlOrs(fmlo...))
 	}
 	panic("?")
 }
@@ -1996,7 +1996,7 @@ func (p *ForAll) nonPrenex() Fof {
 		for i, f := range fmland.fml {
 			fml[i] = nonPrenexQ(true, p.q, f)
 		}
-		return newFmlAnds(fml...)
+		return NewFmlAnds(fml...)
 	} else {
 		return nonPrenexQ(true, p.q, p.fml)
 	}
@@ -2008,7 +2008,7 @@ func (p *Exists) nonPrenex() Fof {
 		for i, f := range fmlor.fml {
 			fml[i] = nonPrenexQ(false, p.q, f)
 		}
-		return newFmlOrs(fml...)
+		return NewFmlOrs(fml...)
 	} else {
 		return nonPrenexQ(false, p.q, p.fml)
 	}
@@ -2048,7 +2048,7 @@ func (p *FmlAnd) varShift(lv Level) Fof {
 	for i, f := range p.fml {
 		q[i] = f.varShift(lv)
 	}
-	return newFmlAnds(q...)
+	return NewFmlAnds(q...)
 }
 
 func (p *FmlOr) varShift(lv Level) Fof {
@@ -2056,7 +2056,7 @@ func (p *FmlOr) varShift(lv Level) Fof {
 	for i, f := range p.fml {
 		q[i] = f.varShift(lv)
 	}
-	return newFmlOrs(q...)
+	return NewFmlOrs(q...)
 }
 
 func (p *ForAll) varShift(lv Level) Fof {

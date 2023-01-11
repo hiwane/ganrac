@@ -249,7 +249,7 @@ func (q *Atom) redEvenLin(lv Level, v, sgn int) Fof {
 				NewAtom(b, GE),
 				NewAtom(abx, GE)))
 	case LT:
-		return newFmlOrs(
+		return NewFmlOrs(
 			NewFmlAnd(
 				NewAtom(a, LT),
 				NewAtom(abx, GT)),
@@ -260,7 +260,7 @@ func (q *Atom) redEvenLin(lv Level, v, sgn int) Fof {
 				NewAtom(b, LE),
 				NewAtom(abx, LT)))
 	case GT:
-		return newFmlAnds(
+		return NewFmlAnds(
 			NewFmlOr(
 				NewAtom(a, GT),
 				NewAtom(abx, LT)),

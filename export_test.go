@@ -24,45 +24,12 @@ func (iv *Interval) Sup() *big.Float {
 	return iv.sup
 }
 
-func NewFmlAnds(pp ...Fof) Fof {
-	return newFmlAnds(pp...)
-}
-
-func NewFmlOrs(pp ...Fof) Fof {
-	return newFmlOrs(pp...)
-}
-
-func NewFmlEquiv(f1, f2 Fof) Fof {
-	return newFmlEquiv(f1, f2)
-}
-
-func NewQeCond() *qeCond {
-	cond := new(qeCond)
-	cond.qecond_init()
-	return cond
-}
-
 func (qeopt *QEopt) Qe_init(g *Ganrac, fof Fof) {
 	qeopt.qe_init(g, fof)
 }
 
 func (qeopt QEopt) Qe_neq(fof FofQ, cond qeCond) Fof {
 	return qeopt.qe_neq(fof, cond)
-}
-
-func (c *CAD) InitProj(algo ProjectionAlgo) {
-	c.initProj(algo)
-}
-
-func (c *CAD) Root() *Cell {
-	return c.root
-}
-
-func (c *CAD) SetRoot(d *Cell) {
-	c.root = d
-}
-func (c *CAD) SetRootp(d *Cellmod) {
-	c.rootp = d
 }
 
 func (cad *CAD) Sym_sqfr2(porg *Poly, cell *Cell) []*cadSqfr {
@@ -106,18 +73,6 @@ func (cell *Cell) Mod(cad *CAD, p Uint) (*Cellmod, bool) {
 	return cell.mod(cad, p)
 }
 
-func (cell *Cell) Truth() int8 {
-	return cell.truth
-}
-
-func (c *cadSqfr) Multi() Mult_t {
-	return Mult_t(c.r)
-}
-
-func (c *cadSqfr) Poly() *Poly {
-	return c.p
-}
-
 func (z *Poly) LC() RObj {
 	return z.lc()
 }
@@ -130,28 +85,12 @@ func FuncCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	return funcCAD(g, name, args)
 }
 
-func NewFofQuadEq(g *Ganrac, p *Poly, lv Level) *fof_quad_eq {
-	tbl := new(fof_quad_eq)
-	tbl.g = g
-	tbl.p = p
-	tbl.lv = lv
-	return tbl
-}
-
 func (tbl *fof_quad_eq) SetSgnLcp(v int) {
 	tbl.sgn_lcp = v
 }
 
 func (tbl *fof_quad_eq) SetSgnS(v int) {
 	tbl.sgn_s = v
-}
-
-func NewNumRegion() *NumRegion {
-	return newNumRegion()
-}
-
-func NewReduceInfo() *reduce_info {
-	return newReduceInfo()
 }
 
 func (qeopt *QEopt) Qe_evenq(prenex_fof Fof, cond qeCond) Fof {

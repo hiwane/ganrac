@@ -392,9 +392,9 @@ _found:
 	}
 	switch f.(type) {
 	case *ForAll:
-		f = newFmlAnds(fs[0], fs[1], fs[2])
+		f = NewFmlAnds(fs[0], fs[1], fs[2])
 	case *Exists:
-		f = newFmlOrs(fs[0], fs[1], fs[2])
+		f = NewFmlOrs(fs[0], fs[1], fs[2])
 	default:
 		panic("")
 	}

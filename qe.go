@@ -186,16 +186,17 @@ func (qeopt *QEopt) qe_init(g *Ganrac, fof Fof) {
 	}
 }
 
-func (cond *qeCond) qecond_init() {
+func NewQeCond() *qeCond {
+	cond := new(qeCond)
 	cond.neccon = trueObj
 	cond.sufcon = falseObj
+	return cond
 }
 
 func (g *Ganrac) QE(fof Fof, qeopt *QEopt) Fof {
-	var cond qeCond
+	cond := NewQeCond()
 	qeopt.qe_init(g, fof)
-	cond.qecond_init()
-	return qeopt.qe(fof, cond)
+	return qeopt.qe(fof, *cond)
 }
 
 func (qeopt QEopt) qe(fof Fof, cond qeCond) Fof {

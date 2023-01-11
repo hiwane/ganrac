@@ -29,6 +29,14 @@ func newCadSqfr(cell *Cell, p *Poly, r mult_t) *cadSqfr {
 	return sq
 }
 
+func (c *cadSqfr) Multi() mult_t {
+	return c.r
+}
+
+func (c *cadSqfr) Poly() *Poly {
+	return c.p
+}
+
 func (cell *Cell) isDE() bool {
 	n := 0
 	for c := cell; c.lv >= 0; c = c.parent {

@@ -22,25 +22,25 @@ func TestSimplComm1(t *testing.T) {
 			NewFmlAnd(NewFmlOr(X, Y), NewFmlOr(X, Y)),
 			NewFmlOr(X, Y),
 		}, { // 1
-			NewFmlAnd(NewFmlOr(X, Y), newFmlOrs(X, Y, Z)),
-			newFmlOrs(X, Y, Z),
+			NewFmlAnd(NewFmlOr(X, Y), NewFmlOrs(X, Y, Z)),
+			NewFmlOrs(X, Y, Z),
 		}, { // 2
-			NewFmlAnd(newFmlOrs(X, Y, W, Z), newFmlOrs(X, Y, Z)),
-			newFmlOrs(X, Y, W, Z),
+			NewFmlAnd(NewFmlOrs(X, Y, W, Z), NewFmlOrs(X, Y, Z)),
+			NewFmlOrs(X, Y, W, Z),
 		}, { // 3
-			NewFmlAnd(newFmlOrs(W, X, Y, Z), newFmlOrs(X, Y, Z)),
-			newFmlOrs(X, Y, W, Z),
+			NewFmlAnd(NewFmlOrs(W, X, Y, Z), NewFmlOrs(X, Y, Z)),
+			NewFmlOrs(X, Y, W, Z),
 		}, { // 4
-			NewFmlAnd(newFmlOrs(X, Y, NewAtom(z, GT)), newFmlOrs(X, Y, NewAtom(z, GE))),
-			newFmlOrs(X, Y, NewAtom(z, GT)),
+			NewFmlAnd(NewFmlOrs(X, Y, NewAtom(z, GT)), NewFmlOrs(X, Y, NewAtom(z, GE))),
+			NewFmlOrs(X, Y, NewAtom(z, GT)),
 		}, {
-			NewFmlAnd(X, newFmlOrs(Z, NewFmlAnd(X, Y))),
-			NewFmlAnd(X, newFmlOrs(Z, Y)),
+			NewFmlAnd(X, NewFmlOrs(Z, NewFmlAnd(X, Y))),
+			NewFmlAnd(X, NewFmlOrs(Z, Y)),
 		}, {
 			NewFmlAnd(X, NewFmlOr(X, Y)),
 			X,
 		}, {
-			NewFmlAnd(X, newFmlOrs(X, Y, Z)),
+			NewFmlAnd(X, NewFmlOrs(X, Y, Z)),
 			X,
 		},
 	} {

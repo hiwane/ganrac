@@ -79,7 +79,7 @@ func divide_neq(finput Fof, lv Level, qeopt QEopt) (Fof, Fof) {
 		} else if len(fot) == 0 {
 			return fof, trueObj
 		} else {
-			return newFmlAnds(fne...), newFmlAnds(fot...)
+			return NewFmlAnds(fne...), NewFmlAnds(fot...)
 		}
 	}
 	return nil, nil
@@ -225,12 +225,12 @@ func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) F
 			c0 := poly.Coef(lv, 0)
 			ret = NewFmlOr(ret, NewFmlAnd(NewAtom(lc, op), qffneq))
 			ret = NewFmlOr(ret, NewFmlAnd(NewAtom(discrim, GT), qffneq))
-			ret = NewFmlOr(ret, newFmlAnds(NewAtom(lc, EQ), NewAtom(c1, EQ), NewAtom(c0, atom.op), qffneq))
+			ret = NewFmlOr(ret, NewFmlAnds(NewAtom(lc, EQ), NewAtom(c1, EQ), NewAtom(c0, atom.op), qffneq))
 			qq := qeopt.qe(NewExists([]Level{lv},
 				NewFmlAnd(fof,
 					NewAtom(Add(Mul(Mul(two, lc), NewPolyVar(lv)), c1), EQ))), cond)
 			// fmt.Printf("qq=%v\n", qq)
-			ret = NewFmlOr(ret, newFmlAnds(
+			ret = NewFmlOr(ret, NewFmlAnds(
 				// ex([x], 2ax+b=0 && b^2-4ac = 0 && a != 0 && NEQ)
 				NewAtom(lc, NE), // atom.op とどちらが良いか.
 				NewAtom(discrim, EQ),

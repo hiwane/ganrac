@@ -216,7 +216,7 @@ func (p *FmlAnd) simplBasic(neccon, sufcon Fof) Fof {
 	ret := make([]Fof, len(p.fml))
 	update := false
 	for i := len(fmls) - 1; i >= 0; i-- {
-		nc := newFmlAnds(fmls...)
+		nc := NewFmlAnds(fmls...)
 		ret[i] = p.fml[i].simplBasic(nc, sufcon)
 		if ret[i] != p.fml[i] {
 			update = true
@@ -228,7 +228,7 @@ func (p *FmlAnd) simplBasic(neccon, sufcon Fof) Fof {
 	if !update {
 		return p
 	}
-	return newFmlAnds(ret...)
+	return NewFmlAnds(ret...)
 }
 
 func (p *FmlOr) simplBasic(neccon, sufcon Fof) Fof {
@@ -242,7 +242,7 @@ func (p *FmlOr) simplBasic(neccon, sufcon Fof) Fof {
 	ret := make([]Fof, len(p.fml))
 	update := false
 	for i := len(fmls) - 1; i >= 0; i-- {
-		sf := newFmlOrs(fmls...)
+		sf := NewFmlOrs(fmls...)
 		ret[i] = p.fml[i].simplBasic(neccon, sf)
 		if ret[i] != p.fml[i] {
 			update = true
@@ -255,7 +255,7 @@ func (p *FmlOr) simplBasic(neccon, sufcon Fof) Fof {
 	if !update {
 		return p
 	}
-	return newFmlOrs(ret...)
+	return NewFmlOrs(ret...)
 }
 
 func (p *ForAll) simplBasic(neccon, sufcon Fof) Fof {

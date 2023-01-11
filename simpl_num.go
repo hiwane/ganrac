@@ -49,7 +49,7 @@ func (x *ninterval) Format(s fmt.State, format rune) {
 // NumRegion
 ////////////////////////////////////////////////////////////////////////
 
-func newNumRegion() *NumRegion {
+func NewNumRegion() *NumRegion {
 	f := new(NumRegion)
 	f.r = make(map[Level][]*ninterval, 0)
 	return f
@@ -185,7 +185,7 @@ func (m *NumRegion) intersect(n *NumRegion) *NumRegion {
 	if n == nil || m == nil {
 		return nil
 	}
-	u := newNumRegion()
+	u := NewNumRegion()
 	for lv, _ := range m.r {
 		v := m.intersect_lv(n, lv)
 		if v != nil {
@@ -244,7 +244,7 @@ func (m *NumRegion) union(n *NumRegion) *NumRegion {
 	if m == nil {
 		return n
 	}
-	u := newNumRegion()
+	u := NewNumRegion()
 	for lv := range m.r {
 		u.r[lv] = m.union_lv(n, lv)
 	}
@@ -340,9 +340,9 @@ func (poly *Poly) simplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) 
 	// fmt.Printf("   simplNumUniPoly(%v) t=%v, f=%v, #root=%v\n", poly, t, f, len(roots))
 	if len(roots) == 0 { // 符号一定
 		if poly.Sign() > 0 {
-			return GT, newNumRegion(), nil
+			return GT, NewNumRegion(), nil
 		} else {
-			return LT, nil, newNumRegion()
+			return LT, nil, NewNumRegion()
 		}
 	}
 	xs := t.getU(f, poly.lv)
@@ -399,15 +399,15 @@ func (poly *Poly) simplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) 
 					if poly.deg()%2 == 0 {
 						// 偶数次
 						if poly.Sign() > 0 {
-							return GT, newNumRegion(), nil
+							return GT, NewNumRegion(), nil
 						} else {
-							return LT, nil, newNumRegion()
+							return LT, nil, NewNumRegion()
 						}
 					} else {
 						// 奇数次
-						pinf := newNumRegion()
+						pinf := NewNumRegion()
 						pinf.r[poly.lv] = append(pinf.r[poly.lv], &ninterval{roots[len(roots)-1].low.upperBound(), nil})
-						ninf := newNumRegion()
+						ninf := NewNumRegion()
 						ninf.r[poly.lv] = append(ninf.r[poly.lv], &ninterval{nil, roots[0].low})
 						if poly.Sign() > 0 {
 							return OP_TRUE, pinf, ninf
@@ -423,9 +423,9 @@ func (poly *Poly) simplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) 
 					sgn *= 2*(len(poly.c)%2) - 1
 				}
 				if sgn > 0 {
-					return GT, newNumRegion(), nil
+					return GT, NewNumRegion(), nil
 				} else if sgn < 0 {
-					return LT, nil, newNumRegion()
+					return LT, nil, NewNumRegion()
 				}
 				panic("?")
 			}
@@ -439,12 +439,12 @@ func (poly *Poly) simplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) 
 	p := poly.toIntv(prec).(*Poly)
 	pp := p.SubstIntv(x, p.lv, prec).(*Interval)
 	if ss := pp.Sign(); ss > 0 {
-		return GT, newNumRegion(), nil
+		return GT, NewNumRegion(), nil
 	} else if ss < 0 {
-		return LT, nil, newNumRegion()
+		return LT, nil, NewNumRegion()
 	}
 
-	nr := []*NumRegion{newNumRegion(), newNumRegion()}
+	nr := []*NumRegion{NewNumRegion(), NewNumRegion()}
 
 	var inf NObj
 	for i, intv := range roots {
@@ -525,8 +525,8 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 	if poly.isUnivariate() {
 		return poly.simplNumUniPoly(t, f)
 	}
-	pret := newNumRegion()
-	nret := newNumRegion()
+	pret := NewNumRegion()
+	nret := NewNumRegion()
 	op_ret := OP_TRUE
 	for v := poly.lv + 1; v >= 0; v-- {
 		deg := poly.Deg(v)
@@ -566,12 +566,12 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 			}
 		} else if c2.Sign() > 0 {
 			s = GT
-			pos = newNumRegion()
+			pos = NewNumRegion()
 			neg = nil
 		} else {
 			s = LT
 			pos = nil
-			neg = newNumRegion()
+			neg = NewNumRegion()
 		}
 		c1 := poly.Coef(v, 1)
 		c0 := poly.Coef(v, 0)
@@ -583,7 +583,7 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 				continue
 			}
 			fml = trueObj
-			neg2 = newNumRegion()
+			neg2 = NewNumRegion()
 		} else {
 			discrim := Sub(c1.Mul(c1), Mul(c2, c0).Mul(four)).(*Poly) // b^2-4ac
 			atom := NewAtom(discrim, LT)
@@ -595,9 +595,9 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 		switch fml.(type) {
 		case *AtomT: // 符号一定が確定
 			if s == GT {
-				return s, newNumRegion(), nil
+				return s, NewNumRegion(), nil
 			} else if s == LT {
-				return s, nil, newNumRegion()
+				return s, nil, NewNumRegion()
 			}
 		case *AtomF:
 			continue
@@ -695,10 +695,10 @@ func (atom *Atom) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumReg
 		// 簡単化できず
 		return atom, nn, pp
 	} else if s&atom.op == 0 {
-		return falseObj, nil, newNumRegion()
+		return falseObj, nil, NewNumRegion()
 	} else if s|atom.op == atom.op {
 		fmt.Printf("true!\n")
-		return trueObj, newNumRegion(), nil
+		return trueObj, NewNumRegion(), nil
 	} else {
 		return atom, nn, pp
 	}
@@ -744,14 +744,14 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 
 		fmls[i], tt, ff = fml.simplNum(g, t, ff)
 		if _, ok := fmls[i].(*AtomF); ok {
-			return falseObj, nil, newNumRegion()
+			return falseObj, nil, NewNumRegion()
 		}
 		tret = tret.intersect(tt)
 		fret = fret.union(ff)
 		// fmt.Printf("@@ And.simplNum[2nd,%d/%d] %v, Fi=%v, Fret=%v\n", i+1, len(fmls), fmls[i], ff, fret)
 	}
 	tret = tret.union(t)
-	fml := newFmlAnds(fmls...)
+	fml := NewFmlAnds(fmls...)
 	// fmt.Printf("## And.simplNum[end,%d] %v\n", len(fmls), fret)
 	return fml, tret, fret
 }

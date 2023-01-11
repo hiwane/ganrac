@@ -110,7 +110,7 @@ func TestSymSqfr(t *testing.T) {
 			hasErr := false
 			for i, sq := range sqfr {
 				//fmt.Printf("<%d> [%v]^%d\n", i, sq.p, sq.r)
-				if sq.Multi() != s.r[i] {
+				if Mult_t(sq.Multi()) != s.r[i] {
 					t.Errorf("<%d,%d,%d,r>\nexpect=%v\nactual=%d\nret=%v", ii, jj, i, s.r[i], sq.Multi(), sq.Poly())
 					for i, sqx := range sqfr {
 						t.Errorf("<%d>: (%v)^(%d)", i, sqx.Poly(), sqx.Multi())
@@ -170,13 +170,12 @@ func TestSymSqfr(t *testing.T) {
 
 func testNewCADCell() (*CAD, *Cell, *Cell) {
 	cad := new(CAD)
-	cad.SetRoot(NewCell(cad, nil, 0))
-	cad.SetRootp(NewCellmod(cad.Root()))
-	cell0 := NewCell(cad, nil, 1)
+	cad.InitRoot()
+	cell0 := NewCell(cad, nil, 1) // projection していないため nil 指定
 	cell0.SetLevel(0)
 	cell0.SetParent(cad.Root())
 	cell0.SetDefPoly(NewPolyCoef(0, -2, 0, 1)) // x^2-2
-	cell1 := NewCell(cad, nil, 1)
+	cell1 := NewCell(cad, nil, 1)              // projection していないため nil 指定
 	cell1.SetLevel(1)
 	cell1.SetParent(cell0)
 	cell1.SetDefPoly(NewPolyCoef(1, -1, -2, 1)) // y^2-2*y-1

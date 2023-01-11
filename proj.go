@@ -242,7 +242,7 @@ func (cad *CAD) Projection(algo ProjectionAlgo) (*List, error) {
 	tm_start := time.Now()
 
 	// projection の準備
-	cad.initProj(algo)
+	cad.InitProj(algo)
 	cad.getU()
 	for _, p := range cad.apppoly {
 		cad.addPoly(p, false)

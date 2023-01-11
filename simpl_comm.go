@@ -102,15 +102,15 @@ func (p *FmlOr) simplComm() Fof {
 						bg = append(bg, b.fml[iu])
 					}
 				}
-				ff[ix] = NewFmlOr(a.fml[ix], newFmlAnds(bg...))
+				ff[ix] = NewFmlOr(a.fml[ix], NewFmlAnds(bg...))
 				fmls[i] = falseObj
-				fmls[j] = newFmlAnds(ff...)
+				fmls[j] = NewFmlAnds(ff...)
 				break
 			}
 		}
 	}
 
-	return newFmlOrs(fmls...)
+	return NewFmlOrs(fmls...)
 }
 
 func (p *ForAll) simplComm() Fof {

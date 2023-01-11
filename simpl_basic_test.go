@@ -242,8 +242,8 @@ func TestSimplBasicAndOr2(t *testing.T) {
 		for ii, input := range []Fof{
 			NewFmlAnd(s.a, s.b),
 			NewFmlAnd(s.b, s.a),
-			newFmlAnds(s.b, s.a, s.b),
-			newFmlAnds(s.a, s.b, s.a, s.b, s.a, s.a, s.b),
+			NewFmlAnds(s.b, s.a, s.b),
+			NewFmlAnds(s.a, s.b, s.a, s.b, s.a, s.a, s.b),
 		} {
 			var q, output, expect Fof
 
@@ -263,7 +263,7 @@ func TestSimplBasicAndOr2(t *testing.T) {
 			lllv := []Level{0, 1, 2, 3, 4, 5, 6}
 
 			// 等価である.
-			q = NewQuantifier(true, lllv, newFmlEquiv(output, expect))
+			q = NewQuantifier(true, lllv, NewFmlEquiv(output, expect))
 			for _, llv := range lllv {
 				qnew := vsLinear(q, llv)
 				if qnew.hasVar(llv) {
@@ -287,7 +287,7 @@ func TestSimplBasicAndOr2(t *testing.T) {
 				t.Errorf("%d: not same form:\ninput =`%v`\noutput=`%v`\nexpect=`%v`", i, input, output, expect)
 				return
 			}
-			q = NewQuantifier(true, lllv, newFmlEquiv(output, expect))
+			q = NewQuantifier(true, lllv, NewFmlEquiv(output, expect))
 			for _, llv := range lllv {
 				q = vsLinear(q, llv)
 				if q.hasVar(llv) {
@@ -321,17 +321,17 @@ func TestSimplSmartAndOrn(t *testing.T) {
 			NewFmlAnd(newAtomVar(0, EQ),
 				NewFmlOr(newAtomVar(1, NE), newAtomVar(2, LE))),
 		}, {
-			newFmlAnds(
+			NewFmlAnds(
 				newAtomVar(0, EQ),
 				NewFmlOr(newAtomVar(1, EQ), NewFmlAnd(newAtomVar(2, EQ), newAtomVar(3, GE))),
 				NewFmlOr(newAtomVar(3, NE), newAtomVar(0, NE))),
-			newFmlAnds(
+			NewFmlAnds(
 				newAtomVar(0, EQ),
 				NewFmlOr(newAtomVar(1, EQ),
 					NewFmlAnd(newAtomVar(2, EQ), newAtomVar(3, GT))),
 				newAtomVar(3, NE)),
 		}, {
-			newFmlAnds(
+			NewFmlAnds(
 				newAtomVar(0, GT),
 				NewAtom(NewPolyCoef(0, -1, 2), GT),
 				NewAtom(NewPolyCoef(0, 5, 3), NE)),
@@ -353,7 +353,7 @@ func TestSimplSmartAndOrn(t *testing.T) {
 		lllv := []Level{0, 1, 2, 3, 4, 5, 6}
 
 		// 等価である.
-		q = NewQuantifier(true, lllv, newFmlEquiv(output, s.expect))
+		q = NewQuantifier(true, lllv, NewFmlEquiv(output, s.expect))
 		for _, llv := range lllv {
 			qnew := vsLinear(q, llv)
 			if qnew.hasVar(llv) {

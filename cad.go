@@ -189,6 +189,11 @@ func (c *CAD) log(lv int, format string, a ...interface{}) {
 	}
 }
 
+func (c *CAD) InitRoot() {
+	c.root = NewCell(c, nil, 0)
+	c.rootp = NewCellmod(c.root)
+}
+
 func NewCAD(prenex_formula Fof, g *Ganrac) (*CAD, error) {
 	if err := prenex_formula.valid(); err != nil {
 		return nil, err
@@ -270,8 +275,7 @@ _NEXT:
 		}
 	}
 
-	c.root = NewCell(c, nil, 0)
-	c.rootp = NewCellmod(c.root)
+	c.InitRoot()
 	c.stack = newCellStack()
 	c.stack.push(c.root)
 	c.stat.cell = make([]int, len(c.q))
@@ -284,7 +288,7 @@ _NEXT:
 	return c, nil
 }
 
-func (c *CAD) initProj(algo ProjectionAlgo) {
+func (c *CAD) InitProj(algo ProjectionAlgo) {
 	vnum := Level(len(c.q))
 	c.proj = make([]ProjFactors, vnum)
 
@@ -355,6 +359,10 @@ func NewCell(cad *CAD, parent *Cell, idx uint) *Cell {
 		cell.multiplicity = make([]mult_t, cad.proj[cell.lv].Len())
 	}
 	return cell
+}
+
+func (c *CAD) Root() *Cell {
+	return c.root
 }
 
 func newCellStack() *cellStack {
@@ -443,7 +451,10 @@ func (cell *Cell) stringTruth() string {
 		return "?"
 	}
 	return []string{"f", "t", "."}[cell.truth]
+}
 
+func (cell *Cell) Truth() int8 {
+	return cell.truth
 }
 
 func (cell *Cell) Print(args ...interface{}) error {

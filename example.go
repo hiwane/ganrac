@@ -90,7 +90,7 @@ func GetExampleFof(name string) *QeExample {
 func exAdam1() *QeExample {
 	q := new(QeExample)
 	q.Output = trueObj
-	q.Input = NewQuantifier(true, []Level{0, 1}, newFmlOrs(
+	q.Input = NewQuantifier(true, []Level{0, 1}, NewFmlOrs(
 		NewAtom(NewPolyCoef(0, 0, 1), GE),
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -49719, 0, 50000), 0, 50000), GE),
 		NewAtom(NewPolyCoef(1,
@@ -112,7 +112,7 @@ func exAdam1() *QeExample {
 
 func exAdam2_1() *QeExample {
 	q := new(QeExample)
-	q.Input = NewQuantifier(true, []Level{0, 1, 2}, newFmlOrs(
+	q.Input = NewQuantifier(true, []Level{0, 1, 2}, NewFmlOrs(
 		NewAtom(NewPolyCoef(0, 0, 1), LT),
 		NewAtom(NewPolyCoef(1, 0, 1), LT),
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 4), 0, 4), GE),
@@ -126,13 +126,13 @@ func exAdam2_1() *QeExample {
 }
 func exAdam2_2() *QeExample {
 	q := new(QeExample)
-	q.Input = NewQuantifier(true, []Level{0, 1, 2}, newFmlOrs(
+	q.Input = NewQuantifier(true, []Level{0, 1, 2}, NewFmlOrs(
 		NewAtom(NewPolyCoef(0, 0, 1), LT),
 		NewAtom(NewPolyCoef(0, -1, 1), GT),
 		NewAtom(NewPolyCoef(1, 0, 1), LT),
-		NewAtom(NewPolyCoef(1, -1, 1), GT), newFmlAnds(
+		NewAtom(NewPolyCoef(1, -1, 1), GT), NewFmlAnds(
 			NewAtom(NewPolyCoef(2, 0, 0, 0, 0, NewPolyCoef(1, NewPolyCoef(0, 0, 0, -1, 0, 1), NewPolyCoef(0, 0, 2, 0, -4), NewPolyCoef(0, -1, 0, 6), NewPolyCoef(0, 0, -4), 1)), LE),
-			NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 0, -1, 0, 1), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, -4, 4)), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 2, -4), NewPolyCoef(0, 0, -4, 6)), NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, -4), NewPolyCoef(0, 0, 4)), NewPolyCoef(1, 0, 0, -1, 0, 1)), LE), newFmlOrs(
+			NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 0, -1, 0, 1), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, -4, 4)), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 2, -4), NewPolyCoef(0, 0, -4, 6)), NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, -4), NewPolyCoef(0, 0, 4)), NewPolyCoef(1, 0, 0, -1, 0, 1)), LE), NewFmlOrs(
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 4, -3, -4, 4), NewPolyCoef(0, -4, 2, 8, -8), NewPolyCoef(0, 5, -12, 8)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 2, -4), NewPolyCoef(0, 0, 4, -4, 8), NewPolyCoef(0, 2, -4, -8), NewPolyCoef(0, -4, 8)), NewPolyCoef(1, NewPolyCoef(0, 0, -4, 5), NewPolyCoef(0, 4, 2, -12), NewPolyCoef(0, -3, 8, 8), NewPolyCoef(0, -4, -8), 4)), LE),
 				NewAtom(NewPolyCoef(2, 0, 0, NewPolyCoef(1, NewPolyCoef(0, 0, 0, -2, 0, 2), NewPolyCoef(0, 0, 2, 0, -4), NewPolyCoef(0, 0, -4, 6)), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, -4, 4), NewPolyCoef(0, 0, -4), NewPolyCoef(0, 0, 4)), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 2, -4), NewPolyCoef(0, -2, 0, 6), NewPolyCoef(0, 0, -4), 2)), LE)))))
 
@@ -143,13 +143,13 @@ func exAdam2_2() *QeExample {
 }
 func exAdam3() *QeExample {
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{2, 3}, NewQuantifier(true, []Level{1}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{2, 3}, NewQuantifier(true, []Level{1}, NewFmlAnds(
 		NewAtom(NewPolyCoef(2, -1, 1), GT),
 		NewAtom(NewPolyCoef(3, 0, 1), GT),
 		NewAtom(NewPolyCoef(0, 0, 1), GT),
 		NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, -1), 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, -2)), NewPolyCoef(1, 0, 0, NewPolyCoef(0, 1, -1), 0, 1)), NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 2)), NewPolyCoef(1, NewPolyCoef(0, 1, -1), 0, 1)), LE),
 		NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, -1), 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 2)), NewPolyCoef(1, 0, 0, NewPolyCoef(0, 1, -1), 0, 1)), NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 2)), NewPolyCoef(1, NewPolyCoef(0, 1, -1), 0, 1)), LE))))
-	q.Input = NewQuantifier(false, []Level{1, 2}, NewQuantifier(true, []Level{3}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{1, 2}, NewQuantifier(true, []Level{3}, NewFmlAnds(
 		NewAtom(NewPolyCoef(1, -1, 1), GT),
 		NewAtom(NewPolyCoef(2, 0, 1), GT),
 		NewAtom(NewPolyCoef(0, 0, 1), GT),
@@ -166,7 +166,7 @@ func exCandJ() *QeExample {
 	// ex([z], z>0 && z-1<0 && y>0 && 2*x >= 1 && (3*y^2+3*x^2-2*x)*z+-y^2-x^2<0 && (3*y^2+3*x^2-4*x+1)*z+-2*y^2+-2*x^2+2*x>0)
 
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{2}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{2}, NewFmlAnds(
 		NewAtom(NewPolyCoef(2, 0, 1), GT),
 		NewAtom(NewPolyCoef(2, -1, 1), LT),
 		NewAtom(NewPolyCoef(1, 0, 1), GT),
@@ -182,7 +182,7 @@ func exCandJ() *QeExample {
 func exCatastropheSurfaceSphere() *QeExample {
 	// ex([x,y,z], z^2+y^2+x^2-1==0 && z^3+x*z+y==0)
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{0, 1, 2}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{0, 1, 2}, NewFmlAnds(
 		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, -1, 0, 1), 0, 1), 0, 1), EQ),
 		NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 0, 1), EQ)))
 	q.Output = trueObj
@@ -192,7 +192,7 @@ func exCatastropheSurfaceSphere() *QeExample {
 
 func exConstCoord() *QeExample {
 	q := new(QeExample)
-	q.Input = NewQuantifier(true, []Level{3, 4}, newFmlOrs(
+	q.Input = NewQuantifier(true, []Level{3, 4}, NewFmlOrs(
 		NewAtom(NewPolyCoef(4, NewPolyCoef(3, -1, 1), 1), LE),
 		NewAtom(NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 0, -1)), 0, NewPolyCoef(1, 0, 0, 1)), NewPolyCoef(1, 0, 0, 1)), NewPolyCoef(0, 0, 0, 1)), NE),
 		NewAtom(NewPolyCoef(3, 0, 1), LT),
@@ -200,11 +200,11 @@ func exConstCoord() *QeExample {
 	// (A w)(A a) [ a+w <= 1 \/ x^2 a + y^2 w + y^2 z^2 - x^2 y^2 /= 0 \/ w < 0 \/ a < 0].
 	// y /= 0 /\ y^2 z^2 - x^2 y^2 + x^2 >= 0 /\ z^2 - x^2 + 1 >= 0 /\ [ x /= 0 \/ y^2 z^2 - x^2 y^2 + x^2 > 0 ]
 	// y != 0 && y^2*z^2 - x^2*y^2 + x^2 >= 0 && z^2 - x^2 + 1 >= 0 && ( x != 0 || y^2*z^2 - x^2*y^2 + x^2 > 0 )
-	q.Output = newFmlAnds(
+	q.Output = NewFmlAnds(
 		NewAtom(NewPolyCoef(1, 0, 1), NE),
 		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 1), 0, NewPolyCoef(0, 0, 0, -1)), 0, NewPolyCoef(1, 0, 0, 1)), GE),
 		NewAtom(NewPolyCoef(2, NewPolyCoef(0, 1, 0, -1), 0, 1), GE),
-		newFmlOrs(
+		NewFmlOrs(
 			NewAtom(NewPolyCoef(0, 0, 1), NE),
 			NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 1), 0, NewPolyCoef(0, 0, 0, -1)), 0, NewPolyCoef(1, 0, 0, 1)), GT)))
 	q.Ref = "original."
@@ -215,7 +215,7 @@ func exCyclic3() *QeExample {
 	q := new(QeExample)
 	q.Output = falseObj
 	// ex([y,z], z+y+x==0 && (y+x)*z+x*y==0 && x*y*z-1==0)
-	q.Input = NewQuantifier(false, []Level{1, 2}, newFmlAnds(NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 1), 1), 1), EQ), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 1)), NewPolyCoef(1, NewPolyCoef(0, 0, 1), 1)), EQ), NewAtom(NewPolyCoef(2, -1, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 1))), EQ)))
+	q.Input = NewQuantifier(false, []Level{1, 2}, NewFmlAnds(NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 1), 1), 1), EQ), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 1)), NewPolyCoef(1, NewPolyCoef(0, 0, 1), 1)), EQ), NewAtom(NewPolyCoef(2, -1, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 1))), EQ)))
 	return q
 }
 
@@ -223,13 +223,13 @@ func exEasy7() *QeExample {
 	// z-2*y-x==0 && z^2-125==0 && z>0 && y^2+x^2-25<=0 && y^2+(-x-5)*y-2*x^2-20*x-50<=0
 	// sqrt(125) = 2*y+x && y^2+x^2 <= 25 && y^2+(-x-5)*y-2*x^2-20*x-50<=0
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{2}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{2}, NewFmlAnds(
 		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, -1), -2), 1), EQ),
 		NewAtom(NewPolyCoef(2, -125, 0, 1), EQ),
 		NewAtom(NewPolyCoef(2, 0, 1), GT),
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -25, 0, 1), 0, 1), LE),
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -50, -20, -2), NewPolyCoef(0, -5, -1), 1), LE)))
-	q.Output = newFmlAnds( // sncad x > 0 and y^2+x^2 == 25 and -4*y^2-4*x*y-x^2+125 == 0
+	q.Output = NewFmlAnds( // sncad x > 0 and y^2+x^2 == 25 and -4*y^2-4*x*y-x^2+125 == 0
 		NewAtom(NewPolyCoef(0, 0, 1), GT),
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -25, 0, 1), 0, 1), EQ),
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -125, 0, 1),
@@ -243,12 +243,12 @@ func exEasy7() *QeExample {
 }
 func exMakePdf() *QeExample {
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{1}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{1}, NewFmlAnds(
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 1), 0, 1), EQ),
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 1), one), LT)))
-	q.Output = newFmlOrs(
+	q.Output = NewFmlOrs(
 		NewAtom(NewPolyCoef(0, -1, 0, 2), LT),
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(0, 0, 1), LE),
 			NewAtom(NewPolyCoef(0, 1, 1), GE)))
 	q.Ref = "Christopher W. Brown. Solution formula construction for truth invariant CAD's. Thesis p65 1999"
@@ -258,15 +258,15 @@ func exMakePdf() *QeExample {
 func exMakePdf2() *QeExample {
 	// [ y^2 + x^2 - 1 <= 0 /\ 5 x + 3 < 0 ] \/ 5 y^2 + 4 x y - 4 y + 2 x^2 - 2 x < 0 \/ [ y^2 + x^2 - 1 <= 0 /\ 5 y + 2 x - 2 < 0 ]
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{2}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{2}, NewFmlAnds(
 		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, -1, 0, 1), 0, 1), 0, 1), EQ),
 		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, -1, 1), 2), 1), LT)))
-	q.Output = newFmlOrs(
-		newFmlAnds(
+	q.Output = NewFmlOrs(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 1), 0, 1), LE),
 			NewAtom(NewPolyCoef(0, 3, 5), LT)),
 		NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -2, 2), NewPolyCoef(0, -4, 4), 5), LT),
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 1), 0, 1), LE),
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, -2, 2), 5), LT)))
 	q.Ref = "Christopher W. Brown. Solution formula construction for truth invariant CAD's. Thesis p65 1999"
@@ -276,7 +276,7 @@ func exMakePdf2() *QeExample {
 func exPL01() *QeExample {
 	q := new(QeExample)
 	q.Output = NewAtom(NewPolyCoef(0, 0, 1), LE)
-	q.Input = NewQuantifier(true, []Level{1, 2}, newFmlOrs(
+	q.Input = NewQuantifier(true, []Level{1, 2}, NewFmlOrs(
 		NewAtom(NewPolyCoef(1, 1, 1), LT),
 		NewAtom(NewPolyCoef(1, -1, 1), GT),
 		NewAtom(NewPolyCoef(2, 1, 1), LT),
@@ -291,9 +291,9 @@ func exQuad() *QeExample {
 	// ex([x], a*x^2+b*x+c == 0)
 	q := new(QeExample)
 	q.Input = NewQuantifier(false, []Level{3}, NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)), EQ))
-	q.Output = newFmlOrs(newFmlAnds(
+	q.Output = NewFmlOrs(NewFmlAnds(
 		NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 0, -1), NewPolyCoef(0, 0, 4)), LE),
-		NewAtom(NewPolyCoef(0, 0, 1), NE)), newFmlAnds(
+		NewAtom(NewPolyCoef(0, 0, 1), NE)), NewFmlAnds(
 		NewAtom(NewPolyCoef(0, 0, 1), EQ),
 		NewAtom(NewPolyCoef(1, 0, 1), NE)),
 		NewAtom(NewPolyCoef(2, 0, 1), EQ))
@@ -307,11 +307,11 @@ func exQuart() *QeExample {
 	q.Input = NewQuantifier(true, []Level{3}, NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 0, 1), GE))
 
 	// 256 r^3 - 128 p^2 r^2 + 144 p q^2 r + 16 p^4 r - 27 q^4 - 4 p^3 q^2 >= 0 /\ [ 27 q^2 + 8 p^3 > 0 \/ [ 48 r^2 - 16 p^2 r + 9 p q^2 + p^4 >= 0 /\ 6 r - p^2 >= 0 ] ]
-	q.Output = newFmlAnds(
+	q.Output = NewFmlAnds(
 		NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 0, 0, -4), 0, -27), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 16), 0, NewPolyCoef(0, 0, 144)), NewPolyCoef(0, 0, 0, -128), 256), GE),
-		newFmlOrs(
+		NewFmlOrs(
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 8), 0, 27), GT),
-			newFmlAnds(
+			NewFmlAnds(
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 1), 0, NewPolyCoef(0, 0, 9)), NewPolyCoef(0, 0, 0, -16), 48), GE),
 				NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 0, -1), 6), GE))))
 	return q
@@ -322,9 +322,9 @@ func exSDC2() *QeExample {
 	// <==>
 	// all([x], x >= 0 => x^2+b*x+c > 0)
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{2}, newFmlAnds(NewAtom(NewPolyCoef(2, 0, 1), GE), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 1), LE)))
+	q.Input = NewQuantifier(false, []Level{2}, NewFmlAnds(NewAtom(NewPolyCoef(2, 0, 1), GE), NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 1), LE)))
 	// 4*c-b^2<=0 && (b<0 || c<=0)
-	q.Output = newFmlAnds(NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 0, -1), 4), LE), newFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), LT), NewAtom(NewPolyCoef(1, 0, 1), LE)))
+	q.Output = NewFmlAnds(NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 0, -1), 4), LE), NewFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), LT), NewAtom(NewPolyCoef(1, 0, 1), LE)))
 	q.Ref = "An Effective Implementation of a Special Quantifier Elimination for a Sign Definite Condition by Logical Formula Simplification"
 	q.DOI = "https://doi.org/10.1007/978-3-319-02297-0_17"
 	return q
@@ -344,14 +344,14 @@ func exRoot2() *QeExample {
 
 func exSDC3() *QeExample {
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{3}, newFmlAnds(NewAtom(NewPolyCoef(3, 0, 1), GE), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 1), LE)))
+	q.Input = NewQuantifier(false, []Level{3}, NewFmlAnds(NewAtom(NewPolyCoef(3, 0, 1), GE), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 1), LE)))
 
 	d := NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 0, 1), -4), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, -4), NewPolyCoef(0, 0, 18)), -27)
 
-	q.Output = newFmlOrs(
+	q.Output = NewFmlOrs(
 		NewAtom(NewPolyCoef(2, 0, 1), LE),
-		newFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), LT), NewAtom(d, GE)),
-		newFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), LT), NewAtom(d, GE)))
+		NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), LT), NewAtom(d, GE)),
+		NewFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), LT), NewAtom(d, GE)))
 	q.Ref = "An Effective Implementation of a Special Quantifier Elimination for a Sign Definite Condition by Logical Formula Simplification"
 	q.DOI = "https://doi.org/10.1007/978-3-319-02297-0_17"
 
@@ -368,7 +368,7 @@ func exRoot3() *QeExample {
 
 func exSDC4() *QeExample {
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{4}, newFmlAnds(NewAtom(NewPolyCoef(4, NewPolyCoef(0, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1), NewPolyCoef(3, 0, 1), 1), LE), NewAtom(NewPolyCoef(4, 0, 1), GE)))
+	q.Input = NewQuantifier(false, []Level{4}, NewFmlAnds(NewAtom(NewPolyCoef(4, NewPolyCoef(0, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1), NewPolyCoef(3, 0, 1), 1), LE), NewAtom(NewPolyCoef(4, 0, 1), GE)))
 	q.Output = nil
 	q.Ref = "An Effective Implementation of a Special Quantifier Elimination for a Sign Definite Condition by Logical Formula Simplification"
 	q.DOI = "https://doi.org/10.1007/978-3-319-02297-0_17"
@@ -379,15 +379,15 @@ func exRoot4() *QeExample {
 	q := new(QeExample)
 	q.Input = NewQuantifier(false, []Level{4}, NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 1), LE))
 
-	q.Output = newFmlOrs(
+	q.Output = NewFmlOrs(
 		NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 0, 1), -4), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, -4), NewPolyCoef(0, 0, 18)), -27), NewPolyCoef(2, NewPolyCoef(1, 0, 0, 0, NewPolyCoef(0, 0, 0, -4), 16), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 18), NewPolyCoef(0, 0, -80)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, -6), 144)), NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, -27), NewPolyCoef(0, 0, 0, 144), -128), NewPolyCoef(0, 0, -192)), 256), LT),
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 0, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 0, 1), -4), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, -4), NewPolyCoef(0, 0, 18)), -27), NewPolyCoef(2, NewPolyCoef(1, 0, 0, 0, NewPolyCoef(0, 0, 0, -4), 16), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 18), NewPolyCoef(0, 0, -80)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, -6), 144)), NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, -27), NewPolyCoef(0, 0, 0, 144), -128), NewPolyCoef(0, 0, -192)), 256), EQ),
 			NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, 0, NewPolyCoef(0, 0, 0, -2), 8), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 9), NewPolyCoef(0, 0, -40)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, -3), 72)), NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, -27), NewPolyCoef(0, 0, 0, 144), -128), NewPolyCoef(0, 0, -192)), 384), GT)),
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 0, -9), 32), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 27), NewPolyCoef(0, 0, -108)), 108), LE),
 			NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, 0, NewPolyCoef(0, 0, 0, -2), 8), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 9), NewPolyCoef(0, 0, -40)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, -3), 72)), NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, -27), NewPolyCoef(0, 0, 0, 144), -128), NewPolyCoef(0, 0, -192)), 384), LE)),
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 0, -9), 32), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 27), NewPolyCoef(0, 0, -108)), 108), LE),
 			NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, -27), NewPolyCoef(0, 0, 0, 144), -128), NewPolyCoef(0, 0, -192)), 768), LT)))
 
@@ -410,10 +410,10 @@ func exWO2() *QeExample {
 			NewPolyCoef(1, 0, NewPolyCoef(0, 0, -1)),
 			NewPolyCoef(2, 0, NewPolyCoef(1, 0, 1)),
 			1), GE))
-	q.Output = newFmlOrs(
-		newFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), GE),
+	q.Output = NewFmlOrs(
+		NewFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), GE),
 			NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 4), 0, NewPolyCoef(1, 0, 1)), LE)),
-		newFmlAnds(NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 4), 0, NewPolyCoef(1, 0, 1)), GE),
+		NewFmlAnds(NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 4), 0, NewPolyCoef(1, 0, 1)), GE),
 			NewAtom(NewPolyCoef(1, 0, 1), LE)))
 	q.Ref = "original: NOT well-oriented, but no delineating polynomial is needed!"
 	return q
@@ -431,16 +431,16 @@ func exWO3() *QeExample {
 	//        = 4 c^3 - b^2 c^2 - 18 b d c + 27 d^2 + 4 b^3 d
 	// x <= 0 \/ [ 4 x z^3 - y^2 z^2 - 18 x y z + 4 y^3 + 27 x^2 <= 0 /\ 6 x z^2 - y^2 z - 9 x y > 0 /\ 12 x z - y^2 < 0 ] \/ [ y^3 - 27 x^2 < 0 /\ 4 x z^3 - y^2 z^2 - 18 x y z + 4 y^3 + 27 x^2 <= 0 ]
 	q := new(QeExample)
-	q.Input = NewQuantifier(false, []Level{3}, newFmlAnds(NewAtom(NewPolyCoef(3, 0, 1), GE), NewAtom(NewPolyCoef(3, NewPolyCoef(0, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1), 1), LT)))
-	q.Output = newFmlOrs(
+	q.Input = NewQuantifier(false, []Level{3}, NewFmlAnds(NewAtom(NewPolyCoef(3, 0, 1), GE), NewAtom(NewPolyCoef(3, NewPolyCoef(0, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1), 1), LT)))
+	q.Output = NewFmlOrs(
 		NewAtom(NewPolyCoef(0, 0, 1), LT),
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 0, 216), 0, 0, 1), EQ),
 			NewAtom(NewPolyCoef(2, 0, 1), LT)),
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 0, -27), 0, 0, 1), LT),
 			NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 27), 0, 0, 4), NewPolyCoef(1, 0, NewPolyCoef(0, 0, -18)), NewPolyCoef(1, 0, 0, -1), NewPolyCoef(0, 0, 4)), LT)),
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 27), 0, 0, 4), NewPolyCoef(1, 0, NewPolyCoef(0, 0, -18)), NewPolyCoef(1, 0, 0, -1), NewPolyCoef(0, 0, 4)), LT),
 			NewAtom(NewPolyCoef(2, 0, 1), LT)))
 	q.Ref = "original(SDC): NOT well-oriented"
@@ -453,12 +453,12 @@ func exWO4() *QeExample {
 	// (E w) [ w^2 < x /\ z w + y <= 0 ].
 	q := new(QeExample)
 	q.Ref = "original: NOT well-oriented, but no delineating polynomial is needed!"
-	q.Input = NewQuantifier(false, []Level{3}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{3}, NewFmlAnds(
 		NewAtom(NewPolyCoef(3, NewPolyCoef(0, 0, -1), 0, 1), LT),
 		NewAtom(NewPolyCoef(3, NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1)), LE)))
-	q.Output = newFmlAnds(
+	q.Output = NewFmlAnds(
 		NewAtom(NewPolyCoef(0, 0, 1), GT),
-		newFmlOrs(
+		NewFmlOrs(
 			NewAtom(NewPolyCoef(1, 0, 1), LE),
 			NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 0, -1), 0, NewPolyCoef(0, 0, 1)), GT)))
 	return q
@@ -466,9 +466,9 @@ func exWO4() *QeExample {
 
 func exXAxisEllipse() *QeExample {
 	q := new(QeExample)
-	q.Input = NewQuantifier(true, []Level{3, 4}, newFmlAnds(
+	q.Input = NewQuantifier(true, []Level{3, 4}, NewFmlAnds(
 		NewAtom(NewPolyCoef(0, 0, 1), GT),
-		NewAtom(NewPolyCoef(1, 0, 1), GT), newFmlOrs(
+		NewAtom(NewPolyCoef(1, 0, 1), GT), NewFmlOrs(
 			NewAtom(NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, 0, 0, -1)), 0, NewPolyCoef(1, 0, 0, 1)), NewPolyCoef(2, 0, NewPolyCoef(1, 0, 0, -2)), NewPolyCoef(1, 0, 0, 1)), 0, NewPolyCoef(0, 0, 0, 1)), NE),
 			NewAtom(NewPolyCoef(4, NewPolyCoef(3, -1, 0, 1), 0, 1), LE))))
 	q.Output = q.Input
@@ -479,11 +479,11 @@ func exXAxisEllipse() *QeExample {
 func exWhitneyUmbrella() *QeExample {
 	q := new(QeExample)
 	// ex([u,v], u*v-x==0 && v-y==0 && u^2-z==0)
-	q.Input = NewQuantifier(false, []Level{3, 4}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{3, 4}, NewFmlAnds(
 		NewAtom(NewPolyCoef(4, NewPolyCoef(0, 0, -1), NewPolyCoef(3, 0, 1)), EQ),
 		NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, -1), 1), EQ),
 		NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, -1), 0, 1), EQ)))
-	q.Output = newFmlAnds(
+	q.Output = NewFmlAnds(
 		NewAtom(NewPolyCoef(2, 0, 1), GE),
 		NewAtom(NewPolyCoef(2, NewPolyCoef(0, 0, 0, -1), NewPolyCoef(1, 0, 0, 1)), EQ))
 	return q
@@ -493,7 +493,7 @@ func exHong93() *QeExample {
 	q := new(QeExample)
 	// vars(u,v,w,x);
 	// ex([x], u*x^2+v*x+1==0 && v*x^3+w*x+u==0 && w*x^2+v*x+u <= 0);
-	q.Input = NewQuantifier(false, []Level{3}, newFmlAnds(
+	q.Input = NewQuantifier(false, []Level{3}, NewFmlAnds(
 		NewAtom(NewPolyCoef(3, 1, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)), EQ),
 		NewAtom(NewPolyCoef(3, NewPolyCoef(0, 0, 1), NewPolyCoef(2, 0, 1), 0, NewPolyCoef(1, 0, 1)), EQ),
 		NewAtom(NewPolyCoef(3, NewPolyCoef(0, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1)), LE)))
@@ -504,42 +504,42 @@ func exHong93() *QeExample {
 	// RC=u^4+(-v^2-2*w)*u^2+(w+1)*v^2*u-w*v^2+w^2;
 	// TC=2*u^3+(-v^2-2*w)*u+w*v^2;
 	// SC=v*u-w*v;
-	q.Output = newFmlOrs(
+	q.Output = NewFmlOrs(
 		// u=0 && v != 0 && F'
-		newFmlAnds(
+		NewFmlAnds(
 			NewAtom(NewPolyCoef(0, 0, 1), EQ),
 			NewAtom(NewPolyCoef(1, 0, 1), NE),
 			NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 1, 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 0, 1)), EQ),
 			NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, -1, 1)), 1), LE)),
-		newFmlAnds(
+		NewFmlAnds(
 			// u != 0 && v^2-4*u >= 0
 			NewAtom(NewPolyCoef(0, 0, 1), NE),
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -4), 0, 1), GE),
-			newFmlOrs(
+			NewFmlOrs(
 				// F1
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 0, 1), 0, NewPolyCoef(0, 1, 0, 3), 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, NewPolyCoef(0, 0, -2, 0, -1), 0, 1), NewPolyCoef(0, 0, 0, 1)), EQ),
 					NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 0, 0, 2), 0, NewPolyCoef(0, 0, 0, 3, 0, -2), 0, NewPolyCoef(0, 0, -4), 0, 1), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 0, 0, -2), 0, NewPolyCoef(0, 0, 0, 0, -4), 0, NewPolyCoef(0, 0, 0, 2)), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 0, 1))), GE),
-					newFmlOrs(
+					NewFmlOrs(
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 1), 0, NewPolyCoef(0, 0, 1, -1)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, -2), 0, NewPolyCoef(0, -1, 1)), 1), LE),
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 2), 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, NewPolyCoef(0, 0, -2), 0, 1)), LE)),
-					newFmlOrs(
+					NewFmlOrs(
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 1), 0, NewPolyCoef(0, 0, 1, -1)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, -2), 0, NewPolyCoef(0, -1, 1)), 1), GE),
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 1)), GE)),
-					newFmlOrs(
+					NewFmlOrs(
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 2), 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, NewPolyCoef(0, 0, -2), 0, 1)), LE),
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 1)), GE))),
 				// F2
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 0, 1), 0, NewPolyCoef(0, 1, 0, 3), 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, NewPolyCoef(0, 0, -2, 0, -1), 0, 1), NewPolyCoef(0, 0, 0, 1)), EQ),
 					NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 0, 0, 2), 0, NewPolyCoef(0, 0, 0, 3, 0, -2), 0, NewPolyCoef(0, 0, -4), 0, 1), NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 0, 0, -2), 0, NewPolyCoef(0, 0, 0, 0, -4), 0, NewPolyCoef(0, 0, 0, 2)), NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 0, 1))), LE),
-					newFmlOrs(
+					NewFmlOrs(
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 1), 0, NewPolyCoef(0, 0, 1, -1)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, -2), 0, NewPolyCoef(0, -1, 1)), 1), LE),
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 2), 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, NewPolyCoef(0, 0, -2), 0, 1)), LE)),
-					newFmlOrs(
+					NewFmlOrs(
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, 1), 0, NewPolyCoef(0, 0, 1, -1)), NewPolyCoef(1, NewPolyCoef(0, 0, 0, -2), 0, NewPolyCoef(0, -1, 1)), 1), GE),
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 1)), LE)),
-					newFmlOrs(
+					NewFmlOrs(
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 2), 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, NewPolyCoef(0, 0, -2), 0, 1)), LE),
 						NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 1)), LE))))))
 

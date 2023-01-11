@@ -20,6 +20,14 @@ type fof_quad_eq struct {
 	g       *Ganrac
 }
 
+func NewFofQuadEq(g *Ganrac, p *Poly, lv Level) *fof_quad_eq {
+	tbl := new(fof_quad_eq)
+	tbl.g = g
+	tbl.p = p
+	tbl.lv = lv
+	return tbl
+}
+
 // ///////////////////////////////////////////////
 //
 // ///////////////////////////////////////////////
@@ -112,7 +120,7 @@ func qe_quadeq(a *Atom, param interface{}) Fof {
 		}
 		sa := NewAtom(s, ops)
 		ta := NewAtom(t, op)
-		ret := newFmlOrs(
+		ret := NewFmlOrs(
 			NewFmlAnd(NewAtoms(r, op), ta),
 			NewFmlAnd(NewAtoms(r, op.neg()), sa),
 			NewFmlAnd(ta, sa))
@@ -237,10 +245,7 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 		fff = fff.Not().(FofAO)
 	}
 
-	tbl := new(fof_quad_eq)
-	tbl.g = qeopt.g
-	tbl.p = minatom.p
-	tbl.lv = minatom.lv
+	tbl := NewFofQuadEq(qeopt.g, minatom.p, minatom.lv)
 
 	if minatom.deg == 2 {
 		// minatom.deg == 2
@@ -267,7 +272,7 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 			} else {
 				tbl.sgn_lcp = -1
 			}
-			opp := newFmlAnds(fff.qe_quadeq(qe_quadeq, tbl), NewAtom(minatom.z, sgns.op), discrim)
+			opp := NewFmlAnds(fff.qe_quadeq(qe_quadeq, tbl), NewAtom(minatom.z, sgns.op), discrim)
 			o = NewFmlOr(o, opp)
 		}
 
@@ -301,7 +306,7 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 	fs[minatom.idx] = NewAtom(c, EQ)
 	fs[len(fs)-1] = NewFmlAnd(fs[minatom.idx], NewAtom(minatom.z, EQ))
 
-	ret := newFmlOrs(opos, oneg, fff.gen(fs))
+	ret := NewFmlOrs(opos, oneg, fff.gen(fs))
 	if op == NE {
 		ret = ret.Not()
 	}

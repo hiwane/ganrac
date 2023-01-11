@@ -109,7 +109,7 @@ func (p *FmlAnd) simplFctr(g *Ganrac) Fof {
 		fml[i] = p.fml[i].simplFctr(g)
 	}
 
-	return newFmlAnds(fml...)
+	return NewFmlAnds(fml...)
 }
 
 func (p *FmlOr) simplFctr(g *Ganrac) Fof {
@@ -118,7 +118,7 @@ func (p *FmlOr) simplFctr(g *Ganrac) Fof {
 		fml[i] = p.fml[i].simplFctr(g)
 	}
 
-	return newFmlOrs(fml...)
+	return NewFmlOrs(fml...)
 }
 
 func (p *ForAll) simplFctr(g *Ganrac) Fof {

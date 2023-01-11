@@ -76,7 +76,7 @@ func TestVsLin(t *testing.T) {
 				// fmt.Printf("----------------------------\n")
 				var q Fof
 				lllv := []Level{0, 2, 3, 4, 5, 6}
-				q = NewQuantifier(true, lllv, newFmlEquiv(qff, ans.(Fof)))
+				q = NewQuantifier(true, lllv, NewFmlEquiv(qff, ans.(Fof)))
 				for _, llv := range lllv {
 					q = vsLinear(q, llv)
 					if q.hasVar(llv) {
@@ -100,7 +100,7 @@ func TestVsLin(t *testing.T) {
 			if !sqff.Equals(ans) {
 				var q Fof
 				lllv := []Level{0, 2, 3, 4, 5, 6}
-				q = NewQuantifier(true, lllv, newFmlEquiv(sqff, ans.(Fof)))
+				q = NewQuantifier(true, lllv, NewFmlEquiv(sqff, ans.(Fof)))
 				for _, llv := range lllv {
 					q = vsLinear(q, llv)
 					if q.hasVar(llv) {
@@ -126,55 +126,55 @@ func TestVsLin2(t *testing.T) {
 		expect Fof
 	}{
 		{2, // ex([x], a*x == b && 3*x > 1);
-			NewQuantifier(false, []Level{2}, newFmlAnds(
+			NewQuantifier(false, []Level{2}, NewFmlAnds(
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, -1), NewPolyCoef(0, 0, 1)), EQ),
 				NewAtom(NewPolyCoef(2, -1, 3), GT))),
-			newFmlOrs( // [ a = 0 /\ 3 b - a = 0 ] \/ [ a > 0 /\ 3 b - a > 0 ] \/ [ a < 0 /\ 3 b - a < 0 ]
-				newFmlAnds(
+			NewFmlOrs( // [ a = 0 /\ 3 b - a = 0 ] \/ [ a > 0 /\ 3 b - a > 0 ] \/ [ a < 0 /\ 3 b - a < 0 ]
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), EQ),
 					NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 3), EQ)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), GT),
 					NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 3), GT)),
-				newFmlAnds(
+				NewFmlAnds(
 					NewAtom(NewPolyCoef(0, 0, 1), LT),
 					NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 3), LT))),
 		}, {2, // ex([x], a*x < b && 3*x > 1);
-			NewQuantifier(false, []Level{2}, newFmlAnds(
+			NewQuantifier(false, []Level{2}, NewFmlAnds(
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, -1), NewPolyCoef(0, 0, 1)), LT),
 				NewAtom(NewPolyCoef(2, -1, 3), GT))),
-			newFmlOrs(
+			NewFmlOrs(
 				NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 3), GT),
 				NewAtom(NewPolyCoef(0, 0, 1), LT)),
 		}, {2, // ex([x], a*x > b && 3*x > 1);
-			NewQuantifier(false, []Level{2}, newFmlAnds(
+			NewQuantifier(false, []Level{2}, NewFmlAnds(
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, -1), NewPolyCoef(0, 0, 1)), GT),
 				NewAtom(NewPolyCoef(2, -1, 3), GT))),
-			newFmlOrs(
+			NewFmlOrs(
 				NewAtom(NewPolyCoef(0, 0, 1), GT),
 				NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 3), LT)),
 		}, {2,
 			// ex([x], a*x+b >= 0 && 3*x+1 > 0)
-			NewQuantifier(false, []Level{2}, newFmlAnds(
+			NewQuantifier(false, []Level{2}, NewFmlAnds(
 				NewAtom(NewPolyCoef(2, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(2, 1, 3), GT))),
 			// b >= 0 \/ a > 0 \/ 3 b - a > 0
-			newFmlOrs(
+			NewFmlOrs(
 				NewAtom(NewPolyCoef(1, 0, 1), GE),
 				NewAtom(NewPolyCoef(0, 0, 1), GT),
 				NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 3), GT)),
 		}, {4,
 			// ex([x], a*x+b >= 0 && c*x+d > 0)
-			NewQuantifier(false, []Level{4}, newFmlAnds(
+			NewQuantifier(false, []Level{4}, NewFmlAnds(
 				NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)), GE),
 				NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1)), GT))),
 			//  b >= 0 && d > 0  ||  a >= 0 && c > 0 && a*d - b*c <= 0  ||  a <= 0 && c < 0 && a*d - b*c >= 0  ||  a > 0 && a*d - b*c > 0  ||  a < 0 && a*d - b*c < 0
-			newFmlOrs(
-				newFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), GE), NewAtom(NewPolyCoef(3, 0, 1), GT)),
-				newFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), GE), NewAtom(NewPolyCoef(2, 0, 1), GT), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), LE)),
-				newFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), LE), NewAtom(NewPolyCoef(2, 0, 1), LT), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), GE)),
-				newFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), GT)),
-				newFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), LT), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), LT))),
+			NewFmlOrs(
+				NewFmlAnds(NewAtom(NewPolyCoef(1, 0, 1), GE), NewAtom(NewPolyCoef(3, 0, 1), GT)),
+				NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), GE), NewAtom(NewPolyCoef(2, 0, 1), GT), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), LE)),
+				NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), LE), NewAtom(NewPolyCoef(2, 0, 1), LT), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), GE)),
+				NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), GT), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), GT)),
+				NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 1), LT), NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(0, 0, 1)), LT))),
 		},
 	} {
 		for jj, sss := range []struct {
