@@ -42,10 +42,18 @@ See https://github.com/hiwane/ganrac/releases
 
 ### from source code
 
+ox-asir version
 ```sh
-> go install github.com/hiwane/ganrac/cmd/ganrac@latest
-> # go get github.com/hiwane/ganrac/cmd/ganrac
+> go install github.com/hiwane/ganrac/cmd/ganrac-ox@latest
+> # go get github.com/hiwane/ganrac/cmd/ganrac-ox
 ```
+
+SageMath version
+```sh
+> go install github.com/hiwane/ganrac/cmd/ganrac-sage@latest
+> # go get github.com/hiwane/ganrac/cmd/ganrac-sage
+```
+
 
 ## Demo
 

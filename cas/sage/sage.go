@@ -12,12 +12,12 @@ import "C"
 import (
 	"fmt"
 	. "github.com/hiwane/ganrac"
-	"os"
 	"log"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"unsafe"
-	"path/filepath"
 )
 
 type Sage struct {
@@ -36,8 +36,8 @@ type Sage struct {
 	pFactor    *C.PyObject
 	pVarInit   *C.PyObject
 
-	ganrac     *Ganrac
-	logger     *log.Logger
+	ganrac *Ganrac
+	logger *log.Logger
 
 	varnum int
 
@@ -51,7 +51,7 @@ func (sage *Sage) log(format string, a ...interface{}) {
 		_, file, line, _ := runtime.Caller(1)
 		// runtime.FuncForPC(pc).Name()  (pc := 1st element of Caller())
 		_, fname := filepath.Split(file)
-		fname = fname[:len(fname)-3]	// .go は不要
+		fname = fname[:len(fname)-3] // suffix .go は不要
 		fmt.Printf("[%d] %14s:%4d: ", sage.cnt, fname, line)
 		fmt.Printf(format, a...)
 	}
@@ -71,7 +71,26 @@ func (sage *Sage) Close() error {
 		C.Py_DecRef(r)
 	}
 
-	//C.Py_Finalize()
+	C.Py_DecRef(sage.pModule)
+	C.Py_DecRef(sage.pstop)
+	C.Py_DecRef(sage.pGCD)
+	C.Py_DecRef(sage.pResultant)
+	C.Py_DecRef(sage.pDiscrim)
+	C.Py_DecRef(sage.pPsc)
+	C.Py_DecRef(sage.pSres)
+	C.Py_DecRef(sage.pGB)
+	C.Py_DecRef(sage.pReduce)
+	C.Py_DecRef(sage.pEval)
+	C.Py_DecRef(sage.pValid)
+	C.Py_DecRef(sage.pFactor)
+	C.Py_DecRef(sage.pVarInit)
+
+	ns := C.PyLong_FromLong(C.long(1))
+	ret := callFunction(sage.pGC, ns)
+	C.Py_DecRef(ret)
+	C.Py_DecRef(sage.pGC)
+
+	// C.Py_Finalize()
 	sage.log("sage.Close() end\n")
 	return nil
 }
@@ -113,8 +132,10 @@ def gan_snapstop():
 	tracemalloc.stop()
 	return
 
-def gan_gc():
+def gan_gc(B):
 	gc.collect()
+	if B != 0:
+		return "0"
 	return str(sum([stat.size for stat in tracemalloc.take_snapshot().statistics('filename')]))
 
 def varinit(num):
@@ -350,7 +371,8 @@ func (sage *Sage) GC() error {
 
 	rets := "boo"
 	if true {
-		ret := callFunction(sage.pGC)
+		ns := C.PyLong_FromLong(C.long(0))
+		ret := callFunction(sage.pGC, ns)
 		defer C.Py_DecRef(ret)
 		rets = toGoString(ret)
 	}
