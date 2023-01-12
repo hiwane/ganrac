@@ -237,32 +237,31 @@ func simplReduceQ(g *Ganrac, inf *reduce_info, p FofQ) Fof {
 
 	if len(qs) > 0 {
 		// qs に含まれる変数を, 等式制約から消去する
-		infb := inf
-		inf = infb.Clone()
+		infbackup := inf
+		inf = infbackup.Clone()
 		inf.vars = NewList()
+		inf.varb = make([]bool, len(inf.varb))
+
 		for _, q := range qs {
 			inf.vars.Append(NewPolyVar(q))
+			inf.varb[q] = true
 		}
-		for _, v := range infb.vars.Iter() {
-			flg := true
-			for _, q := range qs {
-				if q == v.(*Poly).lv {
-					flg = false
-					break
-				}
-			}
-			if flg {
+		for _, _v := range infbackup.vars.Iter() {
+			v := _v.(*Poly)
+			if !inf.varb[v.lv] {
 				inf.vars.Append(v)
+				inf.varb[v.lv] = true
 			}
 		}
-		if infb.vars.Len() != inf.vars.Len() {
-			fmt.Printf("old=%v\n", infb.vars)
+		if infbackup.vars.Len() != inf.vars.Len() {
+			fmt.Printf("old=%v\n", infbackup.vars)
 			fmt.Printf("new=%v\n", inf.vars)
 			fmt.Printf("qs =%v\n", qs)
 			panic("?")
 		}
 		inf.eqns = g.ox.GB(inf.eqns, inf.vars, inf.vars.Len()-len(qs))
 
+		// GB の要素のなかから，qs が含まれる部分を除去する.
 		gb := NewList()
 		for _, p := range inf.eqns.Iter() {
 			b := true
@@ -279,18 +278,8 @@ func simplReduceQ(g *Ganrac, inf *reduce_info, p FofQ) Fof {
 
 		// inf.varb, inf.qn を更新
 		inf.eqns = gb
-		inf.varb = make([]bool, len(inf.varb))
-		for lv := 0; lv < len(inf.varb); lv++ {
-			for _, _p := range gb.Iter() {
-				p := _p.(*Poly)
-				if p.hasVar(Level(lv)) {
-					inf.varb[lv] = true
-					break
-				}
-			}
-		}
+		g.log(9, "[x] p=%v, varb=%v, %v, gb=%v\n", p, inf.varb, inf.vars, gb)
 	}
-	fmt.Printf("[x] p=%v, varb=%v, %s\n", p, inf.varb, inf.vars)
 
 	fml := p.Fml().simplReduce(g, inf)
 	if fml == p.Fml() {

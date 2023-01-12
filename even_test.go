@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestEvenSimpl(t *testing.T) {	// @TEST @TODO
+func TestEvenSimpl(t *testing.T) { // @TEST @TODO
 	funcname := "EvenSimpl"
 
 	g := makeCAS(t)
@@ -285,10 +285,8 @@ func TestEvenSimpl(t *testing.T) {	// @TEST @TODO
 		opt := NewQEopt()
 		cond := NewQeCond()
 		opt.Qe_init(g, f)
-		fmt.Printf("go even simple!! %s\n", f)
 
 		h := opt.Qe_evenq(f, *cond)
-		fmt.Printf("even simple!! %s\n", h)
 		if h == nil {
 			if ss.expect != nil {
 				t.Errorf("ii=%d, %s not worked: %v", ii, funcname, ss.input)
@@ -303,13 +301,11 @@ func TestEvenSimpl(t *testing.T) {	// @TEST @TODO
 			opt2.DelAlgo(QEALGO_SMPL_EVEN) // 使わない
 			u := NewQuantifier(true, vars, NewFmlEquiv(ss.expect, h))
 			// fmt.Printf("u=%v\n", u)
-			fmt.Printf("go even check %s\n", u)
 			if _, ok := g.QE(u, opt2).(*AtomT); !ok {
 				t.Errorf("ii=%d %s\ninput= %v.\nexpect= %v.\nactual= %v.\n", ii, funcname, ss.input, ss.expect, h)
 				break
 			}
 		}
-		fmt.Printf("go even simple!!! not %s\n", f)
 
 		fnot := f.Not()
 		hnot := opt.Qe_evenq(fnot, *cond)

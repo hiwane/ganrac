@@ -89,7 +89,8 @@ func TestSimplReduce(t *testing.T) {
 			}
 
 			u := NewFmlEquiv(o, s.expect)
-			switch uqe := g.QE(u, opt).(type) {
+			ux := g.QE(u, opt)
+			switch uqe := ux.(type) {
 			case *AtomT:
 				continue
 			default:

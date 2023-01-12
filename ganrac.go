@@ -5,6 +5,8 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"runtime"
+	"path/filepath"
 )
 
 var init_var_funcname string = "vars"
@@ -25,6 +27,7 @@ type Ganrac struct {
 	builtin_func_table []func_table
 	ox                 CAS
 	logger             *log.Logger
+	logcnt	int
 	verbose            int
 	verbose_cad        int
 }
@@ -155,6 +158,12 @@ func (g *Ganrac) SetCAS(cas CAS) {
 
 func (g *Ganrac) log(lv int, format string, a ...interface{}) {
 	if lv <= g.verbose {
+		_, file, line, _ := runtime.Caller(1)
+		// runtime.FuncForPC(pc).Name()  (pc := 1st element of Caller())
+		g.logcnt++
+		_, fname := filepath.Split(file)
+		fname = fname[:len(fname)-3]	// .go は不要
+		fmt.Printf("[%d,%d] %.12s:%4d: ", g.logcnt, lv, fname, line)
 		fmt.Printf(format, a...)
 	}
 }
