@@ -143,6 +143,17 @@ func TestPolyAdd(t *testing.T) {
 		if !d.Equals(s.expect) {
 			t.Errorf("invalid poly.add b=%v, a=%v, exp=%v, actual=%v", b, a, s.expect, d)
 		}
+
+		u := b.Neg()
+		c = a.Sub(u)
+		if !c.Equals(s.expect) {
+			t.Errorf("invalid poly.sub a=%v, b=%v, exp=%v, actual=%v", a, u, s.expect, c)
+		}
+
+		d = u.Sub(a).Neg()
+		if !d.Equals(s.expect) {
+			t.Errorf("invalid poly.sub b=%v, a=%v, exp=%v, -actual=%v", u, a, s.expect, d)
+		}
 	}
 }
 
@@ -158,9 +169,30 @@ func TestPolyAddLv(t *testing.T) {
 	if !ep.Equals(c) {
 		t.Errorf("invalid poly.add a=%v, b=%v, expect=%v, actual=%v", a, b, ep, c)
 	}
-	c = b.Add(a)
+	c = Add(a, b)
 	if !ep.Equals(c) {
-		t.Errorf("invalid poly.add b=%v, a=%v, expect=%v, actual=%v", a, b, ep, c)
+		t.Errorf("invalid poly.Add a=%v, b=%v, expect=%v, actual=%v", a, b, ep, c)
+	}
+	c = Add(b, a)
+	if !ep.Equals(c) {
+		t.Errorf("invalid poly.Add b=%v, a=%v, expect=%v, actual=%v", a, b, ep, c)
+	}
+
+	c = a.Sub(b.Neg())
+	if !ep.Equals(c) {
+		t.Errorf("invalid poly.sub a=%v, b=%v, expect=%v, actual=%v", a, b, ep, c)
+	}
+	c = b.Sub(a.Neg())
+	if !ep.Equals(c) {
+		t.Errorf("invalid poly.Sub b=%v, a=%v, expect=%v, actual=%v", b, a, ep, c)
+	}
+	c = Sub(a, b.Neg())
+	if !ep.Equals(c) {
+		t.Errorf("invalid poly.Sub a=%v, b=%v, expect=%v, actual=%v", a, b, ep, c)
+	}
+	c = Sub(b, a.Neg())
+	if !ep.Equals(c) {
+		t.Errorf("invalid poly.Sub b=%v, a=%v, expect=%v, actual=%v", b, a, ep, c)
 	}
 
 	b = NewInt(9)
@@ -168,6 +200,18 @@ func TestPolyAddLv(t *testing.T) {
 	c = a.Add(b)
 	if !ep.Equals(c) {
 		t.Errorf("invalid poly.add a=%v, b=%v, expect=%v, actual=%v", a, b, ep, c)
+	}
+	c = Add(b, a)
+	if !ep.Equals(c) {
+		t.Errorf("invalid poly.Add b=%v, a=%v, expect=%v, actual=%v", b, a, ep, c)
+	}
+	c = Add(a, b)
+	if !ep.Equals(c) {
+		t.Errorf("invalid poly.Add a=%v, b=%v, expect=%v, actual=%v", a, b, ep, c)
+	}
+	c = a.Sub(b.Neg())
+	if !ep.Equals(c) {
+		t.Errorf("invalid poly.sub a=%v, b=%v, expect=%v, actual=%v", a, b, ep, c)
 	}
 }
 

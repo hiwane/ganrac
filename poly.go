@@ -433,18 +433,68 @@ func (z *Poly) normalize() RObj {
 	}
 }
 
-func (z *Poly) Sub(y RObj) RObj {
-	// @TODO とりまサボり.
-	yn := y.Neg()
-	return z.Add(yn)
+func (p *Poly) Sub(y RObj) RObj {
+	q, ok := y.(*Poly)
+	if !ok || p.lv > q.lv {
+		// y は数かレベルが低い
+		z := p.Clone()
+		z.c[0] = Sub(z.c[0], y)
+		return z
+	} else if p.lv < q.lv {
+		z := NewPoly(q.lv, len(q.c))
+		z.c[0] = p.Sub(q.c[0])
+		for i := 1; i < len(q.c); i++ {
+			z.c[i] = q.c[i].Neg()
+		}
+		return z
+	} else if len(p.c) > len(q.c) {
+		z := NewPoly(p.lv, len(p.c))
+		m := len(q.c)
+		for i := 0; i < m; i++ {
+			z.c[i] = Sub(p.c[i], q.c[i])
+		}
+		copy(z.c[m:], p.c[m:])
+		return z
+	} else if len(p.c) < len(q.c) {
+		z := NewPoly(p.lv, len(q.c))
+		for i := 0; i < len(p.c); i++ {
+			z.c[i] = Sub(p.c[i], q.c[i])
+		}
+		for i := len(p.c); i < len(q.c); i++ {
+			z.c[i] = q.c[i].Neg()
+		}
+		return z
+	} else {
+		var i int
+		var c RObj
+		for i = len(p.c) - 1; i >= 0; i-- {
+			c = Sub(p.c[i], q.c[i])
+			if !c.IsZero() {
+				break
+			}
+		}
+		if i <= 0 {
+			return c
+		}
+		z := NewPoly(p.lv, i+1)
+		z.c[i] = c
+		for i--; i >= 0; i-- {
+			z.c[i] = Sub(p.c[i], q.c[i])
+		}
+		return z
+	}
 }
 
 func (x *Poly) Mul(yy RObj) RObj {
 	// karatsuba {"Subst":1497,"Mul":169551}
 	// IncDebugCounter("Poly.Mul", 1)
-	if yy.IsNumeric() {
+	y, ok := yy.(*Poly)
+	if !ok {
 		if yy.IsZero() {
-			return yy
+			return zero
+		}
+		if yy.IsOne() {
+			return x
 		}
 		z := NewPoly(x.lv, len(x.c))
 		for i := 0; i < len(x.c); i++ {
@@ -452,7 +502,6 @@ func (x *Poly) Mul(yy RObj) RObj {
 		}
 		return z
 	}
-	y, _ := yy.(*Poly)
 	if y.lv < x.lv {
 		z := NewPoly(x.lv, len(x.c))
 		for i := 0; i < len(x.c); i++ {
