@@ -129,6 +129,8 @@ func TestPolyAdd(t *testing.T) {
 		{[]int64{1, 4, 5}, []int64{1, 3, -5}, NewPolyCoef(lv, 2, 7)},
 		{[]int64{1, 1}, []int64{1, -1}, NewInt(2)},
 		{[]int64{2, 1}, []int64{-2, -1}, zero},
+		{[]int64{3, 2, 1}, []int64{-3, -2, -1}, zero},
+		{[]int64{3, 2, 1}, []int64{4, -2, -1}, NewInt(7)},
 	} {
 		a := NewPolyInts(lv, s.a...)
 		b := NewPolyInts(lv, s.b...)

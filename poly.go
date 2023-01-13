@@ -369,13 +369,12 @@ func (z *Poly) Neg() RObj {
 }
 
 func (x *Poly) Add(y RObj) RObj {
-	if y.IsNumeric() {
+	p, ok := y.(*Poly)
+	if !ok {
 		z := x.Clone()
 		z.c[0] = z.c[0].Add(y)
 		return z
-	}
-	p, _ := y.(*Poly)
-	if p.lv < x.lv {
+	} else if p.lv < x.lv {
 		z := x.Clone()
 		z.c[0] = p.Add(z.c[0])
 		return z
@@ -383,24 +382,40 @@ func (x *Poly) Add(y RObj) RObj {
 		z := p.Clone()
 		z.c[0] = x.Add(z.c[0])
 		return z
-	} else {
-		var dmin int
+	} else if len(p.c) != len(x.c) {
 		var q *Poly
-		if len(p.c) < len(x.c) {
-			dmin = len(p.c)
+		if len(p.c) <= len(x.c) {
 			q = x
 		} else {
-			dmin = len(x.c)
 			q = p
+			p = x
 		}
+		// deg(p) < deg(q)
 		z := NewPoly(p.lv, len(q.c))
-		for i := 0; i < dmin; i++ {
-			z.c[i] = Add(x.c[i], p.c[i])
+		n := len(p.c)
+		for i := 0; i < n; i++ {
+			z.c[i] = Add(p.c[i], q.c[i])
 		}
-		for i := dmin; i < len(q.c); i++ {
-			z.c[i] = q.c[i]
+		copy(z.c[n:], q.c[n:])
+		return z
+	} else {
+		var i int
+		var c RObj
+		for i = len(p.c) - 1; i >= 0; i-- {
+			c = Add(p.c[i], x.c[i])
+			if !c.IsZero() {
+				break
+			}
 		}
-		return z.normalize()
+		if i <= 0 {
+			return c
+		}
+		q := NewPoly(p.lv, i+1)
+		q.c[i] = c
+		for i--; i >= 0; i-- {
+			q.c[i] = Add(p.c[i], x.c[i])
+		}
+		return q
 	}
 }
 
