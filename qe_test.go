@@ -24,7 +24,11 @@ func benchmarkQE(b *testing.B, name string, cad bool) {
 	}
 }
 
-func BenchmarkAdam1(b *testing.B) {
+func BenchmarkCADAdam1(b *testing.B) {
+	benchmarkQE(b, "adam1", true)
+}
+
+func BenchmarkQEAdam1(b *testing.B) {
 	benchmarkQE(b, "adam1", true)
 }
 

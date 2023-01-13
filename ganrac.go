@@ -5,9 +5,19 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"runtime"
 	"path/filepath"
+	"runtime"
 )
+
+var DebugCounter map[string]int = make(map[string]int)
+
+func IncDebugCounter(f string, n int) int {
+	if _, ok := DebugCounter[f]; !ok {
+		DebugCounter[f] = 0
+	}
+	DebugCounter[f] += n
+	return DebugCounter[f]
+}
 
 var init_var_funcname string = "vars"
 
@@ -27,7 +37,7 @@ type Ganrac struct {
 	builtin_func_table []func_table
 	ox                 CAS
 	logger             *log.Logger
-	logcnt	int
+	logcnt             int
 	verbose            int
 	verbose_cad        int
 }
@@ -162,7 +172,7 @@ func (g *Ganrac) log(lv int, format string, a ...interface{}) {
 		// runtime.FuncForPC(pc).Name()  (pc := 1st element of Caller())
 		g.logcnt++
 		_, fname := filepath.Split(file)
-		fname = fname[:len(fname)-3]	// .go は不要
+		fname = fname[:len(fname)-3] // .go は不要
 		fmt.Printf("[%d,%d] %.12s:%4d: ", g.logcnt, lv, fname, line)
 		fmt.Printf(format, a...)
 	}

@@ -237,7 +237,9 @@ func (z *Poly) Format(s fmt.State, format rune) {
 	case FORMAT_DUMP: // DEBUG (dump)
 		fmt.Fprintf(s, "(poly %d %d (", z.lv, len(z.c))
 		for _, c := range z.c {
-			if cp, ok := c.(*Poly); ok {
+			if c == nil {
+				fmt.Fprintf(s, "nil")
+			} else if cp, ok := c.(*Poly); ok {
 				cp.Format(s, format)
 			} else {
 				fmt.Fprintf(s, "%v", c)
@@ -423,7 +425,8 @@ func (z *Poly) Sub(y RObj) RObj {
 }
 
 func (x *Poly) Mul(yy RObj) RObj {
-	// @TODO とりあえず素朴版 -> Karatsuba へ
+	// karatsuba {"Subst":1497,"Mul":169551}
+	// IncDebugCounter("Poly.Mul", 1)
 	if yy.IsNumeric() {
 		if yy.IsZero() {
 			return yy
@@ -447,7 +450,87 @@ func (x *Poly) Mul(yy RObj) RObj {
 			z.c[i] = x.Mul(y.c[i])
 		}
 		return z
+	} else if len(x.c) > 2 && len(y.c) > 2 {
+		return x.mulKaratsuba(y)
+	} else {
+		return x.mulBasic(y)
 	}
+}
+
+func (f *Poly) mulKaratsuba(g *Poly) RObj {
+	// assert deg(f)>0,deg(g)>0
+	// assert max(deg(f),deg(g))>1
+	// assert f.lv == g.lv
+	m := len(f.c)
+	n := len(g.c)
+	var d int
+	if m >= n {
+		d = m / 2
+	} else {
+		d = n / 2
+	}
+	f1, f0 := f.karatsuba_divide(d)
+	g1, g0 := g.karatsuba_divide(d)
+
+	f1g1 := Mul(f1, g1)
+	f0g0 := Mul(f0, g0)
+	f10 := Sub(f1, f0)
+	g01 := Sub(g0, g1)
+	f10g01 := Mul(f10, g01)
+
+	h1 := Add(Add(f10g01, f1g1), f0g0)
+
+	// h = f1g1 x^2d + h1 x^d + f0g0
+	h := NewPoly(f.lv, m+n-1)
+	if p, ok := f1g1.(*Poly); ok && p.lv == f.lv {
+		// assert f1g1.lv == f.lv
+		if p, ok := f1g1.(*Poly); !ok || p.lv != f.lv {
+			panic(fmt.Sprintf("mnd=(%d,%d,%d) f=%v, g=%v", m, n, d, f, g))
+		}
+		copy(h.c[2*d:], p.c)
+	} else {
+		h.c[2*d] = f1g1
+	}
+
+	var i int
+	if p, ok := f0g0.(*Poly); ok && p.lv == f.lv {
+		copy(h.c, p.c)
+		i = len(p.c)
+	} else {
+		h.c[0] = f0g0
+		i = 1
+	}
+	for ; i < d; i++ {
+		h.c[i] = zero
+	}
+
+	// fmt.Printf("d=%d, <%v|%v>, <%v|%v> h=%V, h1=%v\n", d, f0, f1, g0, g1, h, h1)
+	if p, ok := h1.(*Poly); ok && p.lv == f.lv {
+		for i = 0; i < len(p.c); i++ {
+			if h.c[i+d] == nil {
+				h.c[i+d] = p.c[i]
+			} else {
+				h.c[i+d] = Add(h.c[i+d], p.c[i])
+			}
+		}
+	} else {
+		if h.c[d] == nil {
+			h.c[d] = h1
+		} else {
+			h.c[d] = Add(h1, h.c[d])
+		}
+		i = 1
+	}
+	for ; i < d; i++ {
+		if h.c[i+d] == nil {
+			h.c[i+d] = zero
+		}
+	}
+	return h
+}
+
+/* 素朴な多項式の積 */
+func (x *Poly) mulBasic(y *Poly) RObj {
 	z := NewPoly(x.lv, len(y.c)+len(x.c)-1)
 	for i := range z.c {
 		z.c[i] = zero
@@ -747,7 +830,7 @@ func (z *Poly) subst_intv(x, x2 *Interval, lv Level, prec uint) RObj {
 
 func (z *Poly) Subst(xs RObj, lv Level) RObj {
 	// lvs: sorted
-
+	// IncDebugCounter("Poly.Subst", 1)
 	var p RObj
 	if z.lv == lv {
 		x := xs

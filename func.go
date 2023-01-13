@@ -18,6 +18,7 @@ func (g *Ganrac) setBuiltinFuncTable() {
 		{"cadproj", 1, 2, funcCADproj, true, "(CAD [, proj])*", ""},
 		{"cadsfc", 1, 1, funcCADsfc, true, "(CAD)*", ""},
 		{"coef", 3, 3, funcCoef, false, "(poly, var, deg)", ""}, // coef(F, x, 2)
+		{"counter", 0, 0, funcCounter, false, "()", ""},
 		{"deg", 2, 2, funcDeg, false, "(poly|FOF, var)\t\tdegree of a polynomial with respect to var", `
 Args
 ========
@@ -303,7 +304,6 @@ func funcOXStr(g *Ganrac, name string, args []interface{}) (interface{}, error) 
 	}
 
 	return g.ox.Eval(f0.s)
-
 }
 
 /*
@@ -760,6 +760,14 @@ func funcCoef(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	}
 
 	return rr.Coef(c.lv, uint(d.n.Uint64())), nil
+}
+
+func funcCounter(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+	d := NewDict()
+	for k, v := range DebugCounter {
+		d.Set(k, NewInt(int64(v)))
+	}
+	return d, nil
 }
 
 func funcArgBoolVal(val GObj) bool {

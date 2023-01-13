@@ -171,25 +171,43 @@ func TestPolyAddLv(t *testing.T) {
 
 func TestPolyMul(t *testing.T) {
 	lv := Level(0)
-	for _, s := range []struct {
+	for ii, s := range []struct {
 		a, b, expect []int64
 	}{
 		{[]int64{1, 2}, []int64{1, 1}, []int64{1, 3, 2}},
 		{[]int64{1, 1}, []int64{1, 2, 1}, []int64{1, 3, 3, 1}},
 		{[]int64{1, 1}, []int64{1, 3, 3, 1}, []int64{1, 4, 6, 4, 1}},
 		{[]int64{2, 1}, []int64{4, 3, 1}, []int64{8, 10, 5, 1}},
+		{[]int64{-5, 3}, []int64{-1, 0, 0, 3, -7}, []int64{5, -3, 0, -15, 44, -21}},
+		{[]int64{0, 3}, []int64{0, 0, 0, 0, -7}, []int64{0, 0, 0, 0, 0, -21}},
+		{[]int64{0, 3}, []int64{11, 0, 0, 0, -7}, []int64{0, 33, 0, 0, 0, -21}},
+		{[]int64{-1, 0, 1, -1, 0, 1}, []int64{1, 0, -1, -1, 0, 1}, []int64{-1, 0, 2, 0, -1, 0, 1, 0, -2, 0, 1}},
+		{[]int64{5, 3, -1, 5, -2, 1}, []int64{-2, -1, 1, 1, 2, 1}, []int64{-10, -11, 4, -1, 11, 15, 3, 8, 2, 0, 1}},
+		{[]int64{3, 5, -1, 1, 3, 1}, []int64{0, 4, 2, 120, 20, 2}, []int64{0, 12, 26, 366, 662, 0, 120, 380, 182, 26, 2}},
 	} {
 		a := NewPolyInts(lv, s.a...)
 		b := NewPolyInts(lv, s.b...)
 		ep := NewPolyInts(lv, s.expect...)
-		c := a.Mul(b)
-		if !c.Equals(ep) {
-			t.Errorf("invalid poly a=%v, b=%v, exp=%v, actual=%v", a, b, ep, c)
-		}
 
-		d := b.Mul(a)
-		if !d.Equals(ep) {
-			t.Errorf("invalid poly b=%v, a=%v, exp=%v, actual=%v", b, a, ep, d)
+		for jj, tbl := range []struct {
+			v     RObj
+			label string
+		}{
+			{a.Mul(b), "a*Mul(b)"},
+			{b.Mul(a), "b*Mul(a)"},
+			{a.mulKaratsuba(b), "a*Karatsuba(b)"},
+			{b.mulKaratsuba(a), "b*Karatsuba(a)"},
+			{a.mulBasic(b), "a*Basic(b)"},
+			{b.mulBasic(a), "b*Basic(a)"},
+		} {
+			if err := tbl.v.valid(); err != nil {
+				t.Errorf("invalid %d:%d:%s a=%v, b=%v, actual=%V, err=%s", ii, jj, tbl.label, a, b, tbl.v, err.Error())
+				return
+			}
+			if !tbl.v.Equals(ep) {
+				t.Errorf("invalid %d:%d:%s a=%v, b=%v, exp=%v, actual=%v", ii, jj, tbl.label, a, b, ep, tbl.v)
+				return
+			}
 		}
 	}
 }
