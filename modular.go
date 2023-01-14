@@ -234,6 +234,24 @@ func (f *Poly) add_mod(gg Moder, p Uint) Moder {
 			z := f.Clone()
 			z.c[0] = g.add_mod(z.mcoef(0), p)
 			return z
+		} else if len(f.c) == len(g.c) {
+			var i int
+			var c Moder
+			for i = len(f.c) - 1; i >= 0; i-- {
+				c = f.mcoef(i).add_mod(g.mcoef(i), p)
+				if !c.IsZero() {
+					break
+				}
+			}
+			if i <= 0 {
+				return c
+			}
+			q := NewPoly(f.lv, i+1)
+			q.c[i] = c
+			for i--; i >= 0; i-- {
+				q.c[i] = f.mcoef(i).add_mod(g.mcoef(i), p)
+			}
+			return q
 		} else {
 			var dmin int
 			var q *Poly
@@ -244,18 +262,12 @@ func (f *Poly) add_mod(gg Moder, p Uint) Moder {
 				dmin = len(g.c)
 				q = f
 			}
-			z := q.Clone()
+			z := NewPoly(q.lv, len(q.c))
+			copy(z.c[dmin:], q.c[dmin:])
 			for i := 0; i < dmin; i++ {
-				switch fc := f.c[i].(type) {
-				case *Poly:
-					z.c[i] = fc.add_mod(g.mcoef(i), p)
-				case Uint:
-					z.c[i] = fc.add_mod(g.mcoef(i), p)
-				default:
-					panic("un")
-				}
+				z.c[i] = f.mcoef(i).add_mod(g.mcoef(i), p)
 			}
-			return z.normalize().(Moder)
+			return z
 		}
 	default:
 		panic("")
@@ -296,10 +308,28 @@ func (f *Poly) sub_mod(gg Moder, p Uint) Moder {
 			z := f.Clone()
 			z.c[0] = f.mcoef(0).sub_mod(g, p)
 			return z
+		} else if len(f.c) == len(g.c) {
+			var i int
+			var c Moder
+			for i = len(f.c) - 1; i >= 0; i-- {
+				c = f.mcoef(i).sub_mod(g.mcoef(i), p)
+				if !c.IsZero() {
+					break
+				}
+			}
+			if i <= 0 {
+				return c
+			}
+			z := NewPoly(f.lv, i+1)
+			z.c[i] = c
+			for i--; i >= 0; i-- {
+				z.c[i] = f.mcoef(i).sub_mod(g.mcoef(i), p)
+			}
+			return z
 		} else {
 			var dmin int
 			var z *Poly
-			if len(f.c) <= len(g.c) {
+			if len(f.c) < len(g.c) {
 				dmin = len(f.c)
 				z = NewPoly(g.lv, len(g.c))
 				for i := dmin; i < len(g.c); i++ {
@@ -313,7 +343,7 @@ func (f *Poly) sub_mod(gg Moder, p Uint) Moder {
 			for i := 0; i < dmin; i++ {
 				z.c[i] = f.mcoef(i).sub_mod(g.mcoef(i), p)
 			}
-			return z.normalize().(Moder)
+			return z
 		}
 	case Uint:
 		if g.IsZero() {
