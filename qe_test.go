@@ -32,5 +32,9 @@ func BenchmarkQEAdam1(b *testing.B) {
 	benchmarkQE(b, "adam1", true)
 }
 
+func BenchmarkQEAdam3(b *testing.B) {
+	benchmarkQE(b, "adam3", true)
+}
+
 func TestBench(t *testing.T) {
 }

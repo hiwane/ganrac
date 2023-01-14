@@ -491,7 +491,8 @@ func (x *Poly) Mul(yy RObj) RObj {
 	y, ok := yy.(*Poly)
 	if !ok {
 		if yy.IsZero() {
-			return zero
+			// NOTE: zero を返すと y.(*Interval) のときに動作しなくなる
+			return yy
 		}
 		if yy.IsOne() {
 			return x
