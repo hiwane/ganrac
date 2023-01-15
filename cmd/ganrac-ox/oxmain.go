@@ -36,9 +36,6 @@ func main() {
 	flag.Parse()
 
 	g, logger := cp.NewGanracLogger("OX", gitCommit)
-	if *ox_verbose {
-		g.SetLogger(logger)
-	}
 	if *ox {
 		logger.Printf("connect OX!!!!")
 		connc, err := net.Dial("tcp", *cport)
@@ -64,6 +61,9 @@ func main() {
 
 		defer ox.Close()
 		g.SetCAS(ox)
+		if *ox_verbose {
+			ox.SetLogger(logger)
+		}
 	}
 
 	logger.Printf("START!!!!")

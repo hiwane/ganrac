@@ -1,12 +1,13 @@
 package cmd
 
+// cmd/*/*main.go から呼び出されることを想定
+
 import (
 	"github.com/hiwane/ganrac"
 
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -19,6 +20,7 @@ type CmdParam struct {
 	Quiet      bool
 }
 
+/* コマンドパラメタ情報からの Ganrac の初期化 */
 func (cp CmdParam) NewGanracLogger(cas, revision string) (*ganrac.Ganrac, *log.Logger) {
 	if !cp.Quiet {
 		if revision == "" {
@@ -28,14 +30,12 @@ func (cp CmdParam) NewGanracLogger(cas, revision string) (*ganrac.Ganrac, *log.L
 		}
 	}
 	g := ganrac.NewGANRAC()
-	logger := log.New(os.Stderr, "", log.LstdFlags)
-	if cp.Quiet {
-		logger.SetOutput(ioutil.Discard)
-	}
+	logger := log.New(os.Stderr, "", log.Ltime)
 	if cp.Color {
 		ganrac.SetColordFml(true)
 	}
 	g.Eval(strings.NewReader(fmt.Sprintf("verbose(%d,%d);", cp.Verbose, cp.CadVerbose)))
+	g.SetLogger(logger)
 	return g, logger
 }
 

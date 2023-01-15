@@ -91,9 +91,9 @@ func (inf *reduce_info) GB(g *Ganrac, lvmax Level) *List {
 	inf.varb = varb
 	inf.qn = len(quan)
 
-	g.log(8, "GBi=%v\n", inf.eqns)
+	g.log(8, 1, "GBi=%v\n", inf.eqns)
 	gb := g.ox.GB(inf.eqns, vars, inf.qn)
-	g.log(8, "GBo=%v\n", gb)
+	g.log(8, 1, "GBo=%v\n", gb)
 	return gb
 }
 
@@ -112,7 +112,7 @@ func (p *Atom) simplReduce(g *Ganrac, inf *reduce_info) Fof {
 	q := p.getPoly()
 	r, neg := inf.Reduce(g, q)
 	if !q.Equals(r) {
-		g.log(3, "simplReduce(Atom) %v => %v\n", q, r)
+		g.log(3, 1, "simplReduce(Atom) %v => %v\n", q, r)
 		var a Fof
 		if neg {
 			a = NewAtom(r, p.op.neg())
@@ -278,7 +278,7 @@ func simplReduceQ(g *Ganrac, inf *reduce_info, p FofQ) Fof {
 
 		// inf.varb, inf.qn を更新
 		inf.eqns = gb
-		g.log(9, "[x] p=%v, varb=%v, %v, gb=%v\n", p, inf.varb, inf.vars, gb)
+		g.log(9, 1, "[x] p=%v, varb=%v, %v, gb=%v\n", p, inf.varb, inf.vars, gb)
 	}
 
 	fml := p.Fml().simplReduce(g, inf)

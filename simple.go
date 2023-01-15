@@ -22,7 +22,7 @@ type simpler interface {
 }
 
 func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {
-	g.log(3, "simpl %v\n", c)
+	g.log(3, 1, "simpl %v\n", c)
 	c = c.simplFctr(g)
 	c.normalize()
 	inf := NewReduceInfo()

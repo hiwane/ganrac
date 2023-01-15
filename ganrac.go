@@ -1,7 +1,6 @@
 package ganrac
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -166,15 +165,22 @@ func (g *Ganrac) SetCAS(cas CAS) {
 	g.ox = cas
 }
 
-func (g *Ganrac) log(lv int, format string, a ...interface{}) {
+func (g *Ganrac) log(lv, caller int, format string, a ...interface{}) {
 	if lv <= g.verbose {
-		_, file, line, _ := runtime.Caller(1)
+		_, file, line, _ := runtime.Caller(caller)
 		// runtime.FuncForPC(pc).Name()  (pc := 1st element of Caller())
 		g.logcnt++
 		_, fname := filepath.Split(file)
 		fname = fname[:len(fname)-3] // .go は不要
-		fmt.Printf("[%d,%d] %.12s:%4d: ", g.logcnt, lv, fname, line)
-		fmt.Printf(format, a...)
+		v := make([]interface{}, 4+len(a))
+		v[0] = g.logcnt
+		v[1] = lv
+		v[2] = fname
+		v[3] = line
+		for i, au := range a {
+			v[i+4] = au
+		}
+		g.logger.Printf("[%d,%d] %12.12s:%4d: "+format, v...)
 	}
 }
 

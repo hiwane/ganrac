@@ -7,6 +7,7 @@ import (
 	"fmt"
 	. "github.com/hiwane/ganrac"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"net"
@@ -134,7 +135,7 @@ func NewOpenXM(connc, connd net.Conn, logger *log.Logger) (*OpenXM, error) {
 	ox.connd = connd
 	ox.connc = connc
 	ox.border = binary.LittleEndian
-	ox.logger = logger
+	ox.logger = log.New(ioutil.Discard, "", log.LstdFlags)
 
 	err := ox.init()
 	if err != nil {
@@ -142,6 +143,10 @@ func NewOpenXM(connc, connd net.Conn, logger *log.Logger) (*OpenXM, error) {
 		return nil, err
 	}
 	return ox, err
+}
+
+func (ox *OpenXM) SetLogger(logger *log.Logger) {
+	ox.logger = logger
 }
 
 func (ox *OpenXM) Close() error {

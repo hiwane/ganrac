@@ -804,6 +804,7 @@ func funcQE(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 		return nil, err
 	}
 	opt := NewQEopt()
+	set_verbose := false
 	if len(args) > 1 {
 		dic, ok := args[1].(*Dict)
 		if !ok {
@@ -832,6 +833,7 @@ func funcQE(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 			case "verbose":
 				if val, ok := v.(*Int); ok && val.IsInt64() {
 					opt.log_level = int(val.Int64())
+					set_verbose = true
 				} else {
 					return nil, fmt.Errorf("%s(3rd arg): invalid option value: %s: %v.", name, k, v)
 				}
@@ -841,7 +843,12 @@ func funcQE(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 		}
 	}
 
-	return g.QE(fof, opt), nil
+	if !set_verbose {
+		opt.log_level = g.verbose
+	}
+
+	qff := g.QE(fof, opt)
+	return qff, nil
 }
 
 func funcRealRoot(g *Ganrac, name string, args []interface{}) (interface{}, error) {

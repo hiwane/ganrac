@@ -88,7 +88,7 @@ func (qeopt *QEopt) SetAlgo(algo algo_t, v bool) {
 	}
 }
 
-func (qeopt *QEopt) log(cond qeCond, level int, label, fmt string, args ...interface{}) {
+func (qeopt *QEopt) log(cond qeCond, level int, label, fmtstr string, args ...interface{}) {
 	if qeopt.log_level < level {
 		return
 	}
@@ -98,7 +98,7 @@ func (qeopt *QEopt) log(cond qeCond, level int, label, fmt string, args ...inter
 	v[1] = qeopt.seqno
 	v[2] = cond.depth
 	copy(v[3:], args)
-	qeopt.g.log(level, "%5s[%3d,%3d] "+fmt, v...)
+	qeopt.g.log(level, 2, "%5s[%3d,%3d] "+fmtstr, v...)
 }
 
 func (qeopt *QEopt) num_var(f Fof) int {
