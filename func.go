@@ -460,10 +460,27 @@ func funcSimplify(g *Ganrac, name string, args []interface{}) (interface{}, erro
 	return g.simplFof(c, trueObj, falseObj), nil
 }
 
-func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
-	fof, ok := args[0].(Fof)
+func funcGetFormula(name string, arg interface{}) (Fof, error) {
+	fof, ok := arg.(Fof)
 	if !ok {
-		return nil, fmt.Errorf("%s() expected FOF", name)
+		fstr, ok := arg.(*String)
+		if ok {
+			example := GetExampleFof(fstr.s)
+			if example == nil {
+				return nil, fmt.Errorf("%s(): invalid name: %v", name, arg)
+			}
+			fof = example.Input
+		} else {
+			return nil, fmt.Errorf("%s(1st arg): expected Fof: %v", name, arg)
+		}
+	}
+	return fof, nil
+}
+
+func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+	fof, err := funcGetFormula(name, args[0])
+	if err != nil {
+		return nil, err
 	}
 	var algo ProjectionAlgo = PROJ_McCallum
 	if len(args) > 1 {
@@ -782,9 +799,9 @@ func funcArgBoolVal(val GObj) bool {
 }
 
 func funcQE(g *Ganrac, name string, args []interface{}) (interface{}, error) {
-	fof, ok := args[0].(Fof)
-	if !ok {
-		return nil, fmt.Errorf("%s(1st arg): expected Fof: %v", name, args[0])
+	fof, err := funcGetFormula(name, args[0])
+	if err != nil {
+		return nil, err
 	}
 	opt := NewQEopt()
 	if len(args) > 1 {
