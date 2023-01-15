@@ -53,7 +53,6 @@ func is_strict_only(fof Fof, lv Level) bool {
  * 非等式制約部分とそれ以外で分割する
  */
 func divide_neq(finput Fof, lv Level, qeopt QEopt) (Fof, Fof) {
-
 	switch fof := finput.(type) {
 	case *Atom:
 		if qeopt.assert && fof.Deg(lv) == 0 {
@@ -266,6 +265,9 @@ func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) F
 
 func neqQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 	fne, fot := divide_neq(fof, lv, qeopt)
+	if !fne.hasVar(lv) {
+		return fof
+	}
 
 	if fot == trueObj {
 		qeopt.log(cond, 3, "neq", "<%s> all %v\n", VarStr(lv), fof)
