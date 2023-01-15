@@ -277,10 +277,12 @@ func neqQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 		return fof
 	}
 	if is_strict_only(fot, lv) {
+		qeopt.log(cond, 3, "neq", "<%s> strict [%v] %v\n", VarStr(lv), fne, fof)
 		fstrict := NewQuantifier(false, []Level{lv}, fot)
 		return NewFmlAnd(apply_neqQE(fne, lv), qeopt.qe(fstrict, cond))
 	}
 	if atom, ok := fot.(*Atom); ok {
+		qeopt.log(cond, 3, "neq", "<%s> atom %v\n", VarStr(lv), fof)
 		return apply_neqQE_atom(fne, atom, lv, qeopt, cond)
 	}
 
@@ -288,8 +290,6 @@ func neqQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 }
 
 func (qeopt QEopt) qe_neq(fof FofQ, cond qeCond) Fof {
-	qeopt.log(cond, 2, "neq", "go qe_neq %v\n", fof)
-
 	var fml Fof
 	not := false
 	switch pp := fof.(type) {
@@ -303,7 +303,6 @@ func (qeopt QEopt) qe_neq(fof FofQ, cond qeCond) Fof {
 	}
 
 	for _, q := range fof.Qs() {
-		qeopt.log(cond, 2, "neq", "<%s> %v\n", VarStr(q), fof)
 		ff := neqQE(fml, q, qeopt, cond)
 		if ff != fml {
 			if not {

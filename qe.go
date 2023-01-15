@@ -293,14 +293,18 @@ func (qeopt QEopt) qe_simpl(fof FofQ, cond qeCond) Fof {
 
 	// 偶論理式
 	if (qeopt.Algo & QEALGO_SMPL_EVEN) != 0 {
+		qeopt.log(cond, 2, "eveni", "%v\n", fof)
 		if ff := qeopt.qe_evenq(fof, cond); ff != nil {
+			qeopt.log(cond, 2, "eveno", "%v\n", ff)
 			return ff
 		}
 	}
 
 	// 斉次論理式: homogeneous formula
 	if (qeopt.Algo & QEALGO_SMPL_HOMO) != 0 {
+		qeopt.log(cond, 2, "homoi", "%v\n", fof)
 		if ff := qeopt.qe_homo(fof, cond); ff != nil {
+			qeopt.log(cond, 2, "homoo", "%v\n", ff)
 			return ff
 		}
 	}
@@ -343,7 +347,7 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 		if ff := qeopt.qe_quadeq(fof, cond); ff != nil {
 			ff = qeopt.reconstruct(fqs, ff, cond)
 			ff = qeopt.simplify(ff, cond)
-			qeopt.log(cond, 2, "eqret", "%v\n", fof)
+			qeopt.log(cond, 2, "eqret", "%v\n", ff)
 			return ff
 		}
 	}
@@ -352,10 +356,11 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	// VS を適用できるか.
 	////////////////////////////////
 	if (qeopt.Algo & QEALGO_VSLIN) != 0 {
+		qeopt.log(cond, 2, "qevs1i", "%v\n", fof)
 		if ff := qeopt.qe_vslin(fof, cond); ff != nil {
 			ff = qeopt.reconstruct(fqs, ff, cond)
 			ff = qeopt.simplify(ff, cond)
-			qeopt.log(cond, 2, "vsret", "%v\n", fof)
+			qeopt.log(cond, 2, "qevs1o", "%v\n", ff)
 			return ff
 		}
 	}
@@ -364,10 +369,11 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	// 非等式 QE
 	////////////////////////////////
 	if (qeopt.Algo & QEALGO_NEQ) != 0 {
+		qeopt.log(cond, 2, "neqi", "%v\n", fof)
 		if ff := qeopt.qe_neq(fof, cond); ff != nil {
 			ff = qeopt.reconstruct(fqs, ff, cond)
 			ff = qeopt.simplify(ff, cond)
-			qeopt.log(cond, 2, "neq", "%v\n", fof)
+			qeopt.log(cond, 2, "neqo", "%v\n", ff)
 			return ff
 		}
 	}
@@ -384,7 +390,12 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	// CAD
 	// @TODO 前調査で多項式がおおかったら分配する、のも手ではないか.
 	////////////////////////////////
-	return qeopt.qe_cad(fof, cond)
+	qeopt.log(cond, 2, "qecadi", "%v\n", fof)
+	qeopt.log(cond, 3, "qecad", "nec=%v\n", cond.neccon)
+	qeopt.log(cond, 3, "qecad", "suf=%v\n", cond.sufcon)
+	qff := qeopt.qe_cad(fof, cond)
+	qeopt.log(cond, 2, "qecado", "%v\n", qff)
+	return qff
 }
 
 func (qeopt QEopt) is_easy_cond(fof Fof, cond Fof) bool {
@@ -437,9 +448,6 @@ func (qeopt QEopt) appendNecSuf(qff Fof, cond qeCond) Fof {
 }
 
 func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
-	qeopt.log(cond, 2, "qecad", "%v\n", fof)
-	qeopt.log(cond, 3, "qecad", "nec=%v\n", cond.neccon)
-	qeopt.log(cond, 3, "qecad", "suf=%v\n", cond.sufcon)
 	// 変数順序を入れ替える. :: 自由変数 -> 束縛変数
 	maxvar := qeopt.varn
 
