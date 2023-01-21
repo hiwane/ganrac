@@ -149,3 +149,60 @@ func TestNeqQE(t *testing.T) {
 		return
 	}
 }
+
+func TestNeqQE2(t *testing.T) {
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip TestNeqQE... (no CAS)\n")
+		return
+	}
+	defer g.Close()
+
+	for ii, ss := range []struct {
+		input  string
+		expect string
+	}{
+		{
+			"ex([x], a*x^2+b*x+c != 0 && x <= 0 && c*x+d <= 0)",
+			"c > 0 || ( a > 0 && d <= 0 ) || ( a < 0 && d <= 0 ) || ( b > 0 && d <= 0 ) || ( b < 0 && d <= 0 ) || ( c < 0 && d <= 0 )",
+		},
+	} {
+		opt := NewQEopt()
+
+		f, err := str2fofq(g, ss.input)
+		if err != nil {
+			t.Errorf("ii=%d, input %s. %s.", ii, ss.input, err.Error())
+			continue
+		}
+		expect, err := str2fof(g, ss.expect)
+		if err != nil {
+			t.Errorf("ii=%d, expect %s. %s.", ii, ss.expect, err.Error())
+			continue
+		}
+
+		cond := NewQeCond()
+		opt.Qe_init(g, f)
+		h := opt.Qe_neq(f, *cond)
+		if h == nil {
+			if expect == nil {
+				continue
+			}
+			t.Errorf("ii=%d, neqQE not worked: %v", ii, ss.input)
+			continue
+		} else if expect == nil {
+			t.Errorf("ii=%d, neqQE WORKED: %v", ii, ss.input)
+			continue
+		}
+
+		vars := []Level{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		opt2 := NewQEopt()
+		opt2.Algo &= ^QEALGO_NEQ // NEQ は使わない
+		u := NewQuantifier(true, vars, NewFmlEquiv(expect, h))
+		// fmt.Printf("u=%v\n", u)
+		if _, ok := g.QE(u, opt2).(*AtomT); ok {
+			continue
+		}
+		t.Errorf("ii=%d\ninput= %v.\nexpect= %v.\nactual= %v.\n", ii, ss.input, ss.expect, h)
+		return
+	}
+}

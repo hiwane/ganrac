@@ -39,6 +39,19 @@ func str2poly(g *ganrac.Ganrac, s string) (*ganrac.Poly, error) {
 	return y, nil
 }
 
+func str2fof(g *ganrac.Ganrac, s string) (ganrac.Fof, error) {
+	x, err := evalstr(g, s)
+	if err != nil {
+		return nil, err
+	}
+
+	y, ok := x.(ganrac.Fof)
+	if !ok {
+		return nil, fmt.Errorf("not a formula")
+	}
+	return y, nil
+}
+
 func str2robj(g *ganrac.Ganrac, s string) (ganrac.RObj, error) {
 	x, err := evalstr(g, s)
 	if err != nil {

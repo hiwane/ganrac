@@ -50,6 +50,33 @@ func is_strict_only(fof Fof, lv Level) bool {
 }
 
 /*
+ * strict でないものが少ししかない, かつ, 2次以下
+ */
+func is_strict_or_quad(fof Fof, lv Level, depth int) bool {
+	switch pp := fof.(type) {
+	case FofQ:
+		return is_strict_or_quad(pp.Fml(), lv, depth)
+	case FofAO:
+		for _, f := range pp.Fmls() {
+			if !is_strict_or_quad(f, lv, depth+1) {
+				if a, ok := f.(*Atom); ok && depth == 0 && a.Deg(lv) <= 2 && a.op != EQ {
+					// hong93 を適用済みのはずなので，EQ はなく，GE か LE は保証されているはず
+					continue
+				}
+				return false
+			}
+		}
+		return true
+	case *Atom:
+		if (pp.op & EQ) == 0 { // LT or GT or NE
+			return true
+		}
+		return !pp.hasVar(lv)
+	}
+	return false
+}
+
+/*
  * 非等式制約部分とそれ以外で分割する
  */
 func divide_neq(finput Fof, lv Level, qeopt QEopt) (Fof, Fof) {
@@ -171,6 +198,46 @@ func apply_neqQE_atom_univ(fof, qffneq Fof, atom *Atom, lv Level, qeopt QEopt, c
 	return ret
 }
 
+func apply_neqQE_pstrict(fof, fne Fof, fot *FmlAnd, lv Level, qeopt QEopt, cond qeCond) Fof {
+
+	fot_fmls := fot.Fmls() // 壊してはだめ
+	n := 1
+	if p, ok := fne.(*FmlAnd); ok {
+		n = p.Len()
+	}
+	fmls := make([]Fof, len(fot_fmls)+n)
+	if n == 1 {
+		fmls[len(fot_fmls)] = fne
+	} else {
+		p := fne.(*FmlAnd)
+		copy(fmls[len(fot_fmls):], p.Fmls())
+	}
+	copy(fmls, fot_fmls)
+
+	ors := make([]Fof, 0, len(fmls)+1)
+	for i, v := range fot_fmls {
+		if a, ok := v.(*Atom); ok && a.op&EQ != 0 {
+			// GE/LE を 等式制約に変えた論理式にする
+			fmls[i] = newAtoms(a.p, EQ)
+			f := NewExists([]Level{lv}, fot.gen(fmls))
+			ors = append(ors, qeopt.qe(f, cond))
+			fmls[i] = v
+		}
+	}
+
+	// 全部 strict な場合
+	for i, v := range fot_fmls {
+		if a, ok := v.(*Atom); ok && a.op&EQ != 0 {
+			fmls[i] = newAtoms(a.p, a.op.strict())
+		}
+	}
+	fmls = fmls[:len(fot_fmls)]
+	fstrict := NewExists([]Level{lv}, fot.gen(fmls))
+	qff := NewFmlAnd(apply_neqQE(fne, lv), qeopt.qe(fstrict, cond))
+	ors = append(ors, qff)
+	return NewFmlOrs(ors...)
+}
+
 /*
 * fof: inequational constraints
 * atom: f <= 0 or f >= 0
@@ -180,10 +247,7 @@ func apply_neqQE_atom_univ(fof, qffneq Fof, atom *Atom, lv Level, qeopt QEopt, c
 */
 func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 	// fmt.Printf("atom: %s AND %s\n", fof, atom)
-	if atom.op == EQ {
-		return fof
-	}
-	if qeopt.assert && atom.op != GE && atom.op != LE {
+	if qeopt.assert && (atom.op&EQ) != 0 {
 		panic(fmt.Sprintf("unexpected op %d, expected [%d,%d]", atom.op, GE, LE))
 	}
 
@@ -263,6 +327,9 @@ func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) F
 	}
 }
 
+/*
+ * fof: prenex first-order formula ex([x, y, z], p1 & p2 & ... & p2)
+ */
 func neqQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 	fne, fot := divide_neq(fof, lv, qeopt)
 	if !fne.hasVar(lv) {
@@ -276,14 +343,25 @@ func neqQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 	if fne == trueObj {
 		return fof
 	}
+
+	// @TODO fot が OR になったら分解可能
+
 	if is_strict_only(fot, lv) {
 		qeopt.log(cond, 3, "neq", "<%s> strict [%v] %v\n", VarStr(lv), fne, fof)
 		fstrict := NewQuantifier(false, []Level{lv}, fot)
 		return NewFmlAnd(apply_neqQE(fne, lv), qeopt.qe(fstrict, cond))
 	}
 	if atom, ok := fot.(*Atom); ok {
+		if atom.op == EQ { // Hong93 とかで対応可能
+			return fof
+		}
 		qeopt.log(cond, 3, "neq", "<%s> atom %v\n", VarStr(lv), fof)
 		return apply_neqQE_atom(fne, atom, lv, qeopt, cond)
+	}
+	if true && qeopt.Algo&(QEALGO_EQLIN|QEALGO_EQQUAD) != 0 && is_strict_or_quad(fot, lv, 0) {
+		// @TODO fne がそれなりに複雑である場合に限定したほうが良いかも
+		qeopt.log(cond, 3, "neq", "<%s> pstrict %v\n", VarStr(lv), fof)
+		return apply_neqQE_pstrict(fof, fne, fot.(*FmlAnd), lv, qeopt, cond)
 	}
 
 	return fof

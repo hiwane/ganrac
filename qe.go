@@ -382,6 +382,7 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	// CAD ではどうしようもないが, VS 2 次が使えるかも?
 	////////////////////////////////
 
+	fof = prenex_formula
 	if ff := qeopt.qe_simpl(fof, cond); ff != nil {
 		return ff
 	}
