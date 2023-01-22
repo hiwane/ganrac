@@ -27,6 +27,7 @@ func main() {
 	flag.IntVar(&cp.CadVerbose, "cad_verbose", 0, "cad_verbose")
 	flag.BoolVar(&cp.Color, "color", false, "colored")
 	flag.BoolVar(&cp.Quiet, "q", false, "quiet mode")
+	flag.StringVar(&cp.CmdHistory, "history", "", "command history")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [-ox][-data host:port][-control host:port]\n", os.Args[0])
@@ -67,5 +68,5 @@ func main() {
 	}
 
 	logger.Printf("START!!!!")
-	cmd.Interpreter(g)
+	cp.Interpreter(g)
 }

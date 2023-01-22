@@ -3,6 +3,7 @@ package cmd
 // cmd/*/*main.go から呼び出されることを想定
 
 import (
+	"github.com/chzyer/readline"
 	"github.com/hiwane/ganrac"
 
 	"bufio"
@@ -18,6 +19,17 @@ type CmdParam struct {
 	CadVerbose int
 	Color      bool
 	Quiet      bool
+
+	CmdHistory string
+}
+
+type CmdLine struct {
+	line        string
+	pos         int
+	in_string   bool
+	depth_curly int
+
+	rl *readline.Instance
 }
 
 /* コマンドパラメタ情報からの Ganrac の初期化 */
@@ -39,10 +51,54 @@ func (cp CmdParam) NewGanracLogger(cas, revision string) (*ganrac.Ganrac, *log.L
 	return g, logger
 }
 
+func (cl *CmdLine) get_line() (string, error) {
+	var err error
+	ret := ""
+	for {
+		if cl.pos >= len(cl.line) {
+			cl.line, err = cl.rl.Readline()
+			if err != nil {
+				return "", err
+			}
+			cl.pos = 0
+		}
+
+		for cl.pos < len(cl.line) {
+			c := cl.line[cl.pos]
+			cl.pos++
+			if c == '"' {
+				cl.in_string = !cl.in_string
+			} else if cl.in_string {
+				// do nothing.
+			} else if c == '{' {
+				cl.depth_curly++
+			} else if c == '}' && cl.depth_curly > 0 {
+				cl.depth_curly--
+			} else if c == ';' { // eol
+				goto _RETURN
+			} else if c == ':' && cl.depth_curly <= 0 { // eolq
+				goto _RETURN
+			} else if c == '#' {
+				ret += cl.line + "\n"
+				cl.line = ""
+				break
+			}
+		}
+		ret += cl.line + "\n"
+		cl.line = ""
+	}
+_RETURN:
+	ret += cl.line[:cl.pos]
+	cl.line = cl.line[cl.pos:]
+	cl.pos = 0
+	return ret, nil
+}
+
 /*
  * 1文を取得.
  * 入力エラーリカバリが面倒だから１文ずつ処理する
  */
+
 func get_line(in *bufio.Reader) (string, error) {
 	//	line, err := in.ReadBytes(';')
 	line := make([]rune, 0, 100)
@@ -81,23 +137,58 @@ func get_line(in *bufio.Reader) (string, error) {
 	return string(line), nil
 }
 
-func Interpreter(g *ganrac.Ganrac) {
-	in := bufio.NewReader(os.Stdin)
+var completer = readline.NewPrefixCompleter(
+	readline.PcItem("qe"),
+	readline.PcItem("cad"),
+	readline.PcItem("example"),
+	readline.PcItem("simpl"),
+	readline.PcItem("time"),
+	readline.PcItem("vars"),
+	readline.PcItem("help"),
+	readline.PcItem("impl"),
+	readline.PcItem("equiv"),
+	readline.PcItem("ex"),
+	readline.PcItem("all"),
+	readline.PcItem("cadinit"),
+	readline.PcItem("cadlift"),
+	readline.PcItem("cadproj"),
+	readline.PcItem("cadsfc"),
+	readline.PcItem("print"),
+)
+
+func (cp CmdParam) Interpreter(g *ganrac.Ganrac) {
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:          "> ",
+		HistoryFile:     cp.CmdHistory,
+		AutoComplete:    completer,
+		InterruptPrompt: "^C",
+		EOFPrompt:       "exit",
+
+		HistorySearchFold: true,
+		//FuncFilterInputRune: filterInput,
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer rl.Close()
+	rl.CaptureExitSignal()
+
+	var cl CmdLine
+	cl.rl = rl
+
 	for {
-		if _, err := os.Stdout.WriteString("> "); err != nil {
-			fmt.Fprintf(os.Stderr, "WriteString: %s", err)
+		line, err := cl.get_line()
+		if err == readline.ErrInterrupt {
+			if len(line) == 0 {
+				break
+			} else {
+				continue
+			}
+		} else if err == io.EOF {
 			break
 		}
-		line, err := get_line(in)
-		if err == io.EOF {
-			return
-		}
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "ReadBytes: %s", err)
-			continue
-		}
 
-		p, err := g.Eval(strings.NewReader(string(line)))
+		p, err := g.Eval(strings.NewReader(line))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %s\n", err)
 			continue
