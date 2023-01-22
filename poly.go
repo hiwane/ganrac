@@ -717,7 +717,7 @@ func sdivlt(x, y *Poly) RObj {
 				x = xp
 				y = yp
 				var c *Poly
-				if x.lv < y.lv || len(x.c) < len(y.c) {
+				if x.lv < y.lv || x.lv == y.lv && len(x.c) < len(y.c) {
 					return nil
 				} else if x.lv > y.lv {
 					c = NewPoly(x.lv, len(x.c))
@@ -746,12 +746,17 @@ func sdivlt(x, y *Poly) RObj {
 	panic("toooooo")
 }
 
-func (x *Poly) Sdiv(y *Poly) RObj {
+func (xorg *Poly) Sdiv(y *Poly) RObj {
 	// assume: y is a factor of x
+	x := xorg
 	var ret RObj = zero
-	for i := len(x.c); i >= 0; i-- {
+	for {
 		m := sdivlt(x, y)
 		if m == nil {
+			fmt.Printf("Poly.Sdiv() X=%v\n", xorg)
+			fmt.Printf("Poly.Sdiv() x=%v\n", x)
+			fmt.Printf("Poly.Sdiv() y=%v\n", y)
+			fmt.Printf("Poly.Sdiv() m=%v, \n", m)
 			panic("1")
 		}
 		ret = Add(ret, m)
@@ -765,6 +770,9 @@ func (x *Poly) Sdiv(y *Poly) RObj {
 		}
 		x = xx.(*Poly)
 	}
+	fmt.Printf("Poly.Sdiv() X=%v\n", xorg)
+	fmt.Printf("Poly.Sdiv() x=%v\n", x)
+	fmt.Printf("Poly.Sdiv() y=%v\n", y)
 	panic("toooooo")
 }
 
