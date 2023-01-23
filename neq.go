@@ -199,6 +199,9 @@ func apply_neqQE_atom_univ(fof, qffneq Fof, atom *Atom, lv Level, qeopt QEopt, c
 }
 
 func apply_neqQE_pstrict(fof, fne Fof, fot *FmlAnd, lv Level, qeopt QEopt, cond qeCond) Fof {
+	// GE, LE が一部含まれるが，それは２次以下なので，
+	// hong93 により高速に解ける.
+	// fne が大きければ，全体を解くよりも strict 部分のみの CAD になるのでお得
 
 	fot_fmls := fot.Fmls() // 壊してはだめ
 	n := 1
@@ -217,10 +220,10 @@ func apply_neqQE_pstrict(fof, fne Fof, fot *FmlAnd, lv Level, qeopt QEopt, cond 
 	ors := make([]Fof, 0, len(fmls)+1)
 	for i, v := range fot_fmls {
 		if a, ok := v.(*Atom); ok && a.op&EQ != 0 {
-			// GE/LE を 等式制約に変えた論理式にする
+			// AND の要素のうちひとつの GE/LE を 等式制約に変えた論理式にする
 			fmls[i] = newAtoms(a.p, EQ)
 			f := NewExists([]Level{lv}, fot.gen(fmls))
-			ors = append(ors, qeopt.qe(f, cond))
+			ors = append(ors, f)
 			fmls[i] = v
 		}
 	}
@@ -233,9 +236,11 @@ func apply_neqQE_pstrict(fof, fne Fof, fot *FmlAnd, lv Level, qeopt QEopt, cond 
 	}
 	fmls = fmls[:len(fot_fmls)]
 	fstrict := NewExists([]Level{lv}, fot.gen(fmls))
-	qff := NewFmlAnd(apply_neqQE(fne, lv), qeopt.qe(fstrict, cond))
-	ors = append(ors, qff)
-	return NewFmlOrs(ors...)
+	ff := NewFmlAnd(apply_neqQE(fne, lv), fstrict)
+	ors = append(ors, ff)
+	newfml := NewFmlOrs(ors...)
+	qeopt.log(cond, 3, "neq", "<%s> pstricto %v\n", VarStr(lv), newfml)
+	return qeopt.qe(newfml, cond)
 }
 
 /*
@@ -247,7 +252,7 @@ func apply_neqQE_pstrict(fof, fne Fof, fot *FmlAnd, lv Level, qeopt QEopt, cond 
 */
 func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 	// fmt.Printf("atom: %s AND %s\n", fof, atom)
-	if qeopt.assert && (atom.op&EQ) != 0 {
+	if qeopt.assert && (atom.op&EQ) == 0 {
 		panic(fmt.Sprintf("unexpected op %d, expected [%d,%d]", atom.op, GE, LE))
 	}
 
@@ -358,7 +363,7 @@ func neqQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 		qeopt.log(cond, 3, "neq", "<%s> atom %v\n", VarStr(lv), fof)
 		return apply_neqQE_atom(fne, atom, lv, qeopt, cond)
 	}
-	if true && qeopt.Algo&(QEALGO_EQLIN|QEALGO_EQQUAD) != 0 && is_strict_or_quad(fot, lv, 0) {
+	if qeopt.Algo&(QEALGO_EQLIN|QEALGO_EQQUAD) != 0 && is_strict_or_quad(fot, lv, 0) {
 		// @TODO fne がそれなりに複雑である場合に限定したほうが良いかも
 		qeopt.log(cond, 3, "neq", "<%s> pstrict %v\n", VarStr(lv), fof)
 		return apply_neqQE_pstrict(fof, fne, fot.(*FmlAnd), lv, qeopt, cond)

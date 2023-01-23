@@ -30,6 +30,12 @@ var qeExampleTable []qeExTable = []qeExTable{
 	{"imo13-1", exImo13_1_5},
 	{"makepdf", exMakePdf},
 	{"makepd2", exMakePdf2},
+	{"neq1", exNeq1},
+	{"neq2", exNeq2},
+	{"neq3", exNeq3},
+	{"neq4", exNeq4},
+	{"neq5", exNeq5},
+	{"neq6", exNeq6},
 	{"pl01", exPL01},
 	{"quad", exQuad},
 	{"quart", exQuart},
@@ -270,6 +276,152 @@ func exMakePdf2() *QeExample {
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, -1, 0, 1), 0, 1), LE),
 			NewAtom(NewPolyCoef(1, NewPolyCoef(0, -2, 2), 5), LT)))
 	q.Ref = "Christopher W. Brown. Solution formula construction for truth invariant CAD's. Thesis p65 1999"
+	return q
+}
+
+func exNeq1() *QeExample {
+	// 非等式制約 ex([x], a*x^5+b*x^4+c*x^3+d*x^2+e*x+f != 0)
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{6}, NewAtom(NewPolyCoef(6, NewPolyCoef(5, 0, 1), NewPolyCoef(4, 0, 1), NewPolyCoef(3, 0, 1), NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)), NE))
+	q.Output = NewFmlOrs(NewAtom(NewPolyCoef(0, 0, 1), NE), NewAtom(NewPolyCoef(1, 0, 1), NE), NewAtom(NewPolyCoef(2, 0, 1), NE), NewAtom(NewPolyCoef(3, 0, 1), NE), NewAtom(NewPolyCoef(4, 0, 1), NE), NewAtom(NewPolyCoef(5, 0, 1), NE))
+	q.Ref = "Iwane. Quantifier elimination for inequational constraints. 2015"
+	return q
+}
+
+func exNeq2() *QeExample {
+	// 非等式制約 ex([x], a*x^2+b*x + c != 0 && d*x^2+e*x+f != 0)
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{6}, NewFmlAnds(NewAtom(NewPolyCoef(6, NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)), NE), NewAtom(NewPolyCoef(6, NewPolyCoef(5, 0, 1), NewPolyCoef(4, 0, 1), NewPolyCoef(3, 0, 1)), NE)))
+	q.Output = NewFmlAnds(
+		NewFmlOrs(
+			NewAtom(NewPolyCoef(0, 0, 1), NE),
+			NewAtom(NewPolyCoef(1, 0, 1), NE),
+			NewAtom(NewPolyCoef(2, 0, 1), NE)),
+		NewFmlOrs(
+			NewAtom(NewPolyCoef(3, 0, 1), NE),
+			NewAtom(NewPolyCoef(4, 0, 1), NE),
+			NewAtom(NewPolyCoef(5, 0, 1), NE)))
+
+	q.Ref = "Iwane. Quantifier elimination for inequational constraints. 2015"
+	return q
+}
+
+func exNeq3() *QeExample {
+	// まとめ (1) の改版 strict
+	q := new(QeExample)
+	// ex([x], x^2+a*x+b<0 && x-c!=0 && d*x^2+e*x+f!=0)
+	q.Input = NewQuantifier(false, []Level{6}, NewFmlAnds(
+		NewAtom(NewPolyCoef(6, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 1), LT),
+		NewAtom(NewPolyCoef(6, NewPolyCoef(2, 0, -1), 1), NE),
+		NewAtom(NewPolyCoef(6, NewPolyCoef(5, 0, 1), NewPolyCoef(4, 0, 1), NewPolyCoef(3, 0, 1)), NE)))
+
+	// a^2-4*b > 0 && (d != 0 || e != 0 || f != 0)
+	q.Output = NewFmlAnds(
+		NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 0, -1), 4), LT),
+		NewFmlOrs(
+			NewAtom(NewPolyCoef(3, 0, 1), NE),
+			NewAtom(NewPolyCoef(4, 0, 1), NE),
+			NewAtom(NewPolyCoef(5, 0, 1), NE)))
+
+	q.Ref = "Iwane. Quantifier elimination for inequational constraints. 2015"
+	return q
+}
+
+func exNeq4() *QeExample {
+	// まとめ (2) 改版 strict
+	q := new(QeExample)
+	// ex([x], x^2-2*x*a3+a4^2-2*a4*a2+a2^2+a3^2 < 0 && x != 0 && (a4*a1-a4*a3+a1*a2-a2*a3)*x+a4^2-a4^2*a2-a4*a1*a3+a4*a3^2 != 0);
+	// discrim(x^2-2*x*a3+a4^2-2*a4*a2+a2^2+a3^2, x) = 4*(a4-a2)^2 >= 0 故，この原子論理式だけで false 確定する面白くない
+
+	// 改版
+	// ex([x], x^2-2*x*a3+a4^2-2*a4*a2+a2^2+a3^2 < 1 && x != 0 && (a4*a1-a4*a3+a1*a2-a2*a3)*x+a4^2-a4^2*a2-a4*a1*a3+a4*a3^2 != 0);
+	q.Input = NewQuantifier(false, []Level{4}, NewFmlAnds(
+		NewAtom(NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, -1, 0, 1), 0, 1), NewPolyCoef(1, 0, -2), 1), NewPolyCoef(2, 0, -2), 1), LT),
+		NewAtom(NewPolyCoef(4, 0, 1), NE),
+		NewAtom(NewPolyCoef(4, NewPolyCoef(3, 0, NewPolyCoef(2, 0, NewPolyCoef(0, 0, 1), -1), NewPolyCoef(1, -1, 1)), NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 1)), NewPolyCoef(2, NewPolyCoef(0, 0, -1), 1))), NE)))
+
+	q.Output = NewFmlAnds(
+		NewAtom(NewPolyCoef(3, NewPolyCoef(1, -1, 0, 1), NewPolyCoef(1, 0, -2), 1), LT),
+		NewFmlOrs(
+			NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -1)), NewPolyCoef(1, 0, 1)), NewPolyCoef(2, NewPolyCoef(0, 0, -1), 1)), NE),
+			NewAtom(NewPolyCoef(3, 0, NewPolyCoef(2, 0, NewPolyCoef(0, 0, 1), -1), NewPolyCoef(1, -1, 1)), NE)))
+
+	q.Ref = "Iwane. Quantifier elimination for inequational constraints. 2015"
+	return q
+}
+
+func exNeq5() *QeExample {
+	// まとめ (1) の改版 atom
+	q := new(QeExample)
+	// ex([x], e*x^5+c*x^3+x^2+a*x+b<=0 && x-c!=0 && d*x^2+e*x+f!=0)
+	q.Input = NewQuantifier(false, []Level{6}, NewFmlAnds(
+		NewAtom(NewPolyCoef(6, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1), 1, NewPolyCoef(2, 0, 1), 0, NewPolyCoef(4, 0, 1)), LE),
+		NewAtom(NewPolyCoef(6, NewPolyCoef(2, 0, -1), 1), NE),
+		NewAtom(NewPolyCoef(6, NewPolyCoef(5, 0, 1), NewPolyCoef(4, 0, 1), NewPolyCoef(3, 0, 1)), NE)))
+
+	// (e != 0 || c != 0 || a^2-4*b > 0) && (d != 0 || e != 0 || f != 0) ||
+	// (e == 0 && c == 0 && a^2-4*b == 0 && ex([x], 2*x+a== 0 && x!=c && d*x^2+e*x+f != 0)
+	q.Output = NewFmlOrs(
+		NewFmlAnds(
+			NewFmlOrs(
+				NewAtom(NewPolyCoef(4, 0, 1), NE),
+				NewAtom(NewPolyCoef(2, 0, 1), NE),
+				NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 0, -1), 4), LT)),
+			NewFmlOrs(
+				NewAtom(NewPolyCoef(3, 0, 1), NE),
+				NewAtom(NewPolyCoef(4, 0, 1), NE),
+				NewAtom(NewPolyCoef(5, 0, 1), NE))),
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(4, 0, 1), EQ),
+			NewAtom(NewPolyCoef(2, 0, 1), EQ),
+			NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, 0, -1), 4), EQ),
+			NewAtom(NewPolyCoef(0, 0, 1), NE),
+			NewAtom(NewPolyCoef(5, NewPolyCoef(3, 0, NewPolyCoef(0, 0, 0, 1)), 4), NE)))
+
+	q.Ref = "Iwane. Quantifier elimination for inequational constraints. 2015"
+	return q
+}
+
+func exNeq6() *QeExample {
+	// まとめ (3) strictに近い
+	q := new(QeExample)
+	// ex([x], x<0 && (a3-3)*x+2>0 && (a3^2-8*a3+24)*x+4*a3-20>=0 && a1*x-a2!=0 && (a1*a3+a1^2-4*a1-2)*x^2+(-a2*a3+(-2*a1+4)*a2+2*a1+1)*x+a2^2-2*a2+1!=0)
+	q.Input = NewQuantifier(false, []Level{4},
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(4, 0, 1), LT),
+			NewAtom(NewPolyCoef(4, 2, NewPolyCoef(2, -3, 1)), GT),
+			NewAtom(NewPolyCoef(4, NewPolyCoef(2, -20, 4), NewPolyCoef(2, 24, -8, 1)), GE),
+			NewAtom(NewPolyCoef(4, NewPolyCoef(1, 0, -1), NewPolyCoef(0, 0, 1)), NE),
+			NewAtom(NewPolyCoef(4, NewPolyCoef(1, 1, -2, 1), NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 1, 2), NewPolyCoef(0, 4, -2)), NewPolyCoef(1, 0, -1)), NewPolyCoef(2, NewPolyCoef(0, -2, -4, 1), NewPolyCoef(0, 0, 1))), NE)))
+
+	// (!)  = a1*x-a2!=0 && (a1*a3+a1^2-4*a1-2)*x^2+(-a2*a3+(-2*a1+4)*a2+2*a1+1)*x+a2^2-2*a2+1!=0
+	// (!') = ex([x], (!))
+	//      = (a1 != 0 || a2 != 0) && (a1*a3+a1^2-4*a1-2 != 0 || -a2*a3+(-2*a1+4)*a2+2*a1+1 != 0 || a2^2-2*a2+1!=0)
+	//   ex([x], x<0 && (a3-3)*x+2>0 && (a3^2-8*a3+24)*x+4*a3-20>0) && ex([x], (!)) ||
+	//   ex([x], x<0 && (a3-3)*x+2>0 && (a3^2-8*a3+24)*x+4*a3-20=0 && (!))
+	// <==>
+	//   a3 > 5 && (!') ||
+	//   Q<0 && (a3-3)*Q+2*P > 0 && a1*Q-a2*P != 0 && (a1*a3+a1^2-4*a1-2)*Q^2+(-a2*a3+(-2*a1+4)*a2+2*a1+1)*P*Q+(a2^2-2*a2+1)*Q!=0
+	//   where P = a3^2-8*a3+24, Q = -(4*a3-20)
+	//
+	// note that: a3^2-8*a3+24 > 0 by the discriminant is negative
+	q.Output = NewFmlOrs(
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(2, -20, 4), GT),
+			NewAtom(NewPolyCoef(2, 12, -16, 2), LT),
+			NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, -20), 24), NewPolyCoef(1, NewPolyCoef(0, 0, 4), -8), NewPolyCoef(1, 0, 1)), NE),
+			NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 80, -640, 400), NewPolyCoef(0, 1120, -960), 400), NewPolyCoef(1, NewPolyCoef(0, -96, 528, -160), NewPolyCoef(0, -1184, 512), -160), NewPolyCoef(1, NewPolyCoef(0, 36, -120, 16), NewPolyCoef(0, 432, -104), 16), NewPolyCoef(1, NewPolyCoef(0, -4, 8), NewPolyCoef(0, -68, 8)), NewPolyCoef(1, 0, 4)), NE)),
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(2, -5, 1), GT),
+			NewFmlOrs(
+				NewAtom(NewPolyCoef(0, 0, 1), NE),
+				NewAtom(NewPolyCoef(1, 0, 1), NE)),
+			NewFmlOrs(
+				NewAtom(NewPolyCoef(2, NewPolyCoef(0, -2, -4, 1), NewPolyCoef(0, 0, 1)), NE),
+				NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, -1, -2), NewPolyCoef(0, -4, 2)), NewPolyCoef(1, 0, 1)), NE),
+				NewAtom(NewPolyCoef(1, -1, 1), NE))))
+
+	q.Ref = "Iwane. Quantifier elimination for inequational constraints. 2015"
 	return q
 }
 
