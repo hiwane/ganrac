@@ -122,11 +122,7 @@ func (p Uint) toIntv(prec uint) RObj {
 }
 
 func (p Uint) Sign() int {
-	if p == 0 {
-		return 0
-	} else {
-		return 1
-	}
+	return int(p)
 }
 
 func (u Uint) simpl_mod(cell *Cellmod, p Uint) Moder {
@@ -365,8 +361,8 @@ func (f Uint) neg_mod(p Uint) Moder {
 }
 
 func (f *Poly) neg_mod(p Uint) Moder {
-	z := f.Clone()
-	for i, c := range z.c {
+	z := NewPoly(f.lv, len(f.c))
+	for i, c := range f.c {
 		z.c[i] = c.(Moder).neg_mod(p)
 	}
 	return z
