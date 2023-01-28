@@ -65,6 +65,9 @@ func makeCAS(t *testing.T) *ganrac.Ganrac {
 	} else {
 		return nil
 	}
+	if c == nil {
+		return nil
+	}
 	g.SetCAS(c)
 	return g
 }

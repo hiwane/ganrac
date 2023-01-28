@@ -26,6 +26,9 @@ func (iv *Interval) Sup() *big.Float {
 
 func (qeopt *QEopt) Qe_init(g *Ganrac, fof Fof) {
 	qeopt.qe_init(g, fof)
+	if g.ox == nil {
+		panic("g.ox is null")
+	}
 }
 
 func (qeopt QEopt) Qe_neq(fof FofQ, cond qeCond) Fof {
@@ -94,6 +97,9 @@ func (tbl *fof_quad_eq) SetSgnS(v int) {
 }
 
 func (qeopt *QEopt) Qe_evenq(prenex_fof Fof, cond qeCond) Fof {
+	if qeopt.g.ox == nil {
+		panic("muri-yan")
+	}
 	return qeopt.qe_evenq(prenex_fof, cond)
 }
 

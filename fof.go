@@ -99,10 +99,10 @@ type AtomF struct {
 
 type Atom struct {
 	// p1*p2*...*pn op 0
-	p         []*Poly
-	pmul      *Poly // = p1*p2*...*p2: cache
-	op        OP
-	factorizd bool
+	p           []*Poly
+	pmul        *Poly // = p1*p2*...*p2: cache
+	op          OP
+	irreducible bool
 }
 
 type FmlAnd struct {
@@ -1429,11 +1429,7 @@ func NewAtom(p RObj, op OP) Fof {
 	a.p = []*Poly{p.(*Poly)}
 	if a.p[0].Sign() < 0 { // 正規化. 主係数を正にする.
 		a.p[0] = a.p[0].Neg().(*Poly)
-		if op != EQ && op != NE {
-			a.op = op ^ (LT | GT)
-		} else {
-			a.op = op
-		}
+		a.op = op.neg()
 	} else {
 		a.op = op
 	}
