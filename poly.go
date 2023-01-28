@@ -1522,13 +1522,26 @@ func (porg *Poly) pp() (*Poly, RObj) {
 
 }
 
-func (p *Poly) isEven() bool {
-	for i := 1; i < len(p.c); i += 2 {
-		if !p.c[i].IsZero() {
-			return false
+func (p *Poly) isEven(lv Level) bool {
+	if p.lv == lv {
+		for i := 1; i < len(p.c); i += 2 {
+			if !p.c[i].IsZero() {
+				return false
+			}
 		}
+		return true
+	} else if p.lv < lv {
+		return true
+	} else {
+		for _, cc := range p.c {
+			if c, ok := cc.(*Poly); ok {
+				if !c.isEven(lv) {
+					return false
+				}
+			}
+		}
+		return true
 	}
-	return true
 }
 
 func (p *Poly) Less(q *Poly) bool {

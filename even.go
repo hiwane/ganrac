@@ -98,14 +98,12 @@ func (p *Atom) isEvenE(lv Level) int {
 		}
 		d := pp.Deg(lv)
 		if d%2 == 0 {
-			for i := 1; i <= d; i += 2 {
-				if !pp.Coef(lv, uint(i)).IsZero() {
-					return EVEN_NG
-				}
+			if !pp.isEven(lv) {
+				return EVEN_NG
 			}
 			continue
 		}
-		if d == 1 && len(p.p) == 1 {
+		if d == 1 && len(p.p) == 1 { // p.Deg() == 1
 			c := pp.Coef(lv, 1)
 			if _, ok := c.(NObj); ok {
 				return EVEN_LIN1
@@ -125,25 +123,21 @@ func (p *Atom) isEven(lv Level) int {
 	if len(p.p) == 1 {
 		return EVEN_NG
 	}
+	// 積とって，偶数次でないのなら偶関数でないことが確定
 	if p.Deg(lv)%2 != 0 {
 		return EVEN_NG
 	}
 
-	m := p.p[0]
-	for i := 1; i < len(p.p); i++ {
-		m = m.Mul(p.p[i]).(*Poly)
-	}
-	for i := 1; i < len(m.c); i += 2 {
-		c := m.Coef(lv, uint(i))
-		if !c.IsZero() {
-			return EVEN_NG
-		}
+	m := p.getPoly()
+	if !m.isEven(lv) {
+		return EVEN_NG
 	}
 	return EVEN_OKM
 }
 
+// true/false.
 func (p *FofTFbase) isEven(lv Level) int {
-	return EVEN_NO
+	return EVEN_NO // 何もしない故
 }
 
 func (p *FmlAnd) isEven(lv Level) int {
@@ -229,9 +223,9 @@ func (q *Atom) redEvenLin(lv Level, v, sgn int) Fof {
 
 	switch q.op {
 	case EQ:
-		return NewFmlAnd(NewAtom(Mul(a, b), LE), NewAtom(abx, EQ))
+		return NewFmlAnd(NewAtoms([]RObj{a, b}, LE), NewAtom(abx, EQ))
 	case NE:
-		return NewFmlOr(NewAtom(Mul(a, b), GT), NewAtom(abx, NE))
+		return NewFmlOr(NewAtoms([]RObj{a, b}, GT), NewAtom(abx, NE))
 	case LE:
 		return NewFmlOr(
 			NewFmlAnd(
@@ -276,28 +270,24 @@ func (q *Atom) redEvenLin(lv Level, v, sgn int) Fof {
 }
 
 func (q *Atom) redEven(lv Level, v, sgn int) Fof {
+	if !q.hasVar(lv) {
+		return q
+	}
 
-	m := q.isEven(lv)
 	pp := q.p
-	if m == EVEN_OKM {
-		pp = []*Poly{q.getPoly()}
+	if m := q.isEven(lv); m == EVEN_OKM {
+		pp = []*Poly{q.getPoly()} // 積が even
 	} else if m == EVEN_LIN1 || m == EVEN_LIN2 {
 		return q.redEvenLin(lv, v, sgn)
 	}
 
 	ps := make([]RObj, len(pp))
-	up := false
 	for i, p := range pp {
-		d := p.Deg(lv)
-		if d > 0 {
+		if p.hasVar(lv) {
 			ps[i] = p.redEven(lv)
-			up = true
 		} else {
 			ps[i] = p
 		}
-	}
-	if !up {
-		return q
 	}
 	return NewAtoms(ps, q.op)
 }

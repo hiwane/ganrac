@@ -1111,7 +1111,7 @@ func (cell *Cell) make_cells_i(cad *CAD, pf ProjFactor, porg *Poly) ([]*Cell, si
 
 	// even polynomial.
 	even := 1
-	for pp.isEven() {
+	for pp.isEven(pp.lv) {
 		even *= 2
 		qq := NewPoly(pp.lv, pp.deg()/2+1)
 		q := NewPoly(p.lv, len(qq.c))
