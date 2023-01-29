@@ -315,7 +315,8 @@ func (qeopt QEopt) qe_simpl(fof FofQ, cond qeCond) Fof {
 func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	fof := prenex_formula
 
-	// quantifier の一番外側を処理する.
+	// ほとんどの speacial QE は
+	// quantifier の一番内側のみを処理する.
 	fof = prenex_formula
 	fqs := make([]FofQ, 1, 10)
 	fqs[0] = fof
@@ -382,7 +383,11 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	// CAD ではどうしようもないが, VS 2 次が使えるかも?
 	////////////////////////////////
 
+	////////////////////////////////
+	// ここから下は，入力全体を対象とする
+	////////////////////////////////
 	fof = prenex_formula
+
 	if ff := qeopt.qe_simpl(fof, cond); ff != nil {
 		return ff
 	}

@@ -37,7 +37,7 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond) Fof {
 				}
 				if v&EVEN_OK != 0 {
 					// 単純に次数を下げればいい．
-					qeopt.log(cond, 1, "evenI", "<%s,%#x> %v\n", VarStr(q), v, fofq)
+					qeopt.log(cond, 3, "evenI", "<%s,%#x> %v\n", VarStr(q), v, fofq)
 
 					var ret Fof = falseObj
 					qff := fofq.Fml()
@@ -45,6 +45,14 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond) Fof {
 						qff = qff.Not()
 					}
 
+					// q^2 = varn の条件を追加すべきかどうか. @TODO
+					varn := qeopt.varn
+					cond2 := cond
+					cond2.neccon = cond2.neccon.Subst(NewPolyVar(varn), q)
+					cond2.sufcon = cond2.sufcon.Subst(NewPolyVar(varn), q)
+					if fofq.isForAll() {
+						cond2.neccon, cond2.sufcon = cond2.sufcon.Not(), cond2.neccon.Not()
+					}
 					for _, sgn := range []int{1, -1} {
 						if sgn < 0 && v&(EVEN_LIN) == 0 {
 							break
@@ -53,12 +61,7 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond) Fof {
 						f = f.redEven(q, v, sgn)
 						f = NewFmlAnd(f, NewAtom(NewPolyVar(q), GE))
 						f = NewExists(fofq.Qs(), f)
-						qeopt.log(cond, 1, "evenM", "<%s,%#x,%d> %v\n", VarStr(q), v, sgn, f)
-
-						varn := qeopt.varn
-						cond2 := cond
-						cond2.neccon = cond2.neccon.Subst(NewPolyVar(varn), q)
-						cond2.sufcon = cond2.sufcon.Subst(NewPolyVar(varn), q)
+						qeopt.log(cond, 3, "evenM", "<%s,%#x,%d> %v\n", VarStr(q), v, sgn, f)
 
 						qeopt.varn++
 						ret = NewFmlOr(ret, qeopt.qe(f, cond2))
@@ -82,7 +85,34 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond) Fof {
 	// free var.  次数も
 	for j, b := range bs {
 		if b {
-			if v := fof.isEven(Level(j)); v&EVEN_NG == 0 {
+			if v := fof.isEven(Level(j)); v == EVEN_OK || v == EVEN_OKM {
+				// @TODO EVEN_LIN1 の場合なども適用可能だが，未実装
+				qeopt.log(cond, 3, "evenFI", "<%s,%#x> %v\n", VarStr(Level(j)), v, fof)
+
+				varn := qeopt.varn
+				cond2 := cond
+				var ret Fof = falseObj
+				for _, sgn := range []int{1, -1} {
+					if sgn < 0 && v&(EVEN_LIN) == 0 {
+						break
+					}
+					y := NewPolyVar(varn)
+					// x := NewPolyVar(Level(j))
+
+					// x^2 = y で simplify
+					f := fof.Subst(y, Level(j))
+					f = f.redEven(Level(varn), v, sgn)
+					f = NewFmlAnd(f, NewAtom(y, GE))
+					qeopt.log(cond, 3, "evenFM", "<%s,%#x,%d> %v\n", VarStr(Level(j)), v, sgn, f)
+					qeopt.varn++
+					f = qeopt.qe(f, cond2)
+					g := NewAtom(NewPolyVarn(Level(j), 2).Sub(y), EQ)
+					f = NewExists([]Level{varn}, NewFmlAnd(g, f))
+					qeopt.log(cond, 3, "evenFN", "<%s,%#x,%d> %v\n", VarStr(Level(j)), v, sgn, f)
+					ret = NewFmlOr(ret, qeopt.qe(f, cond2))
+					qeopt.varn--
+				}
+				return qeopt.qe(ret, cond)
 			}
 		}
 	}
@@ -313,7 +343,7 @@ func (p *Poly) redEven(lv Level) *Poly {
 		return q
 	}
 
-	q := NewPoly(p.lv, p.deg()/2+1)
+	q := NewPoly(p.lv, len(p.c)/2+1)
 	for i := 0; i < len(q.c); i++ {
 		q.c[i] = p.c[2*i]
 	}
