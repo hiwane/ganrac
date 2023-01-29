@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -137,30 +138,76 @@ func get_line(in *bufio.Reader) (string, error) {
 	return string(line), nil
 }
 
-var completer = readline.NewPrefixCompleter(
-	readline.PcItem("qe"),
-	readline.PcItem("cad"),
-	readline.PcItem("example"),
-	readline.PcItem("simpl"),
-	readline.PcItem("time"),
-	readline.PcItem("vars"),
-	readline.PcItem("help"),
-	readline.PcItem("impl"),
-	readline.PcItem("equiv"),
-	readline.PcItem("ex"),
-	readline.PcItem("all"),
-	readline.PcItem("cadinit"),
-	readline.PcItem("cadlift"),
-	readline.PcItem("cadproj"),
-	readline.PcItem("cadsfc"),
-	readline.PcItem("print"),
-)
+type ganCompleter struct {
+	funcs    []string
+	examples []string
+	qeopts   []string
+	re_var   *regexp.Regexp
+	re_func  *regexp.Regexp
+	re_dict  *regexp.Regexp
+}
+
+func NewGanCompleter(g *ganrac.Ganrac) *ganCompleter {
+	gc := new(ganCompleter)
+	gc.re_var = regexp.MustCompile(`[a-z][a-z_]*$`)
+	gc.re_func = regexp.MustCompile(`(cad|qe|help)\s*\(\s*"([a-z_]*)$`)
+	gc.re_dict = regexp.MustCompile(`[,{]\s*(")?([a-z_]*)$`)
+	gc.funcs = g.FunctionNames()
+	gc.examples = ganrac.ExampleNames()
+	gc.qeopts = ganrac.QEOptionNames()
+	return gc
+}
+
+func (compl *ganCompleter) matchFunction(line, suf string, cand []string) (newLine [][]rune, length int) {
+	newLine = make([][]rune, 0, 10)
+	n := len(line)
+	for _, s := range cand {
+		if strings.HasPrefix(s, line) || line == "" {
+			newLine = append(newLine, []rune(s[n:]+suf))
+		}
+	}
+
+	return newLine, n
+}
+
+func (compl *ganCompleter) Do(line []rune, pos int) (newLine [][]rune, length int) {
+	//    |      カーソル位置
+	// 1234567
+	// で TAB すると， ([49, 50, 51, 52, 53, 54, 55], 3) が復帰される
+
+	// Readline will pass the whole line and current offset to it
+	// Completer need to pass all the candidates, and how long they shared the same characters in line
+	// Example:
+	//   [go, git, git-shell, grep]
+	//   Do("g", 1) => ["o", "it", "it-shell", "rep"], 1
+	//   Do("gi", 2) => ["t", "t-shell"], 2
+	//   Do("git", 3) => ["", "-shell"], 3
+	matches := compl.re_func.FindStringSubmatch(string(line[:pos]))
+	if len(matches) > 0 {
+		if matches[1] == "help" {
+			return compl.matchFunction(matches[2], "\");", compl.funcs)
+		} else {
+			return compl.matchFunction(matches[2], "\"", compl.examples)
+		}
+	}
+	matches = compl.re_dict.FindStringSubmatch(string(line[:pos]))
+	if len(matches) > 0 {
+		// いまのところ qe コマンドくらいしかない
+		return compl.matchFunction(matches[2], matches[1]+":", compl.qeopts)
+	}
+	match := compl.re_var.FindString(string(line[:pos]))
+	if match != "" {
+		return compl.matchFunction(match, "(", compl.funcs)
+	}
+	return nil, 0
+}
 
 func (cp CmdParam) Interpreter(g *ganrac.Ganrac) {
+
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:          "> ",
+		Prompt:          "» ",
 		HistoryFile:     cp.CmdHistory,
-		AutoComplete:    completer,
+		AutoComplete:    NewGanCompleter(g),
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
 

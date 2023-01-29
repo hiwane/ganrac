@@ -56,26 +56,34 @@ func (qeopt *QEopt) DelAlgo(algo algo_t) {
 	qeopt.Algo &= ^algo
 }
 
+var qeOptTable = []struct {
+	val  int64
+	name string
+}{
+	{QEALGO_EQQUAD, "eqquad"},
+	{QEALGO_EQLIN, "eqlin"},
+	{QEALGO_VSQUAD, "vsquad"},
+	{QEALGO_VSLIN, "vslin"},
+	{QEALGO_NEQ, "neq"},
+	{QEALGO_SMPL_EVEN, "smpleven"},
+	{QEALGO_SMPL_HOMO, "smplhomo"},
+	{QEALGO_SMPL_TRAN, "smpltran"},
+	{QEALGO_SMPL_ROTA, "smplrot"},
+}
+
+func QEOptionNames() []string {
+	ret := make([]string, len(qeOptTable))
+	for i, v := range qeOptTable {
+		ret[i] = v.name
+	}
+	return ret
+}
+
 func getQEoptStr(algo int64) string {
-	switch algo {
-	case QEALGO_EQQUAD:
-		return "eqquad"
-	case QEALGO_EQLIN:
-		return "eqlin"
-	case QEALGO_VSQUAD:
-		return "vsquad"
-	case QEALGO_VSLIN:
-		return "vslin"
-	case QEALGO_NEQ:
-		return "neq"
-	case QEALGO_SMPL_EVEN:
-		return "smpleven"
-	case QEALGO_SMPL_HOMO:
-		return "smplhomo"
-	case QEALGO_SMPL_TRAN:
-		return "smpltran"
-	case QEALGO_SMPL_ROTA:
-		return "smplrot"
+	for _, v := range qeOptTable {
+		if algo == v.val {
+			return v.name
+		}
 	}
 	return ""
 }

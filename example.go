@@ -16,6 +16,14 @@ type qeExTable struct {
 	f    func() *QeExample
 }
 
+func ExampleNames() []string {
+	ret := make([]string, len(qeExampleTable))
+	for i, s := range qeExampleTable {
+		ret[i] = s.name
+	}
+	return ret
+}
+
 var qeExampleTable []qeExTable = []qeExTable{
 	{"adam1", exAdam1},
 	{"adam2-1", exAdam2_1},

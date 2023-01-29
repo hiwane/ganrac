@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+func (g *Ganrac) FunctionNames() []string {
+	ret := make([]string, 0, len(g.builtin_func_table))
+	for _, s := range g.builtin_func_table {
+		if g.ox != nil || !s.ox {
+			ret = append(ret, s.name)
+		}
+	}
+	return ret
+}
+
 func (g *Ganrac) setBuiltinFuncTable() {
 	// 関数テーブル
 	g.builtin_func_table = []func_table{
