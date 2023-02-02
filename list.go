@@ -146,6 +146,15 @@ func NewList(args ...interface{}) *List {
 	return lst
 }
 
+func NewListN(n int, args ...interface{}) *List {
+	lst := new(List)
+	lst.v = make([]GObj, len(args), n)
+	for i := 0; i < len(args); i++ {
+		lst.v[i] = args[i].(GObj)
+	}
+	return lst
+}
+
 func (z *List) getiPoly(i int) *Poly {
 	// i は正しいと仮定
 	return z.geti(i).(*Poly)
@@ -166,7 +175,7 @@ func (z *List) geti(i int) GObj {
 }
 
 func (z *List) Subst(xs RObj, lvs Level) *List {
-	p := NewList()
+	p := NewListN(z.Len())
 	for i := 0; i < len(z.v); i++ {
 		p.Append(gobjSubst(z.v[i], xs, lvs))
 	}
@@ -174,7 +183,7 @@ func (z *List) Subst(xs RObj, lvs Level) *List {
 }
 
 func (z *List) toIntv(prec uint) *List {
-	p := NewList()
+	p := NewListN(z.Len())
 	for i := 0; i < len(z.v); i++ {
 		p.Append(gobjToIntv(z.v[i], prec))
 	}
