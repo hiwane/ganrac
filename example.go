@@ -53,6 +53,7 @@ var qeExampleTable []qeExTable = []qeExTable{
 	{"root2", exRoot2},
 	{"root3", exRoot3},
 	{"root4", exRoot4},
+	{"wlog1", exWlog1},
 	{"wo1", exWO1},
 	{"wo2", exWO2},
 	{"wo3", exWO3},
@@ -552,6 +553,26 @@ func exRoot4() *QeExample {
 			NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, -27), NewPolyCoef(0, 0, 0, 144), -128), NewPolyCoef(0, 0, -192)), 768), LT)))
 
 	q.Ref = "Gonzalez-Vega, Laureano.  A combinatorial algorithm solving some quantifier elimination problems.  1998"
+	return q
+}
+func exWlog1() *QeExample {
+	/* 正三角形のひとつの角の余弦
+	 all([x,y,z,w,a,b], impl((x != z || y != w) &&
+		(x - z)^2 + (y - w)^2 == (z - a)^2 + (w - b)^2 &&
+		(z - a)^2 + (w - b)^2 == (a - x)^2 + (b - y)^2,
+		(z - a)^2 + (w - b)^2 == (a - x)^2 + (b - y)^2 + (x - z)^2 + (y - w)^2 - 2 * c
+	*/
+	q := new(QeExample)
+	q.Input = NewQuantifier(true, []Level{1, 2, 3, 4, 5, 6}, NewFmlOrs(
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(3, NewPolyCoef(1, 0, -1), 1), EQ),
+			NewAtom(NewPolyCoef(4, NewPolyCoef(2, 0, -1), 1), EQ)),
+		NewAtom(NewPolyCoef(6, NewPolyCoef(5, NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, -1), 0, -1), NewPolyCoef(1, 0, 2)), NewPolyCoef(2, 0, 2)), NewPolyCoef(3, 0, -2), 1), NewPolyCoef(4, 0, -2), 1), NE),
+		NewAtom(NewPolyCoef(6, NewPolyCoef(5, NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, 1), 0, 1), 0, -1), 0, -1), NewPolyCoef(3, NewPolyCoef(1, 0, -2), 2)), NewPolyCoef(4, NewPolyCoef(2, 0, -2), 2)), NE),
+		NewAtom(NewPolyCoef(6, NewPolyCoef(5, NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, NewPolyCoef(0, -2, 2)), 0, NewPolyCoef(0, -2, 2)), NewPolyCoef(1, 0, 2)), NewPolyCoef(2, 0, 2)), NewPolyCoef(3, NewPolyCoef(1, 0, NewPolyCoef(0, 2, -4)), -2), NewPolyCoef(0, 0, 2)), NewPolyCoef(4, NewPolyCoef(2, 0, NewPolyCoef(0, 2, -4)), -2), NewPolyCoef(0, 0, 2)), EQ)))
+	q.Output = NewAtom(NewPolyCoef(0, -1, 2), EQ)
+	q.Ref = "H. Iwane, H. Anai. Formula Simplification for Real Quantifier Elimination Using Geometric Invariance"
+	q.DOI = "10.1145/3087604.3087627"
 	return q
 }
 
