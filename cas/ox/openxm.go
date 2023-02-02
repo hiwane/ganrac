@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/big"
 	"net"
+	"strconv"
 )
 
 // http://www.math.sci.kobe-u.ac.jp/OpenXM/Current/index-spec.html
@@ -362,7 +363,7 @@ func (ox *OpenXM) sendCMORecPoly(p *Poly) (map[Level]int32, error) {
 		return nil, err
 	}
 
-	varn := VarNum()
+	varn := p.Level() + 1
 	b := make([]bool, varn)
 	p.Indets(b)
 
@@ -379,7 +380,7 @@ func (ox *OpenXM) sendCMORecPoly(p *Poly) (map[Level]int32, error) {
 	err = ox.dataWrite(&cnt)
 	for i := len(b) - 1; i >= 0; i-- {
 		if b[i] {
-			ox.sendCMOString(VarStr(Level(i)))
+			ox.sendCMOString(fmt.Sprintf("x%d", i))
 			cnt--
 		}
 	}
@@ -537,9 +538,9 @@ func (ox *OpenXM) recvCMOIndeterminate() (*Poly, error) {
 	}
 	c := cc.(string)
 
-	lv, ok := VarStr2Lv(c)
-	if ok {
-		return VarPoly(lv), nil
+	lv, err := strconv.Atoi(c[1:])
+	if err == nil {
+		return NewPolyVar(Level(lv)), nil
 	}
 
 	return nil, fmt.Errorf("unknown variable %s", c)
