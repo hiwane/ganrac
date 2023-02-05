@@ -150,7 +150,7 @@ type ganCompleter struct {
 func NewGanCompleter(g *ganrac.Ganrac) *ganCompleter {
 	gc := new(ganCompleter)
 	gc.re_var = regexp.MustCompile(`[a-z][a-z_]*$`)
-	gc.re_func = regexp.MustCompile(`(cad|qe|help)\s*\(\s*"([a-z_]*)$`)
+	gc.re_func = regexp.MustCompile(`(cad|qe|example|help)\s*\(\s*"([a-z_]*)$`)
 	gc.re_dict = regexp.MustCompile(`[,{]\s*(")?([a-z_]*)$`)
 	gc.funcs = g.FunctionNames()
 	gc.examples = ganrac.ExampleNames()
@@ -158,7 +158,7 @@ func NewGanCompleter(g *ganrac.Ganrac) *ganCompleter {
 	return gc
 }
 
-func (compl *ganCompleter) matchFunction(line, suf string, cand []string) (newLine [][]rune, length int) {
+func (compl *ganCompleter) matchFunction(line, pre, suf string, cand []string) (newLine [][]rune, length int) {
 	newLine = make([][]rune, 0, 10)
 	n := len(line)
 	for _, s := range cand {
@@ -167,7 +167,7 @@ func (compl *ganCompleter) matchFunction(line, suf string, cand []string) (newLi
 		}
 	}
 
-	return newLine, n
+	return newLine, n + len(pre)
 }
 
 func (compl *ganCompleter) Do(line []rune, pos int) (newLine [][]rune, length int) {
@@ -185,19 +185,20 @@ func (compl *ganCompleter) Do(line []rune, pos int) (newLine [][]rune, length in
 	matches := compl.re_func.FindStringSubmatch(string(line[:pos]))
 	if len(matches) > 0 {
 		if matches[1] == "help" {
-			return compl.matchFunction(matches[2], "\");", compl.funcs)
+			return compl.matchFunction(matches[2], "\"", "\");", compl.funcs)
 		} else {
-			return compl.matchFunction(matches[2], "\"", compl.examples)
+			// cad/qe/example
+			return compl.matchFunction(matches[2], "\"", "\"", compl.examples)
 		}
 	}
 	matches = compl.re_dict.FindStringSubmatch(string(line[:pos]))
 	if len(matches) > 0 {
 		// いまのところ qe コマンドくらいしかない
-		return compl.matchFunction(matches[2], matches[1]+":", compl.qeopts)
+		return compl.matchFunction(matches[2], matches[1], matches[1]+":", compl.qeopts)
 	}
 	match := compl.re_var.FindString(string(line[:pos]))
 	if match != "" {
-		return compl.matchFunction(match, "(", compl.funcs)
+		return compl.matchFunction(match, "", "(", compl.funcs)
 	}
 	return nil, 0
 }
