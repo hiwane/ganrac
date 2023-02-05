@@ -175,6 +175,7 @@ Example
 		)},
 		{"quit", 0, 1, funcQuit, false, "([code])\t\tbye.", ""},
 		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)\t\treal root isolation", ""},
+		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)*\tresultant.", ""},
 		{"rootbound", 1, 1, funcRootBound, false, "(uni-poly in Z[x])\troot bound", `
 Args
 ========
@@ -873,6 +874,23 @@ func funcRealRoot(g *Ganrac, name string, args []interface{}) (interface{}, erro
 	}
 
 	return p.RealRootIsolation(int(q.Int64()))
+}
+
+func funcOXRes(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+	f, ok := args[0].(*Poly)
+	if !ok {
+		return nil, fmt.Errorf("%s(1st arg): expected poly: %d:%v", name, args[0].(GObj).Tag(), args[0])
+	}
+	h, ok := args[1].(*Poly)
+	if !ok {
+		return nil, fmt.Errorf("%s(2nd arg): expected poly: %d:%v", name, args[1].(GObj).Tag(), args[1])
+	}
+	x, ok := args[2].(*Poly)
+	if !ok || !x.isVar() {
+		return nil, fmt.Errorf("%s(3rd arg): expected var: %d:%v", name, args[2].(GObj).Tag(), args[2])
+	}
+
+	return g.ox.Resultant(f, h, x.lv), nil
 }
 
 func funcRootBound(g *Ganrac, name string, args []interface{}) (interface{}, error) {
