@@ -664,3 +664,6 @@ func (sage *Sage) Eval(p string) (GObj, error) {
 		return nil, fmt.Errorf("Sage: unsupported " + retstr)
 	}
 }
+
+func (sage *Sage) SetLogger(logger *log.Logger) {
+}

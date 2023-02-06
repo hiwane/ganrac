@@ -69,6 +69,7 @@ func makeCAS(t *testing.T) *ganrac.Ganrac {
 		return nil
 	}
 	g.SetCAS(c)
+	// c.SetLogger(logger)
 	return g
 }
 
@@ -107,4 +108,25 @@ func makeOX(t *testing.T, g *ganrac.Ganrac) ganrac.CAS {
 	}
 
 	return ox
+}
+
+func checkEquivalentQff(g *ganrac.Ganrac, p, q ganrac.Fof) string {
+	if !p.IsQff() {
+		return "checkEquivalent(p,q): p is not a QFF formula"
+	}
+	if !q.IsQff() {
+		return "checkEquivalent(p,q): q is not a QFF formula"
+	}
+
+	fof := ganrac.NewForAll([]ganrac.Level{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, ganrac.NewFmlEquiv(p, q))
+	qeopt := ganrac.NewQEopt()
+	qeopt.Qe_init(g, fof)
+	cond := ganrac.NewQeCond()
+
+	ret := qeopt.QE(fof, *cond)
+	if _, ok := ret.(*ganrac.AtomT); ok {
+		return ""
+	} else {
+		return "checkEquivalent(p,q): q is not equivalent"
+	}
 }

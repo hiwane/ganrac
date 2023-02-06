@@ -27,12 +27,11 @@ const (
 )
 
 type QEopt struct {
-	varn      Level
-	log_level int
-	Algo      algo_t
-	g         *Ganrac
-	seqno     int
-	assert    bool
+	varn   Level
+	Algo   algo_t
+	g      *Ganrac
+	seqno  int
+	assert bool
 }
 
 type qeCond struct {
@@ -97,7 +96,7 @@ func (qeopt *QEopt) SetAlgo(algo algo_t, v bool) {
 }
 
 func (qeopt *QEopt) log(cond qeCond, level int, label, fmtstr string, args ...interface{}) {
-	if qeopt.log_level < level {
+	if level > qeopt.g.verbose {
 		return
 	}
 
@@ -313,6 +312,15 @@ func (qeopt QEopt) qe_simpl(fof FofQ, cond qeCond) Fof {
 		qeopt.log(cond, 2, "homoi", "%v\n", fof)
 		if ff := qeopt.qe_homo(fof, cond); ff != nil {
 			qeopt.log(cond, 2, "homoo", "%v\n", ff)
+			return ff
+		}
+	}
+
+	// translation formula
+	if (qeopt.Algo & QEALGO_SMPL_TRAN) != 0 {
+		qeopt.log(cond, 2, "trani", "%v\n", fof)
+		if ff := qeopt.qe_tran(fof, cond); ff != nil && ff != fof {
+			qeopt.log(cond, 2, "trano", "%v\n", ff)
 			return ff
 		}
 	}

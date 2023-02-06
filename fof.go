@@ -1567,6 +1567,10 @@ func NewFmlOr(pp Fof, qq Fof) Fof {
 	return r
 }
 
+func NewForAll(lv []Level, fml Fof) Fof {
+	return NewQuantifier(true, lv, fml)
+}
+
 func NewExists(lv []Level, fml Fof) Fof {
 	return NewQuantifier(false, lv, fml)
 }

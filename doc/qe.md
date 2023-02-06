@@ -25,6 +25,6 @@
 | [Equotional constraints](../simpl_reduce.go) |✔|
 | [Even formula](../even.go) `phi(x^2) <=> ex([y], x^2 = y /\ phi(y) /\ y >= 0)` ||
 | [Scale invaiant formula](../simpl_homo.go) |✔| [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
-| Translation invariant formula || [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
+| [Translation invariant formula](../simpl_tran.go) |✔| [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
 | Rotation invariant formula || [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
 | [Symbolic-numeric](../simpl_num.go) |✔| [[Iwane18](http://www.jssac.org/Editor/Suushiki/V24/V242.html)] |

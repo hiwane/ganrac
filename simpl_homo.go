@@ -141,7 +141,7 @@ func (atom *Atom) get_homo_cond(conds [][]int, ret []int) [][]int {
 	//   ret: homo 対象にならない変数に 0 を設定
 	for _, p := range atom.p {
 		c := p.constantTerm()
-		if !c.IsZero() {
+		if !c.IsZero() { // 定数項が非ゼロ, 故，斉次になれない
 			bb := make([]bool, p.lv+1)
 			atom.Indets(bb)
 			for i, b := range bb {
@@ -404,7 +404,7 @@ _found:
 
 func (qeopt QEopt) qe_homo(fof FofQ, cond qeCond) Fof {
 	conds := make([][]int, 0)
-	d := make([]int, int(qeopt.varn))
+	d := make([]int, int(qeopt.varn)) // 斉次か確認のための次数情報保存域
 	for i := range d {
 		d[i] = -1
 	}

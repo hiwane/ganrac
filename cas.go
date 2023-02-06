@@ -4,6 +4,10 @@ package ganrac
 // 外部 CAS を利用
 // - Q[x] 上の因数分解，など
 
+import (
+	"log"
+)
+
 type CAS interface {
 	Gcd(p, q *Poly) RObj
 
@@ -38,4 +42,6 @@ type CAS interface {
 	Eval(p string) (GObj, error)
 
 	Close() error
+
+	SetLogger(logger *log.Logger)
 }

@@ -19,7 +19,7 @@ type Poly struct { // recursive expression
 }
 
 func NewPolyVar(lv Level) *Poly {
-	if int(lv) < len(varlist) {
+	if 0 <= int(lv) && int(lv) < len(varlist) {
 		return varlist[lv].p
 	} else {
 		return NewPolyVarn(lv, 1)

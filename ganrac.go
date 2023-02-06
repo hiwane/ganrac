@@ -1,9 +1,11 @@
 package ganrac
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"runtime"
 )
@@ -190,4 +192,9 @@ func maxint(a, b int) int {
 	} else {
 		return a
 	}
+}
+
+func gpanic(s string) {
+	fmt.Fprintf(os.Stderr, "Please report the bug to https://github.com/hiwane/ganrac/issues\n")
+	panic(s)
 }
