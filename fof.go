@@ -1146,7 +1146,9 @@ func (p *AtomF) Not() Fof {
 }
 
 func (p *Atom) Not() Fof {
-	return newAtoms(p.p, p.op.not())
+	v := p.Clone()
+	v.op = p.op.not()
+	return v
 }
 
 func (p *FmlAnd) Not() Fof {
@@ -1435,6 +1437,12 @@ func NewAtom(p RObj, op OP) Fof {
 	}
 
 	// 整数化, 原始化 @TODO
+	return a
+}
+
+func (p *Atom) Clone() *Atom {
+	a := new(Atom)
+	*a = *p
 	return a
 }
 

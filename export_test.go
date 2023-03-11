@@ -124,7 +124,7 @@ func SimplNum(
 }
 
 func (poly *Poly) SimplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) {
-	return poly.simplNumUniPoly(t, f)
+	return poly.simplNumUniPoly(t.getU(f, poly.lv))
 }
 
 func SimplFctr(fof simpler, g *Ganrac) Fof {

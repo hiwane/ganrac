@@ -10,6 +10,8 @@ import (
 	"sort"
 )
 
+type gray_t []*Interval
+
 // open/closed interval
 type ninterval struct {
 	// inf=nil => -infinity
@@ -21,7 +23,8 @@ type ninterval struct {
 // nil は empty set を表す.
 type NumRegion struct {
 	// len(r[lv]) == 0 は  -inf <= x[lv] <= +inf を表す.
-	// もし，要素があれば, union of closed interval
+	// もし，要素があれば, その要素の union であるが，
+	// 昇順にソートされ，重複はない
 	r map[Level][]*ninterval
 }
 
@@ -61,7 +64,7 @@ func (m *NumRegion) add(inf, sup NObj, lv Level) {
 
 func (m *NumRegion) Format(s fmt.State, format rune) {
 	if m == nil {
-		fmt.Fprintf(s, "{}")
+		fmt.Fprintf(s, "{empty}")
 		return
 	}
 	fmt.Fprintf(s, "{")
@@ -156,23 +159,25 @@ func (m *NumRegion) intersect_lv(n *NumRegion, lv Level) []*ninterval {
 			ret = append(ret, x)
 		} else {
 			if nx[j].sup != nil && mx[i].inf != nil && nx[j].sup.Cmp(mx[i].inf) <= 0 {
+				//              [m....m]
+				//  [n .... n]
 				// 重複なし.
 				j++
 				continue
 			}
 
 			x := new(ninterval)
-			x.inf = nx[j].inf
-			if nx[j].sup == nil || nx[j].sup.Cmp(mx[i].sup) > 0 {
+			x.inf = mx[i].inf
+			if nx[j].sup == nil || mx[i].sup != nil && nx[j].sup.Cmp(mx[i].sup) > 0 {
 				//   [m...m]
 				// [n ....... n]
 				x.sup = mx[i].sup
-				j++
+				i++
 			} else {
 				//     [m.......m]
 				// [n .... n]
 				x.sup = nx[j].sup
-				i++
+				j++
 			}
 			ret = append(ret, x)
 		}
@@ -190,6 +195,11 @@ func (m *NumRegion) intersect(n *NumRegion) *NumRegion {
 		v := m.intersect_lv(n, lv)
 		if v != nil {
 			u.r[lv] = v
+		}
+	}
+	for lv, nx := range n.r {
+		if _, ok := u.r[lv]; !ok {
+			u.r[lv] = nx
 		}
 	}
 	return u
@@ -334,7 +344,7 @@ func (m *NumRegion) getU(n *NumRegion, lv Level) []*Interval {
 // assume: poly is univariate
 // returns (OP, pos, neg)
 // OP = (t,f) 以外で取りうる符号
-func (poly *Poly) simplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) {
+func (poly *Poly) simplNumUniPoly(gray gray_t) (OP, *NumRegion, *NumRegion) {
 	// 重根を持っていたら...?
 	roots := poly.realRootIsolation(-30)
 	// fmt.Printf("   simplNumUniPoly(%v) t=%v, f=%v, #root=%v\n", poly, t, f, len(roots))
@@ -345,7 +355,7 @@ func (poly *Poly) simplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) 
 			return LT, nil, NewNumRegion()
 		}
 	}
-	xs := t.getU(f, poly.lv)
+	xs := gray
 	prec := uint(53)
 
 	// 根が， unknown 領域に含まれていない，かつ
@@ -521,16 +531,121 @@ _LT:
 	return LT, t, f
 }
 
-func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRegion, *NumRegion) {
-	if poly.isUnivariate() {
-		return poly.simplNumUniPoly(t, f)
+func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]*Poly, OP, *NumRegion, *NumRegion) {
+	ret_op := GT
+
+	var pret *NumRegion
+	var nret *NumRegion
+
+	ps := make([]*Poly, 0, fctr.Len()-start)
+
+	n := fctr.Len() - 1
+	for i := n; i >= start; i-- {
+		ei, _ := fctr.Geti(i, 1)
+		e := ei.(*Int).Int64()
+
+		pi, _ := fctr.Geti(i, 0)
+		p := pi.(*Poly)
+
+		op, pos, neg := p.simplNumPoly(g, t, f, p.lv)
+
+		if e%2 == 0 {
+			pn := pos.union(neg)
+			if i == n {
+				pret = pn
+				nret = nil
+			} else {
+				pret = pret.intersect(pn)
+				nret = nret.intersect(pn)
+			}
+		} else {
+			if i == n {
+				pret = pos
+				nret = neg
+			} else {
+				pp := pret.intersect(pos)
+				nn := nret.intersect(neg)
+				pn := pret.intersect(neg)
+				np := nret.intersect(pos)
+				pret = pp.union(nn)
+				nret = np.union(pn)
+			}
+		}
+		if op == GT {
+			continue
+		} else if op == LT {
+			if e%2 != 0 {
+				ret_op = ret_op.neg()
+			}
+			continue
+		} else if op == GE {
+			ret_op |= EQ
+		} else if op == LE {
+			ret_op |= EQ
+			if e%2 != 0 {
+				ret_op = ret_op.neg()
+			}
+		} else if e%2 == 0 {
+			if op&EQ != 0 {
+				ret_op |= EQ
+			}
+		} else {
+			ret_op = OP_TRUE
+		}
+		ps = append(ps, p)
 	}
-	pret := NewNumRegion()
-	nret := NewNumRegion()
+	return ps, ret_op, pret, nret
+}
+
+func (poly *Poly) simplNumPolyFctr(g *Ganrac, t, f *NumRegion) (OP, *NumRegion, *NumRegion) {
+	fctr := g.ox.Factor(poly)
+	cont, _ := fctr.Geti(0, 0)
+
+	_, ret_op, pret, nret := fctr.simplNumPolys(g, 1, t, f)
+	if cont.(RObj).Sign() > 0 {
+		return ret_op, pret, nret
+	} else {
+		return ret_op.neg(), nret, pret
+	}
+}
+
+func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRegion, *NumRegion) {
+
+	// とりま全部 gray 区間を代入してみる
+
+	prec := uint(53)
+	pi := poly.toIntv(prec)
+	gray := make(map[Level]gray_t, poly.lv+1)
+	for lv := poly.lv; lv >= 0; lv-- {
+		gg := t.getU(f, lv)
+		gray[lv] = gg
+		x := newInterval(prec)
+		x.inf = gg[0].inf
+		x.sup = gg[len(gg)-1].sup
+		if pp, ok := pi.(*Poly); ok {
+			pi = pp.SubstIntv(x, lv, prec)
+		}
+	}
+	if pp, ok := pi.(*Interval); ok {
+		if !pp.ContainsZero() {
+			s := pp.Sign()
+			if s > 0 {
+				return GT, NewNumRegion(), nil
+			} else if s < 0 {
+				return LT, nil, NewNumRegion()
+			}
+		}
+	} else {
+		panic("bug")
+	}
+	if poly.isUnivariate() {
+		return poly.simplNumUniPoly(gray[poly.lv])
+	}
+	var pret, nret *NumRegion
 	op_ret := OP_TRUE
-	for v := poly.lv + 1; v >= 0; v-- {
+	for v := poly.lv; v >= 0; v-- {
 		deg := poly.Deg(v)
-		if deg == 0 && v < poly.lv {
+		if deg == 0 {
 			continue
 		}
 		s, pos, neg := poly.simplNumNvar(g, t, f, v)
@@ -546,74 +661,64 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 			continue
 		}
 
+		/////////////////////////////////////////////////////////////////////////
 		// 2次であれば，判別式が負なら符号が主係数の符号と一致することを利用する.
+		/////////////////////////////////////////////////////////////////////////
+
+		// 主係数の符号を考える
 		c2 := poly.Coef(v, 2)
+		var pc, nc *NumRegion // sgn of leading Coefficient
 		if cp, ok := c2.(*Poly); ok {
-			var fml Fof
-			atom := NewAtom(cp, GT).simplFctr(g)
-			fml, pos, _ = atom.simplNum(g, t, f)
-			if _, ok := fml.(*AtomT); ok {
-				s = GT
-				neg = nil
-			} else {
-				atom = NewAtom(cp, LT).simplFctr(g)
-				fml, neg, _ = atom.simplNum(g, t, f)
-				if _, ok := fml.(*AtomT); ok {
-					s = LT
-				} else {
-					s = OP_TRUE
-				}
+			s, pc, nc = cp.simplNumPolyFctr(g, t, f)
+			if s != GT && s != LT {
+				continue
 			}
 		} else if c2.Sign() > 0 {
+			pc = NewNumRegion()
 			s = GT
-			pos = NewNumRegion()
-			neg = nil
 		} else {
+			nc = NewNumRegion()
 			s = LT
-			pos = nil
-			neg = NewNumRegion()
 		}
 		c1 := poly.Coef(v, 1)
 		c0 := poly.Coef(v, 0)
-		d := Sub(c1.Mul(c1), Mul(c2, c0).Mul(four))
-		var fml Fof
-		var neg2 *NumRegion
-		if dd, ok := d.(NObj); ok {
-			if dd.Sign() >= 0 {
-				continue
+		discrim := Sub(c1.Mul(c1), Mul(c2, c0).Mul(four))
+		// 判別式の符号を考える
+		var sgn_op OP = 0
+		var nd *NumRegion = nil // sgn of Discrimination
+		switch dd := discrim.(type) {
+		case NObj:
+			sgn := dd.Sign()
+			if sgn > 0 {
+				sgn_op = GT
+			} else if sgn < 0 {
+				sgn_op = LT
+				nd = NewNumRegion()
+			} else {
+				sgn_op = EQ
 			}
-			fml = trueObj
-			neg2 = NewNumRegion()
-		} else {
-			discrim := Sub(c1.Mul(c1), Mul(c2, c0).Mul(four)).(*Poly) // b^2-4ac
-			atom := NewAtom(discrim, LT)
-			atom = atom.simplFctr(g)
-
-			fml, neg2, _ = atom.simplNum(g, t, f)
-			// fmt.Printf("simnum: discrim[%d]=%v: %v: neg=%v: %v\n", dv, d, atom, neg2, fml)
+		case *Poly:
+			sgn_op, _, nd = dd.simplNumPolyFctr(g, t, f)
+		default:
+			panic(fmt.Sprintf("unknown type. dd=%v", dd))
 		}
-		switch fml.(type) {
-		case *AtomT: // 符号一定が確定
-			if s == GT {
-				return s, NewNumRegion(), nil
-			} else if s == LT {
-				return s, nil, NewNumRegion()
-			}
-		case *AtomF:
+
+		pret = pret.union(pc.intersect(nd))
+		nret = nret.union(nc.intersect(nd))
+
+		if sgn_op&GT != 0 { // GT, GE, NE
 			continue
+		} else if sgn_op == LT {
+			op_ret &= s
+		} else { // LE, EQ
+			op_ret &= (s | EQ)
 		}
 
-		pos = neg2.intersect(pos) // 判別式が負 かつ 主係数が正
-		pret = pret.union(pos)
-
-		neg = neg2.intersect(neg) // 判別式が負 かつ 主係数が負
-		nret = nret.union(neg)
-		// fmt.Printf("-- neg2=%v\n", neg2)
-		// fmt.Printf("-- pos=%v -> %v\n", pos, pret)
-		// fmt.Printf("-- neg=%v -> %v\n", neg, nret)
+		if op_ret == GT || op_ret == LT {
+			break
+		}
 	}
-
-	return OP_TRUE, pret, nret
+	return op_ret, pret, nret
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -630,77 +735,32 @@ func (p *AtomF) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegio
 
 func (atom *Atom) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegion) {
 	// simplFctr 通過済みと仮定したいところだが.
-	if atom.op == NE || atom.op == GE || atom.op == GT {
-		p := atom.Not()
-		p, f, t = p.simplNum(g, f, t)
-		return p.Not(), t, f
+
+	fctr := NewListN(len(atom.p))
+	for _, p := range atom.p {
+		fctr.Append(NewList(p, one))
 	}
 
-	ps := make([]*Poly, 0, len(atom.p))
-	op := atom.op
-	if atom.op == EQ {
-		up := false
-		var neg *NumRegion
-		for _, p := range atom.p {
-			s, pp, nn := p.simplNumPoly(g, t, f, p.lv)
-			if s == GT || s == LT {
-				up = true
-				continue
-			}
-			neg = neg.union(pp)
-			neg = neg.union(nn)
-			ps = append(ps, p)
-		}
-		if len(ps) == 0 {
-			return falseObj, t, f
-		}
-		if up {
-			atom = newAtoms(ps, op)
-		}
-		return atom, nil, neg
+	ps, s, pp, nn := fctr.simplNumPolys(g, 0, t, f)
+	if len(ps) != len(atom.p) {
+		atom = newAtoms(ps, atom.op)
 	}
-	if len(atom.p) > 1 {
-		// 一多項式じゃないとやってられない....
-		var pmul RObj = one
 
-		for _, p := range atom.p {
-			s, _, _ := p.simplNumPoly(g, t, f, p.lv)
-			if s != GT && s != LT {
-				ps = append(ps, p)
-				pmul = p.Mul(pmul)
-			} else if s == LT {
-				op = op.neg()
-			}
-		}
-		a, t, f := NewAtom(pmul, op).simplNum(g, t, f)
-		switch a.(type) {
-		case *AtomT, *AtomF:
-			return a, t, f
-		default:
-			if len(ps) == len(atom.p) {
-				return atom, t, f
-			} else if len(ps) == 1 {
-				return a, t, f
-			} else {
-				return newAtoms(ps, op), t, f
-			}
-		}
-	}
-	pol := atom.getPoly()
-	s, pp, nn := pol.simplNumPoly(g, t, f, pol.lv+1)
-	// fmt.Printf("   atm.simplNum(): s=%v|%v, atom=%v, pos=%f, neg=%f\n", s, atom.op, pol, pp, nn)
-
-	// op は　LT or LE
-	if s == OP_TRUE {
-		// 簡単化できず
-		return atom, nn, pp
-	} else if s&atom.op == 0 {
+	if s&atom.op == 0 {
 		return falseObj, nil, NewNumRegion()
 	} else if s|atom.op == atom.op {
-		fmt.Printf("true!\n")
+		g.log(3, 1, "smplnum: <%v> ==> true\n", atom)
 		return trueObj, NewNumRegion(), nil
-	} else {
+	} else if atom.op == LT || atom.op == LE {
 		return atom, nn, pp
+	} else if atom.op == GT || atom.op == GE {
+		return atom, pp, nn
+	}
+	pn := pp.union(nn)
+	if atom.op == EQ {
+		return atom, nil, pn
+	} else {
+		return atom, pn, nil
 	}
 }
 
@@ -711,7 +771,7 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 	// fmt.Printf("   And.simplNum And=%v\n", p)
 	for i := range p.fml {
 		fml, tt, ff := p.fml[i].simplNum(g, t, f)
-		// fmt.Printf("@@ And.simplNum[1st,%d/%d] %v -> %v, %v\n", i+1, len(p.fml), p.fml[i], fml, ff)
+		// fmt.Printf("@@ And.simplNum[1st,%d/%d] %v -> %v, false=%v\n", i+1, len(p.fml), p.fml[i], fml, ff)
 		if _, ok := fml.(*AtomF); ok {
 			return falseObj, nil, nil
 		}
@@ -734,11 +794,12 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 	fret := f
 	for i, fml := range fmls {
 		ff := f
+		// i 番以外の情報から white/black region を構築する
 		var tt *NumRegion
 		for j := 0; j < len(fmls); j++ {
 			if j != i {
 				ff = ff.union(fs[j])
-				//		tt = tt.intersect(ts[j])
+				//		tt = tt.intersect(ts[j])	// intersect とってもほぼ偽になるからやらない
 			}
 		}
 

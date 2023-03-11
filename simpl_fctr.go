@@ -36,14 +36,13 @@ func (p *Atom) simplFctr(g *Ganrac) Fof {
 	for _, p := range p.p {
 		fctr := g.ox.Factor(p)
 		// Factor の復帰値の 0 番目は容量
-		fctrn, _ := fctr.Geti(0)
-		cont, _ := fctrn.(*List).Geti(0)
+		cont, _ := fctr.Geti(0, 0)
 		sgn *= cont.(RObj).Sign()
 		if !cont.(RObj).IsOne() && !cont.(RObj).IsMinusOne() {
 			up = true
 		}
 		for i := fctr.Len() - 1; i > 0; i-- {
-			fctrn, _ = fctr.Geti(i)
+			fctrn, _ := fctr.Geti(i)
 			ei, _ := fctrn.(*List).Geti(1)
 			e := ei.(*Int).Int64()
 			pi, _ := fctrn.(*List).Geti(0)
