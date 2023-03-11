@@ -20,6 +20,7 @@ type Algo_t algo_t
 func (iv *Interval) Inf() *big.Float {
 	return iv.inf
 }
+
 func (iv *Interval) Sup() *big.Float {
 	return iv.sup
 }
@@ -124,7 +125,10 @@ func SimplNum(
 }
 
 func (poly *Poly) SimplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) {
-	return poly.simplNumUniPoly(t.getU(f, poly.lv))
+	gray := newGrayResion(poly.lv+1, 32)
+	gray.setTF(t, f)
+	gray.upGray(poly.lv)
+	return poly.simplNumUniPoly(gray)
 }
 
 func SimplFctr(fof simpler, g *Ganrac) Fof {

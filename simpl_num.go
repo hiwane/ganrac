@@ -10,7 +10,15 @@ import (
 	"sort"
 )
 
-type gray_t []*Interval
+type gray_intv []*Interval
+
+type grayRegion struct {
+	prec uint
+	r    map[Level]gray_intv
+	x    map[Level]*Interval
+	t    *NumRegion	// true/whiteRegion
+	f    *NumRegion	// false/blackRegion
+}
 
 // open/closed interval
 type ninterval struct {
@@ -51,6 +59,28 @@ func (x *ninterval) Format(s fmt.State, format rune) {
 ////////////////////////////////////////////////////////////////////////
 // NumRegion
 ////////////////////////////////////////////////////////////////////////
+
+func newGrayResion(lv Level, prec uint) *grayRegion {
+	p := new(grayRegion)
+	p.r = make(map[Level]gray_intv, lv)
+	p.x = make(map[Level]*Interval, lv)
+	p.prec = prec
+	return p
+}
+
+func (gray *grayRegion) setTF(t, f *NumRegion) {
+	gray.t = t
+	gray.f = f
+}
+
+func (gray *grayRegion) upGray(lv Level) {
+	gg := gray.t.getU(gray.f, lv)
+	gray.r[lv] = gg
+	x := newInterval(gray.prec)
+	x.inf = gg[0].inf
+	x.sup = gg[len(gg)-1].sup
+	gray.x[lv] = x
+}
 
 func NewNumRegion() *NumRegion {
 	f := new(NumRegion)
@@ -344,7 +374,7 @@ func (m *NumRegion) getU(n *NumRegion, lv Level) []*Interval {
 // assume: poly is univariate
 // returns (OP, pos, neg)
 // OP = (t,f) 以外で取りうる符号
-func (poly *Poly) simplNumUniPoly(gray gray_t) (OP, *NumRegion, *NumRegion) {
+func (poly *Poly) simplNumUniPoly(gray *grayRegion) (OP, *NumRegion, *NumRegion) {
 	// 重根を持っていたら...?
 	roots := poly.realRootIsolation(-30)
 	// fmt.Printf("   simplNumUniPoly(%v) t=%v, f=%v, #root=%v\n", poly, t, f, len(roots))
@@ -355,7 +385,7 @@ func (poly *Poly) simplNumUniPoly(gray gray_t) (OP, *NumRegion, *NumRegion) {
 			return LT, nil, NewNumRegion()
 		}
 	}
-	xs := gray
+	xs := gray.r[poly.lv]
 	prec := uint(53)
 
 	// 根が， unknown 領域に含まれていない，かつ
@@ -443,9 +473,7 @@ func (poly *Poly) simplNumUniPoly(gray gray_t) (OP, *NumRegion, *NumRegion) {
 	}
 
 	// gray region を代入
-	x := xs[0]
-	x.sup = xs[len(xs)-1].sup
-
+	x := gray.x[poly.lv]
 	p := poly.toIntv(prec).(*Poly)
 	pp := p.SubstIntv(x, p.lv, prec).(*Interval)
 	if ss := pp.Sign(); ss > 0 {
@@ -476,17 +504,15 @@ func (poly *Poly) simplNumUniPoly(gray gray_t) (OP, *NumRegion, *NumRegion) {
 	}
 }
 
-func (poly *Poly) simplNumNvar(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRegion, *NumRegion) {
-	prec := uint(30)
+func (poly *Poly) simplNumNvar(g *Ganrac, gray *grayRegion, dv Level) (OP, *NumRegion, *NumRegion) {
+	prec := gray.prec
 	p := poly.toIntv(prec).(*Poly)
 
 	for lv := poly.lv; lv >= 0; lv-- {
 		if lv == dv {
 			continue
 		}
-		xs := t.getU(f, lv)
-		x := xs[0]
-		x.sup = xs[len(xs)-1].sup
+		x := gray.x[lv]
 		switch pp := p.SubstIntv(x, lv, prec).(type) {
 		case *Poly:
 			p = pp
@@ -501,14 +527,14 @@ func (poly *Poly) simplNumNvar(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 			} else if pp.sup.Sign() == 0 {
 				goto _LE
 			}
-			return OP_TRUE, t, f
+			return OP_TRUE, gray.t, gray.f
 		}
 	}
 
 	// fmt.Printf("   simplNumNvar() p[%d]=%f\n", dv, p)
 	if len(p.c) == 2 { // linear
 		if p.c[1].(*Interval).ContainsZero() {
-			return OP_TRUE, t, f
+			return OP_TRUE, gray.t, gray.f
 		}
 		// x := p.c[0].Div(p.c[1].Neg().(NObj)).(*Interval)
 		// if ss := x.Sign(); ss > 0 {
@@ -517,18 +543,18 @@ func (poly *Poly) simplNumNvar(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 		// } else if x.sup.Sign() == 0 {
 		// } else {
 		// }
-		return OP_TRUE, t, f
+		return OP_TRUE, gray.t, gray.f
 	}
 
-	return OP_TRUE, t, f
+	return OP_TRUE, gray.t, gray.f
 _GT:
-	return GT, t, f
+	return GT, gray.t, gray.f
 _GE:
-	return GE, t, f
+	return GE, gray.t, gray.f
 _LE:
-	return LE, t, f
+	return LE, gray.t, gray.f
 _LT:
-	return LT, t, f
+	return LT, gray.t, gray.f
 }
 
 func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]*Poly, OP, *NumRegion, *NumRegion) {
@@ -612,22 +638,23 @@ func (poly *Poly) simplNumPolyFctr(g *Ganrac, t, f *NumRegion) (OP, *NumRegion, 
 func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRegion, *NumRegion) {
 
 	// とりま全部 gray 区間を代入してみる
-
 	prec := uint(53)
 	pi := poly.toIntv(prec)
-	gray := make(map[Level]gray_t, poly.lv+1)
+	gray := newGrayResion(poly.lv+1, prec)
+	gray.setTF(t, f)
 	for lv := poly.lv; lv >= 0; lv-- {
-		gg := t.getU(f, lv)
-		gray[lv] = gg
-		x := newInterval(prec)
-		x.inf = gg[0].inf
-		x.sup = gg[len(gg)-1].sup
+		if !poly.hasVar(lv) {
+			continue
+		}
+		gray.upGray(lv)
+		x := gray.x[lv]
 		if pp, ok := pi.(*Poly); ok {
 			pi = pp.SubstIntv(x, lv, prec)
 		}
 	}
 	if pp, ok := pi.(*Interval); ok {
 		if !pp.ContainsZero() {
+			// 符号が確定した
 			s := pp.Sign()
 			if s > 0 {
 				return GT, NewNumRegion(), nil
@@ -639,7 +666,7 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 		panic("bug")
 	}
 	if poly.isUnivariate() {
-		return poly.simplNumUniPoly(gray[poly.lv])
+		return poly.simplNumUniPoly(gray)
 	}
 	var pret, nret *NumRegion
 	op_ret := OP_TRUE
@@ -648,7 +675,7 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 		if deg == 0 {
 			continue
 		}
-		s, pos, neg := poly.simplNumNvar(g, t, f, v)
+		s, pos, neg := poly.simplNumNvar(g, gray, v)
 		op_ret &= s
 		if op_ret == GT || op_ret == LT {
 			return op_ret, pos, neg
