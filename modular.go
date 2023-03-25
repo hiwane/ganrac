@@ -622,6 +622,19 @@ func (f *Poly) divmod_poly_mod(gorg *Poly, cell *Cellmod, p Uint) (Moder, Moder,
 		return nil, nil, gc
 	}
 
+	if moniii, ok := g.lc().(Uint); !ok || moniii != 1 {
+		fmt.Printf("gorg[%d,%2d]=%v\n", gorg.lv, gorg.deg(), gorg)
+		fmt.Printf("g   [%d,%2d]=%v\n", g.lv, g.deg(), g)
+		fmt.Printf("inv =%v\n", _inv)
+		for c := cell; c.parent != nil && c.lv >= 0; c = c.parent {
+			fmt.Printf("cell[%d]=%v\n", c.lv, c.defpoly)
+		}
+		fmt.Printf("p=%d\n", p)
+		fmt.Printf("gorg=%S\n", gorg)
+		fmt.Printf("g   =%S\n", g)
+		panic("expected monic")
+	}
+
 	// g に inv かけたから, f にもかけよう
 	switch inv := _inv.(type) {
 	case Uint:
@@ -666,10 +679,14 @@ func (f *Poly) divmod_poly_mod(gorg *Poly, cell *Cellmod, p Uint) (Moder, Moder,
 		switch f2 := f.sub_mod(gg, p).(type) {
 		case *Poly:
 			if f.lv == f2.lv && len(f.c) <= len(f2.c) {
-				fmt.Printf("    f=%v\n", f)
-				fmt.Printf("    g=%v\n", g)
-				fmt.Printf("    F=%v\n", f2)
-				fmt.Printf("    G=%v\n", gg)
+				fmt.Printf("    f[%d,%2d]=%v\n", f.lv, f.deg(), f)
+				fmt.Printf("    g[%d,%2d]=%v\n", g.lv, g.deg(), g)
+				fmt.Printf("    F[%d,%2d]=%v\n", f2.lv, f2.deg(), f2)
+				if gx, ok := gg.(*Poly); ok {
+					fmt.Printf("    G[%d,%2d]=%v\n", gx.lv, gx.deg(), gx)
+				} else {
+					fmt.Printf("    G[%d,%2d]=%v\n", 0, -1, gg)
+				}
 				panic(fmt.Sprintf("why? mod=%d", p))
 			}
 			f = f2

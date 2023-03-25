@@ -486,5 +486,45 @@ func TestModularKaratsubaDivide(t *testing.T) {
 			}
 		}
 	}
-
 }
+
+func TestModularMonicize(t *testing.T) {
+
+	var p Uint = 131
+	cad := new(CAD)
+	cad.root = NewCell(cad, nil, 0)
+	cad.rootp = NewCellmod(cad.root)
+
+	cell0 := NewCell(cad, nil, 1)
+	cell0.lv = 0
+	cell0.parent = cad.root
+	cell0.defpoly = NewPolyCoef(0, 2382286350, 0, 747627160, 0, 3145087702, 0, 1880984826, 0, 540819817, 0, 437450036, 0, 1)
+
+	cell0p, ok := cell0.mod(cad, p)
+	if !ok {
+		t.Errorf("cell mod failed")
+		return
+	}
+
+	g := NewPolyCoef(1, NewPolyCoef(0, 4026383232, 0, 675417520, 0, 2014923038), NewPolyCoef(0, 1299090956, 0, 2067948355), NewPolyCoef(0, 3639549503, 0, 2065827236, 0, 954437178))
+	gp := g.mod(p).(*Poly)
+	if gp.lv != g.lv || gp.deg() != g.deg() {
+		t.Errorf("g mod failed: %v", gp)
+		return
+	}
+
+	_g, _inv, gc := gp.monicize(cell0p, p)
+	switch gg := _g.(type) {
+	case *Poly:
+		if moniii, ok := gg.lc().(Uint); !ok || moniii != 1 {
+			t.Errorf("not monic poly: %v\ninv=%v\ngc=%v", gg, _inv, gc)
+			return
+		}
+	case Uint:
+		return
+	default:
+		t.Errorf("not monic unknown: %v\ninv=%v\ngc=%v", gg, _inv, gc)
+		return
+	}
+}
+

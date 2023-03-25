@@ -249,6 +249,16 @@ func (cad *CAD) symde_zero_chk2(porg *Poly, cell *Cell, pi int) bool {
 				return false
 			}
 
+			if cell.lv == 0 && (q.Deg(0) >= cell.defpoly.deg() || s2.Deg(0) >= cell.defpoly.deg()) {
+				fmt.Printf("q=%v\n", q)
+				fmt.Printf("s=%v\n", s2)
+				panic("stop1")
+			}
+			if cell.lv == 1 && (q.Deg(0) >= cell.parent.defpoly.deg() || s2.Deg(0) >= cell.parent.defpoly.deg()) {
+				fmt.Printf("q=%v\n", q)
+				fmt.Printf("s=%v\n", s2)
+				panic("stop2")
+			}
 			cell.improveIsoIntv(cell.defpoly, true)
 		}
 	}
@@ -378,6 +388,7 @@ func (cad *CAD) symde_gcd_mod(forg, gorg *Poly, cell *Cellmod, p Uint, need_t bo
 	t1 = s2
 	t2 = s1
 
+	// Euclidian algorithm
 	for {
 		if err := g.valid(); err != nil {
 			panic(fmt.Sprintf("invalid g %v: %v,  <%v,%v>\n", g, err, forg, gorg))
@@ -410,8 +421,16 @@ func (cad *CAD) symde_gcd_mod(forg, gorg *Poly, cell *Cellmod, p Uint, need_t bo
 		}
 
 		s1, s2 = s2, s1.sub_mod(s2.mul_mod(q, p), p)
+		s2 = s2.simpl_mod(cell, p)
+		if ss, ok := s2.(*Poly); ok && ss.Deg(cell.lv) >= cell.defpoly.deg() {
+			panic("not fimplified")
+		}
 		if need_t {
 			t1, t2 = t2, t1.sub_mod(t2.mul_mod(q, p), p)
+			t2 = t2.simpl_mod(cell, p)
+			if tt, ok := t2.(*Poly); ok && tt.Deg(cell.lv) >= cell.defpoly.deg() {
+				panic("not fimplified")
+			}
 		}
 
 		switch r := rr.(type) {
@@ -604,6 +623,25 @@ func (crt *fctr_cellcrt_t) update(cad *CAD, cell *Cell, cellp *Cellmod, p Uint) 
 	panic("prec")
 }
 
+func (cad *CAD) de_simplify(f *Poly, cell *Cell, pi int) *Poly {
+
+	for cell.lv > f.lv {
+		cell = cell.parent
+	}
+
+	for ; cell.lv >= 0; cell = cell.parent {
+		// 擬剰余
+		r := f.prem(cell.defpoly)
+		if rp, ok := r.(*Poly); ok {
+			f = rp
+		} else {
+			return f
+		}
+	}
+
+	return f
+}
+
 func (cad *CAD) symde_gcd2(forg, gorg *Poly, cell *Cell, pi int) (*Poly, *Poly) {
 	// assume: forg.lv == gorg.lv
 	// returns (gcd(f,g), f/gcd(f,g) or nil)
@@ -675,10 +713,12 @@ func (cad *CAD) symde_gcd2(forg, gorg *Poly, cell *Cell, pi int) (*Poly, *Poly) 
 		if no_chg && !tried {
 			// 試し割り
 			if gcd_crt.frr.deg() == forg.deg() {
+
 				return forg, nil
 			}
 
 			if ok, q := cad.test_div(forg, gcd_crt.frr, cell, pi+pidx); ok {
+				q = cad.de_simplify(q, cell, pi+1)
 				return gcd_crt.frr, q
 			}
 			fmt.Printf("try failed\n")

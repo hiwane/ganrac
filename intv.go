@@ -373,7 +373,9 @@ func (x *Interval) toIntv(prec uint) RObj {
 
 func (x *Interval) mid(p float64, prec uint) *big.Float {
 	l := big.NewFloat(p)
+	l.SetPrec(prec)
 	r := big.NewFloat(1 - p)
+	r.SetPrec(prec)
 	l.Mul(l, x.inf)
 	r.Mul(r, x.sup)
 	r.Add(l, r)

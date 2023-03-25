@@ -966,7 +966,8 @@ func (cell *Cell) make_cells(cad *CAD, pf ProjFactor) ([]*Cell, sign_t) {
 
 func (cell *Cell) nintv_divide(prec uint) bool {
 	ret := false
-	for _, point := range []float64{0.5, 0.25, 0.75, 0.125, 0.875} {
+	for _, point := range []float64{0.5, 0.25, 0.75} {
+		// 中点部分を符号判定する
 		mid := cell.nintv.mid(point, prec)
 		vv := NewIntervalFloat(mid, prec)
 		pp := cell.defpoly.toIntv(prec).(*Poly)
@@ -1265,6 +1266,17 @@ func (cell *Cell) root_iso_i(cad *CAD, pf ProjFactor, porg, pp *Poly, prec uint,
 	return cells, nil
 }
 
+/*
+ *
+ *
+ * @MEMO
+
+ sage: K.<a> = NumberField(x^2-2)
+ sage: Q.<x> = PolynomialRing(K)
+ sage: factor(x^2-4*a*x+6)
+ (x - 3*a) * (x - a)
+
+ */
 func (cell *Cell) improveIsoIntv(p *Poly, parent bool) {
 	// 分離区間の改善
 	if parent && cell.lv >= 0 {
@@ -1306,15 +1318,19 @@ func (cell *Cell) improveIsoIntv(p *Poly, parent bool) {
 		return
 	}
 
+	// 精度をあげて判定する
 	var prec uint
 	for prec = cell.nintv.Prec() + 64; prec < 1000; prec += 60 {
-		if cell.nintv_divide(prec) {
+		if cell.nintv_divide(prec) {	// 区間を半分にして．．．．
 			return
 		}
+
 		cell.parent.improveIsoIntv(nil, true)
 	}
 
-	cell.Print()
+	// 無理だった... symbolic にやるか. @TODO
+	fmt.Printf("improveIsoIntv(%v, %v)\n", p, parent)
+	cell.Print("cellp")
 	panic(fmt.Sprintf("unimplemented: prec=%d", prec))
 }
 

@@ -1322,6 +1322,68 @@ func (forg *Poly) _quorem(g *Poly) (RObj, RObj) {
 	}
 }
 
+func (fx *Poly) prem(g *Poly) RObj {
+	// 擬剰余
+	// pquorem は f.lv == g.lv を仮定するが本関数は仮定しない
+	// lv := g.lv について, deg(f, lv) < deg(g, lv) になるように剰余を求める
+
+	f := fx
+	d := f.Deg(g.lv)
+	e := g.deg()
+	if d < e {
+		return f
+	}
+
+	gc := g.lc()
+	a := gc.Pow(NewInt(int64(d - e + 1)))
+	f = f.Mul(a).(*Poly)
+	if err := f.valid(); err != nil {
+		panic(err.Error())
+	}
+	if !f.isZZ() {
+		fmt.Printf("fin=%v\na  =%v\nfou=%v\n", fx, a, f)
+		panic("not ZZ")
+	}
+
+	for d >= e {
+		du := uint(d)
+		var c RObj
+		switch gcc := gc.(type) {
+		case *Poly:
+			// f が gcc で割り切れることを保証しているため
+			// gc が Poly なら lc(f) も poly
+			c = sdivlt(f.Coef(g.lv, du).(*Poly), gcc)
+		case *Int:
+			c = f.Coef(g.lv, du).Div(gcc)
+		default:
+			panic("a")
+		}
+		var qc RObj
+		if d > g.deg() {
+			qc = Mul(NewPolyVarn(g.lv, d-g.deg()), c)
+		} else {
+			qc = c
+		}
+		switch ff := f.Sub(g.Mul(qc)).(type) {
+		case NObj:
+			return ff
+		case *Poly:
+			f = ff
+			d = f.Deg(g.lv)
+		}
+		if err := f.valid(); err != nil {
+			panic(err.Error())
+		}
+		if d >= int(du) {
+			fmt.Printf("f=%v\n", f)
+			fmt.Printf("d=%d, du=%d\n", d, du)
+			panic("nande?")
+		}
+	}
+	f = f.primpart()
+	return f
+}
+
 func (f *Poly) pquorem(g *Poly) (RObj, RObj, RObj) {
 	// assume: f.lv == g.lv
 	// return: (a, q, r) where a * f = q * g + r and deg(r) < deg(g)
@@ -1332,7 +1394,8 @@ func (f *Poly) pquorem(g *Poly) (RObj, RObj, RObj) {
 		return one, zero, f
 	}
 
-	a := g.lc().Pow(NewInt(int64(len(f.c) - len(g.c) + 1)))
+	gc := g.lc()
+	a := gc.Pow(NewInt(int64(len(f.c) - len(g.c) + 1)))
 	pp := f.Mul(a).(*Poly)
 	q, r := pp._quorem(g)
 
@@ -1345,7 +1408,47 @@ func (f *Poly) pquorem(g *Poly) (RObj, RObj, RObj) {
 	if err := r.valid(); err != nil {
 		panic(err)
 	}
+	if gg, ok := gc.(*Poly); ok {
+		for {
+			rr, ok1 := r.(*Poly)
+			qq, ok2 := q.(*Poly)
+			if ok1 && ok2 {
+				rk := sdivlt(rr, gg)
+				if rk == nil {
+					break
+				}
+				qk := sdivlt(qq, gg)
+				if qk == nil {
+					break
+				}
+				q = qk
+				r = rk
+			}
+		}
+	}
+
+	q = pquorem_simplify(gc, q)
+	r = pquorem_simplify(gc, r)
 	return a, q, r
+}
+
+func pquorem_simplify(a, q RObj) RObj {
+	if gg, ok := a.(*Poly); ok {
+		for {
+			if qq, ok2 := q.(*Poly); ok2 {
+				qk := sdivlt(qq, gg)
+				if qk == nil {
+					break
+				}
+				q = qk
+			}
+		}
+	}
+
+	if qq, ok := q.(*Poly); ok {
+		q = qq.primpart()
+	}
+	return q
 }
 
 func (p *Poly) content(k *Int) *Int {
@@ -1646,4 +1749,20 @@ func (f *Poly) karatsuba_divide(d int) (RObj, RObj) {
 	//	fmt.Printf("KARA.divide %d\nf [%d]=%v\nf1[%d]=%v\nf0[%d]=%v\n", d, len(f.c), f, len(f1.c), f1, len(f0.c), f0)
 	//	fmt.Printf("kara.divide %d\nf=%v\nf1=%v\nf0=%v\n", d, f, f1.normalize(), f0.normalize())
 	return f1.normalize(), f0.normalize()
+}
+
+func (f *Poly) isZZ() bool {
+	for _, cc := range f.c {
+		switch c := cc.(type) {
+		case *Poly:
+			if !c.isZZ() {
+				return false
+			}
+		case *Int:
+			continue
+		default:
+			return false
+		}
+	}
+	return true
 }
