@@ -34,13 +34,14 @@ Ubuntu
 > while :; do ox -ox ox_asir -control 1234 -data 4321; done
 ```
 
+
 ## Installation
 
-### binaries
+### downloading the binary
 
 See https://github.com/hiwane/ganrac/releases
 
-### from source code
+### compiling from source code
 
 ox-asir version
 ```sh
@@ -94,5 +95,4 @@ print(C, "cell", 0, 1);
 cadsfc(C);
 print(C, "stat");
 ```
-
 
