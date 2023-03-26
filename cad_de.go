@@ -422,8 +422,10 @@ func (cad *CAD) symde_gcd_mod(forg, gorg *Poly, cell *Cellmod, p Uint, need_t bo
 
 		s1, s2 = s2, s1.sub_mod(s2.mul_mod(q, p), p)
 		s2 = s2.simpl_mod(cell, p)
-		if ss, ok := s2.(*Poly); ok && ss.Deg(cell.lv) >= cell.defpoly.deg() {
-			panic("not fimplified")
+		if cell.defpoly != nil {
+			if ss, ok := s2.(*Poly); ok && cell.defpoly != nil && ss.Deg(cell.lv) >= cell.defpoly.deg() {
+				panic("not fimplified")
+			}
 		}
 		if need_t {
 			t1, t2 = t2, t1.sub_mod(t2.mul_mod(q, p), p)
@@ -631,6 +633,9 @@ func (cad *CAD) de_simplify(f *Poly, cell *Cell, pi int) *Poly {
 
 	for ; cell.lv >= 0; cell = cell.parent {
 		// 擬剰余
+		if cell.defpoly == nil {
+			continue
+		}
 		r := f.prem(cell.defpoly)
 		if rp, ok := r.(*Poly); ok {
 			f = rp
