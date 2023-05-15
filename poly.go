@@ -522,6 +522,10 @@ func (x *Poly) Mul(yy RObj) RObj {
 	}
 }
 
+func mulPolyChan(f, g RObj, ch chan RObj) {
+	ch <- Mul(f, g)
+}
+
 func (f *Poly) mulKaratsuba(g *Poly) RObj {
 	// assert deg(f)>0,deg(g)>0
 	// assert max(deg(f),deg(g))>1
@@ -537,11 +541,28 @@ func (f *Poly) mulKaratsuba(g *Poly) RObj {
 	f1, f0 := f.karatsuba_divide(d)
 	g1, g0 := g.karatsuba_divide(d)
 
-	f1g1 := Mul(f1, g1)
-	f0g0 := Mul(f0, g0)
-	f10 := Sub(f1, f0)
-	g01 := Sub(g0, g1)
-	f10g01 := Mul(f10, g01)
+	var f1g1, f0g0, f10g01 RObj
+	if true {
+		f1g1 = Mul(f1, g1)
+		f0g0 = Mul(f0, g0)
+		f10 := Sub(f1, f0)
+		g01 := Sub(g0, g1)
+		f10g01 = Mul(f10, g01)
+	} else {
+		var cf1g1, cf0g0, cf10g01 chan RObj
+		cf1g1 = make(chan RObj)
+		go mulPolyChan(f1, g1, cf1g1)
+		cf0g0 = make(chan RObj)
+		go mulPolyChan(f0, g0, cf0g0)
+		f10 := Sub(f1, f0)
+		g01 := Sub(g0, g1)
+
+		cf10g01 = make(chan RObj)
+		go mulPolyChan(f10, g01, cf10g01)
+		f1g1 = <-cf1g1
+		f0g0 = <-cf0g0
+		f10g01 = <-cf10g01
+	}
 
 	h1 := Add(Add(f10g01, f1g1), f0g0)
 
