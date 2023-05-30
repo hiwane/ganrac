@@ -527,4 +527,3 @@ func TestModularMonicize(t *testing.T) {
 		return
 	}
 }
-

@@ -37,6 +37,9 @@ func TestEvalRobj(t *testing.T) {
 		{"(x^2+3*x+1)+(-x^2+5*x+8);", NewPolyCoef(0, 9, 8)},
 		{"(x^2+3*x+1)+(-x^2-3*x+8);", NewInt(9)},
 		{"(x^2+3*x+1)+(-x^2-3*x-1);", zero},
+		{"x-y;", NewPolyCoef(1, NewPolyVar(0), -1)},
+		{"x*(x^2-y^2);", NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 1), 0, NewPolyCoef(0, 0, -1))},
+		{"x^2*(y^2-x^2);", NewPolyCoef(1, NewPolyCoef(0, 0, 0, 0, 0, -1), 0, NewPolyCoef(0, 0, 0, 1))},
 	} {
 		u, err := g.Eval(strings.NewReader(s.input))
 		if err != nil && s.expect != nil {

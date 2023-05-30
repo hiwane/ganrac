@@ -16,8 +16,8 @@ type grayRegion struct {
 	prec uint
 	r    map[Level]gray_intv
 	x    map[Level]*Interval
-	t    *NumRegion	// true/whiteRegion
-	f    *NumRegion	// false/blackRegion
+	t    *NumRegion // true/whiteRegion
+	f    *NumRegion // false/blackRegion
 }
 
 // open/closed interval
