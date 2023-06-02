@@ -2,6 +2,7 @@ package main
 
 import (
 	openxm "github.com/hiwane/ganrac/cas/ox"
+	"github.com/hiwane/ganrac/cas/para"
 	"github.com/hiwane/ganrac/cmd"
 
 	"flag"
@@ -18,7 +19,8 @@ func main() {
 		cport      = flag.String("control", "localhost:1234", "ox-asir, control port")
 		dport      = flag.String("data", "localhost:4321", "ox-asir, data port")
 		ox         = flag.Bool("ox", false, "use ox-asir")
-		ox_verbose = flag.Bool("ox_verbose", false, "ox_verbose")
+		ox_verbose = flag.Bool("ox-verbose", false, "verbose ox-asir")
+		paran      = flag.Int("para", 0, "parallel number")
 
 		cp cmd.CmdParam
 	)
@@ -60,8 +62,16 @@ func main() {
 			os.Exit(1)
 		}
 
-		defer ox.Close()
-		g.SetCAS(ox)
+		g.SetParaNum(*paran)
+		if *paran > 0 {
+			paracas := para.NewParaCAS(ox)
+			defer paracas.Close()
+			g.SetCAS(paracas)
+		} else {
+			defer ox.Close()
+			g.SetCAS(ox)
+		}
+
 		if *ox_verbose {
 			ox.SetLogger(logger)
 		}

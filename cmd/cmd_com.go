@@ -43,7 +43,8 @@ func (cp CmdParam) NewGanracLogger(cas, revision string) (*ganrac.Ganrac, *log.L
 		}
 	}
 	g := ganrac.NewGANRAC()
-	logger := log.New(os.Stderr, "", log.Ltime)
+	// logger := log.New(os.Stderr, "", log.Ltime)
+	logger := log.New(os.Stderr, "", 0)
 	if cp.Color {
 		ganrac.SetColordFml(true)
 	}

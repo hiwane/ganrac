@@ -41,6 +41,7 @@ type Ganrac struct {
 	logcnt             int
 	verbose            int
 	verbose_cad        int
+	paranum            int
 }
 
 func NewGANRAC() *Ganrac {
@@ -91,6 +92,10 @@ func NewGANRAC() *Ganrac {
 	}
 
 	return g
+}
+
+func (g *Ganrac) SetParaNum(n int) {
+	g.paranum = n
 }
 
 func (g *Ganrac) Close() {

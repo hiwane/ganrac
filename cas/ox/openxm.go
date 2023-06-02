@@ -143,7 +143,8 @@ func NewOpenXM(connc, connd net.Conn, logger *log.Logger) (*OpenXM, error) {
 		logger.Printf("ox.init failed: %s", err.Error())
 		return nil, err
 	}
-	return ox, err
+
+	return ox, nil
 }
 
 func (ox *OpenXM) SetLogger(logger *log.Logger) {
@@ -156,17 +157,32 @@ func (ox *OpenXM) Close() error {
 	return nil
 }
 
-func (ox *OpenXM) dataRead(v interface{}) error {
-	return binary.Read(ox.dr, ox.border, v)
+func (ox *OpenXM) dataRead(v any) error {
+	err := binary.Read(ox.dr, ox.border, v)
+	if err != nil {
+		ox.logger.Printf("dataRead failed: %s", err.Error())
+	}
+	return err
 }
 
 func (ox *OpenXM) dataReadInt32() (int32, error) {
 	var n int32
 	err := binary.Read(ox.dr, ox.border, &n)
+	if err != nil {
+		ox.logger.Printf("dataReadInt32 failed: %s", err.Error())
+	}
 	return n, err
 }
 
-func (ox *OpenXM) dataWrite(v interface{}) error {
+func (ox *OpenXM) dataFlush() error {
+	err := ox.dw.Flush()
+	if err != nil {
+		ox.logger.Printf("dataFlush failed: %s", err.Error())
+	}
+	return err
+}
+
+func (ox *OpenXM) dataWrite(v any) error {
 	if false {
 		buf := new(bytes.Buffer)
 		binary.Write(buf, ox.border, v)
@@ -175,9 +191,16 @@ func (ox *OpenXM) dataWrite(v interface{}) error {
 		for i := 0; i < len(b); i++ {
 			s += fmt.Sprintf(" %02x", b[i])
 		}
-		ox.logger.Printf("%s ... <%d,%d>", s, len(b), b[0])
+		ox.logger.Printf("%s ... <%d,%d> %T:%v", s, len(b), b[0], v, v)
+		if fmt.Sprintf("%T", v) == "*int32" {
+			panic("stop")
+		}
 	}
-	return binary.Write(ox.dw, ox.border, v)
+	err := binary.Write(ox.dw, ox.border, v)
+	if err != nil {
+		ox.logger.Printf("dataWrite() failed: %s", err.Error())
+	}
+	return err
 }
 
 func (ox *OpenXM) init() error {
@@ -196,13 +219,13 @@ func (ox *OpenXM) init() error {
 		return err
 	}
 	ox.logger.Printf("<--  dread.n=%d: %x\n", n, b[0])
-	b[0] = 1 // Little endian
-	n, err = ox.dw.Write(b)
+	b[0] = 1                // Little endian
+	_, err = ox.dw.Write(b) // ここは DataWrite() できない
 	if err != nil {
 		ox.logger.Printf(" --> write cport %v\n", err)
 		return err
 	}
-	ox.dw.Flush()
+	ox.dataFlush()
 	n, err = ox.cw.Write(b)
 	if err != nil {
 		ox.logger.Printf(" --> write cport %v\n", err)
@@ -222,8 +245,8 @@ func (ox *OpenXM) init() error {
 
 func (ox *OpenXM) PushOXCommand(sm_command int32) error {
 	var err error
+	ox.logger.Printf("PushOXCommand(tag:%d)", sm_command)
 	err = ox.PushOXTag(OX_COMMAND)
-	//ox.logger.Printf("PushOXCommand(tag:%d): err=%s", sm_command, err)
 	if err != nil {
 		ox.logger.Printf("push ox command(tag:%d) failed: %s", sm_command, err.Error())
 		return err
@@ -231,7 +254,6 @@ func (ox *OpenXM) PushOXCommand(sm_command int32) error {
 	err = ox.dataWrite(sm_command)
 	if err != nil {
 		ox.logger.Printf("push ox command(sm:%d) failed: %s", sm_command, err.Error())
-
 		return err
 	}
 	return nil
@@ -377,7 +399,7 @@ func (ox *OpenXM) sendCMORecPoly(p *Poly) (map[Level]int32, error) {
 	}
 	ox.logger.Printf(" --> %s() cnt=%d\n", fname, cnt)
 	ox.sendCMOTag(CMO_LIST)
-	err = ox.dataWrite(&cnt)
+	err = ox.dataWrite(cnt)
 	for i := len(b) - 1; i >= 0; i-- {
 		if b[i] {
 			ox.sendCMOString(fmt.Sprintf("x%d", i))
@@ -401,8 +423,14 @@ func (ox *OpenXM) sendCMOPoly(p *Poly, lvmap map[Level]int32) error {
 		}
 	}
 	ox.logger.Printf(" --> sendCMOPoly() #mono=%d, p.lv=%d -> %d\n", cnt, p.Level(), lvmap[p.Level()])
-	err = ox.dataWrite(&cnt)
+	err = ox.dataWrite(cnt)
+	if err != nil {
+		return err
+	}
 	err = ox.dataWrite(lvmap[p.Level()])
+	if err != nil {
+		return err
+	}
 	for i := int32(p.Deg(p.Level())); cnt > 0; i-- {
 		if i < 0 {
 			panic(fmt.Sprintf("invalid cnt=%d, p=%v", cnt, p))
@@ -410,8 +438,14 @@ func (ox *OpenXM) sendCMOPoly(p *Poly, lvmap map[Level]int32) error {
 		c := p.Coef(p.Level(), uint(i))
 		if !c.IsZero() {
 			cnt--
-			err = ox.dataWrite(&i)
-			ox.sendCMO(c, lvmap)
+			err = ox.dataWrite(i)
+			if err != nil {
+				return err
+			}
+			err = ox.sendCMO(c, lvmap)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return err
@@ -427,7 +461,7 @@ func (ox *OpenXM) sendCMOString(s string) error {
 	b := []byte(s)
 	var m int32 = int32(len(b))
 	// ox.logger.Printf(" --> %s() m=%d, s=%s", fname, m, s)
-	err = ox.dataWrite(&m)
+	err = ox.dataWrite(m)
 	err = ox.dataWrite(b)
 	return err
 }
@@ -450,7 +484,7 @@ func (ox *OpenXM) sendCMOInt32(n int32) error {
 		ox.logger.Printf(" --> %s(%d,cmotag) failed: %s", fname, n, err.Error())
 		return err
 	}
-	err = ox.dataWrite(&n)
+	err = ox.dataWrite(n)
 	// ox.logger.Printf(" --> write CMOint32[%d]", n)
 	if err != nil {
 		ox.logger.Printf(" --> %s(%d,body) failed: %s", fname, n, err.Error())
@@ -485,7 +519,7 @@ func (ox *OpenXM) send_bigint(z *big.Int) error {
 	if z.Sign() < 0 {
 		m *= -1
 	}
-	err := ox.dataWrite(&m)
+	err := ox.dataWrite(m)
 	if err != nil {
 		ox.logger.Printf(" --> %s(len:%d) failed: %s", fname, m, err.Error())
 		return err
@@ -825,23 +859,30 @@ func (ox *OpenXM) PopOXTag() (int32, int32, error) {
 		ox.logger.Printf("PopOXTag(serial) failed: %s", err.Error())
 		return 0, 0, err
 	}
+	ox.logger.Printf("<--  popOxTag targ=%d, serial=%d\n", tag, serial)
 	return tag, serial, nil
 }
 
-func (ox *OpenXM) PopCMO() (interface{}, error) {
-	// ox.logger.Printf("PopCMO() start\n")
+func (ox *OpenXM) PopCMO() (any, error) {
+	ox.logger.Printf("PopCMO() start\n")
 	err := ox.PushOXCommand(SM_popCMO)
 	if err != nil {
 		ox.logger.Printf("PopCMO(send-command) failed: %s", err.Error())
 		return "", err
 	}
-	err = ox.dw.Flush()
+	err = ox.dataFlush()
 	if err != nil {
 		ox.logger.Printf("PopCMO(flush) failed: %s", err.Error())
 		return "", err
 	}
-	tag, _, err := ox.PopOXTag()
-	// ox.logger.Printf("PopCMO() receive: tag=%d, serial=%d\n", tag, serial)
+	tag, serial, err := ox.PopOXTag()
+	if false {
+		ox.logger.Printf("PopCMO() receive: tag=%d, serial=%d\n", tag, serial)
+	}
+	if err != nil {
+		ox.logger.Printf("PopCMO(pop ox) failed: %s", err.Error())
+		return "", err
+	}
 	if tag != OX_DATA {
 		return "", fmt.Errorf("PopCMO() unexpected tag=%d", tag)
 	}
@@ -865,7 +906,7 @@ func (ox *OpenXM) ExecString(val string) error {
 		ox.logger.Printf("%s(%d) push OxCommand() failed", fname, SM_executeStringByLocalParser)
 		return err
 	}
-	err = ox.dw.Flush()
+	err = ox.dataFlush()
 	return err
 }
 
@@ -875,41 +916,45 @@ func (ox *OpenXM) ExecFunction(funcname string, argv ...interface{}) error {
 		ox.logger.Printf("%s(arg-%d): %s() send %v", fname, i, funcname, argv[i])
 		err := ox.PushOxCMO(argv[i])
 		if err != nil {
-			ox.logger.Printf("%s() push-arg(%d) %s() failed", fname, i, funcname)
+			ox.logger.Printf("%s() push-arg(%d/%d) %s() failed", fname, i, len(argv), funcname)
 			return err
 		}
 	}
-	// ox.logger.Printf("%s(#arg-%d): send %s()", fname, len(argv), funcname)
+	ox.logger.Printf("%s(#arg-%d): send %s()", fname, len(argv), funcname)
 	err := ox.PushOxCMO(int32(len(argv)))
 	if err != nil {
 		ox.logger.Printf("%s() push-arglen(%d) failed", fname, len(argv))
 		return err
 	}
-	// ox.logger.Printf("%s(): send funcname %v", fname, funcname)
+	ox.logger.Printf("%s(): send funcname %v", fname, funcname)
 	err = ox.PushOxCMO(funcname)
 	if err != nil {
 		ox.logger.Printf("%s() push-fname() failed", fname)
 		return err
 	}
-	// ox.logger.Printf("%s(): %s() send command %v", fname, funcname, SM_executeFunction)
+	ox.logger.Printf("%s(): %s() send command %v", fname, funcname, SM_executeFunction)
 	err = ox.PushOXCommand(SM_executeFunction)
 	if err != nil {
 		ox.logger.Printf("%s(%d) push OxCommand() failed", fname, SM_executeFunction)
 		return err
 	}
-	err = ox.dw.Flush()
-	// ox.logger.Printf("%s(): %s() finished", fname, funcname)
+	err = ox.dataFlush()
+	if err != nil {
+		ox.logger.Printf("%s(%d) flush failed", fname, SM_executeFunction)
+		return err
+	}
+	ox.logger.Printf("%s(): %s() finished", fname, funcname)
 	return err
 }
 
 func (ox *OpenXM) PopString() (string, error) {
-	// ox.logger.Printf("PopString() start\n")
+	ox.logger.Printf("PopString() start\n")
 	err := ox.PushOXCommand(SM_popString)
 	if err != nil {
 		ox.logger.Printf("PopString(send-command) failed: %s", err.Error())
 		return "", err
 	}
-	err = ox.dw.Flush()
+	err = ox.dataFlush()
 	if err != nil {
 		ox.logger.Printf("PopString(flush) failed: %s", err.Error())
 		return "", err

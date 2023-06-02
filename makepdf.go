@@ -134,7 +134,7 @@ func (sfc *CADSfc) lift_conlicts(cad *CAD) error {
 				if int(c.lv) < sfc.freen-1 && c.children == nil {
 					// まだ持ち上げてなかったら，持ち上げる
 					c.truth = t_undef
-					err := c.lift(cad)
+					err := c.lift(cad, cad.stack)
 					if err != nil {
 						return err
 					}

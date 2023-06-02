@@ -385,6 +385,10 @@ func (cs *cellStack) pop() *Cell {
 	return cell
 }
 
+func (cs *cellStack) size() int {
+	return len(cs.stack)
+}
+
 func (cad *CAD) Print(args ...interface{}) error {
 	return cad.Fprint(os.Stdout, args...)
 }

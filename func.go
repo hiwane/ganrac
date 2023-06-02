@@ -89,6 +89,7 @@ Examples
 `},
 		{"example", 0, 1, funcExample, false, "([name])\t\texample.", ""},
 		{"fctr", 1, 1, funcOXFctr, true, "(poly)*\t\t\tfactorize polynomial over the rationals.", ""},
+		{"fctrp", 1, 1, funcOXFctrp, true, "(poly)*\t\t\tfactorize polynomial over the rationals. para", ""},
 		{"gb", 2, 3, funcOXGB, true, "(polys, vars)*\t\tGroebner basis", ""},
 		{"help", 0, 1, nil, false, "()\t\t\tshow help", ""},
 		//		{"igcd", 2, 2, funcIGCD, false, "(int1, int2)\t\tThe integer greatest common divisor", ""},
@@ -355,12 +356,33 @@ func funcOXDiscrim(g *Ganrac, name string, args []interface{}) (interface{}, err
 }
 
 func funcOXFctr(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+	fmt.Printf("go funcOXFctr\n")
 	f0, ok := args[0].(*Poly)
+	fmt.Printf("f0 =%v\n", f0)
 	if !ok {
 		return nil, fmt.Errorf("%s(1st arg): expected poly: %d:%v", name, args[0].(GObj).Tag(), args[0])
 	}
 
+	fmt.Printf("go oxFctor\n")
 	return g.ox.Factor(f0), nil
+}
+
+func funcOXFctrp(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+	fmt.Printf("go funcOXFctrpara\n")
+	f0, ok := args[0].(*Poly)
+	fmt.Printf("f0 =%v\n", f0)
+	if !ok {
+		return nil, fmt.Errorf("%s(1st arg): expected poly: %d:%v", name, args[0].(GObj).Tag(), args[0])
+	}
+
+	ch := make(chan any)
+	go func(p *Poly, ch chan any) {
+		ch <- g.ox.Factor(p)
+	}(f0, ch)
+
+	q := <-ch
+	fmt.Printf("go oxFctor\n")
+	return q, nil
 }
 
 func funcOXGB(g *Ganrac, name string, args []interface{}) (interface{}, error) {

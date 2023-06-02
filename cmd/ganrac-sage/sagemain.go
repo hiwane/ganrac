@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/hiwane/ganrac/cas/para"
 	"github.com/hiwane/ganrac/cas/sage"
 	"github.com/hiwane/ganrac/cmd"
 
@@ -14,6 +15,7 @@ var gitCommit string
 func main() {
 	var (
 		tmpfile = flag.String("tmpfile", "/tmp/ganrac.tmp", "temporary file")
+		paran   = flag.Int("para", 0, "parallel number")
 
 		cp cmd.CmdParam
 	)
@@ -36,7 +38,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "initialize sage failed: %s\n", err.Error())
 		os.Exit(1)
 	}
-	g.SetCAS(Sage)
+	g.SetParaNum(*paran)
+	if *paran > 0 {
+		paracas := para.NewParaCAS(Sage)
+		defer paracas.Close()
+		g.SetCAS(paracas)
+	} else {
+		defer Sage.Close()
+		g.SetCAS(Sage)
+	}
 
 	logger.Printf("START!!!!")
 	cp.Interpreter(g)

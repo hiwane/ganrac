@@ -29,8 +29,11 @@ func (z *List) String() string {
 }
 
 func (z *List) Format(s fmt.State, format rune) {
-	left := "["
-	right := "]"
+	if z == nil {
+		fmt.Fprintf(s, "<<nil list>>")
+		return
+	}
+	var left, right string
 	switch format {
 	case FORMAT_DUMP:
 		left = fmt.Sprintf("(list %d", len(z.v))
@@ -41,16 +44,19 @@ func (z *List) Format(s fmt.State, format rune) {
 	case FORMAT_SRC:
 		left = "NewList("
 		right = ")"
+	default:
+		left = "["
+		right = "]"
 	}
 
-	fmt.Fprintf(s, "%s", left)
+	fmt.Fprintf(s, left)
 	for i, v := range z.v {
 		if i != 0 {
 			fmt.Fprintf(s, ", ")
 		}
 		v.Format(s, format)
 	}
-	fmt.Fprintf(s, "%s", right)
+	fmt.Fprintf(s, right)
 }
 
 func (z *List) Set(ii *Int, v GObj) error {

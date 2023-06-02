@@ -14,8 +14,17 @@ func (ox *OpenXM) Gcd(p, q *Poly) RObj {
 
 func (ox *OpenXM) Factor(p *Poly) *List {
 	// 因数分解
-	ox.ExecFunction("fctr", p)
-	s, _ := ox.PopCMO()
+	err := ox.ExecFunction("fctr", p)
+	if err != nil {
+		ox.logger.Printf("Factor failed: input=%v, err=%s\n", p, err.Error())
+		return nil
+	}
+	s, e := ox.PopCMO()
+	if e != nil {
+		ox.logger.Printf("Factor failed: err=%s\n", e.Error())
+		ox.logger.Printf("Factor input: %v.\n", p)
+		return nil
+	}
 	gob := ox.toGObj(s)
 	return gob.(*List)
 }

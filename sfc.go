@@ -105,6 +105,7 @@ func (sfc *CADSfc) pdqv22_split_leaf(cells []*Cell, min, max int) ([]*Cell, int)
 			t |= 0x01
 			ct = c
 		} else {
+			fmt.Printf("pdqv22_split_leaf internal error\n")
 			c.Print()
 			c.parent.Print("signatures")
 			panic("internal error")

@@ -7,6 +7,7 @@ package ganrac
 import (
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 )
 
@@ -59,9 +60,9 @@ func (cell *Cell) hasSection() bool {
 
 func (cell *Cell) set_truth_value_from_children(cad *CAD) {
 	// 子供の真偽値から自分の真偽値を決める.
-	if cad.q[cell.lv+1] < 0 {
+	if cad.q[cell.lv+1] < 0 { // 自由変数
 		cell.Print("cellp")
-		panic("gao")
+		panic(fmt.Sprintf("why? cell=%v", cell.Index()))
 	}
 
 	cell.truth = 1 - cad.q[cell.lv+1]
@@ -109,6 +110,101 @@ func (cell *Cell) set_parent_and_truth_other(cad *CAD) {
 	}
 }
 
+/*
+ * base phase から，と仮定
+ */
+func (cad *CAD) liftallpara() error {
+
+	// とりま base phase
+	cad.stack.pop() // root を捨てる
+	cad.root.lift(cad, cad.stack)
+
+	ch := make(chan *Cell, cad.g.paranum)
+	cherr := make(chan error, cad.g.paranum)
+	defer close(ch)
+	defer close(cherr)
+
+	var wg sync.WaitGroup
+	wg.Add(cad.g.paranum)
+
+	fn := func(ch chan *Cell, cad *CAD, stack *cellStack, cherr chan<- error, idx int) {
+		var err error
+		defer wg.Done()
+		for {
+			cell := <-ch
+			if cell == nil {
+				// fmt.Fprintf(os.Stderr, "[%2d] EXIT   >>   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n", idx)
+				cherr <- nil
+				return
+			}
+			// fmt.Fprintf(os.Stderr, "[%2d] LIFT   >> %v  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n", idx, cell.Index())
+			stack.push(cell)
+			err = cad.liftall(stack)
+			// fmt.Fprintf(os.Stderr, "[%2d] LIFTed << %v  @@@@@@@@@@@@@@@@@@@@@@@@\n", idx, cell.Index())
+			if err != nil {
+				cherr <- err // エラー返っても最後まで処理を続けてしまう. @TODO
+				return
+			}
+		}
+	}
+
+	stacks := make([]*cellStack, cad.g.paranum)
+	for i := 0; i < cad.g.paranum; i++ {
+		stacks[i] = newCellStack()
+		go fn(ch, cad, stacks[i], cherr, i)
+	}
+
+	has_root := false
+	for !cad.stack.empty() { // level 1 で並列化
+		cell := cad.stack.pop()
+		if cell.truth >= 0 {
+			continue
+		} else if cell == cad.root {
+			has_root = true // level 1 が束縛変数の場合
+		} else {
+			ch <- cell
+		}
+	}
+
+	// 番兵... 途中でエラーになったら？？
+	for i := 0; i < cad.g.paranum; i++ {
+		ch <- nil
+	}
+
+	wg.Wait()
+	for i := 0; i < cad.g.paranum; i++ { // これやるなら wg.Wait() いらんくない？
+		perr := <-cherr
+		if perr != nil {
+			return perr
+		}
+	}
+
+	// 結果が真偽値になるときにエラーになるのかな
+	if has_root && cad.root.truth < 0 {
+		cad.root.set_truth_value_from_children(cad)
+	}
+
+	return nil
+}
+
+func (cad *CAD) liftall(stack *cellStack) error {
+	for !stack.empty() {
+		cell := stack.pop()
+		if cell.truth >= 0 {
+			continue
+		} else if cell.children != nil {
+			// 子供の真偽値が確定した.
+			cell.set_truth_value_from_children(cad)
+			continue
+		} else {
+			if err := cell.lift(cad, stack); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (cad *CAD) Lift(index ...int) error {
 	if cad.stage != 1 {
 		return fmt.Errorf("invalid stage")
@@ -116,21 +212,17 @@ func (cad *CAD) Lift(index ...int) error {
 	cad.log(2, "cad.Lift %v\n", index)
 	if len(index) == 0 { // 指定なしなので，最後までやる.
 		tm_start := time.Now()
-		for !cad.stack.empty() {
-			cell := cad.stack.pop()
-			if cell.truth >= 0 {
-				continue
-			} else if cell.children != nil {
-				// 子供の真偽値が確定した.
-				cell.set_truth_value_from_children(cad)
-				continue
-			} else {
-				if err := cell.lift(cad); err != nil {
-					return err
-				}
-			}
+
+		var err error
+		if cad.g.paranum > 0 && cad.stack.size() == 1 && len(cad.q) > 1 {
+			// 2 変数以上で， base phase からの場合のみ
+			err = cad.liftallpara()
+		} else {
+			err = cad.liftall(cad.stack)
 		}
-		err := cad.root.valid(cad)
+		if err == nil {
+			err = cad.root.valid(cad)
+		}
 		cad.stage = CAD_STAGE_LIFTED
 		cad.stat.tm[1] = time.Since(tm_start)
 		return err
@@ -138,7 +230,7 @@ func (cad *CAD) Lift(index ...int) error {
 	c := cad.root
 	if len(index) == 1 && index[0] == -1 { // 指定なしと区別するため，root は -1 で表現
 		if c.children == nil {
-			return c.lift(cad)
+			return c.lift(cad, cad.stack)
 		} else {
 			return fmt.Errorf("already lifted %v", index)
 		}
@@ -146,7 +238,7 @@ func (cad *CAD) Lift(index ...int) error {
 
 	for _, idx := range index {
 		if c.children == nil {
-			err := c.lift(cad)
+			err := c.lift(cad, cad.stack)
 			if err != nil {
 				return err
 			}
@@ -157,7 +249,7 @@ func (cad *CAD) Lift(index ...int) error {
 		c = c.children[idx]
 	}
 	if c.children == nil {
-		return c.lift(cad)
+		return c.lift(cad, cad.stack)
 	} else {
 		return fmt.Errorf("already lifted %v", index)
 	}
@@ -308,7 +400,7 @@ func (cell *Cell) rlift(cad *CAD, lv Level, proj_num []int) error {
 		panic(fmt.Sprintf("m=%d, old=%d\n", m, len(oldcs)))
 	}
 
-	cell.lift_term(cad, undefined)
+	cell.lift_term(cad, undefined, cad.stack)
 
 	if err := cell.valid(cad); err != nil {
 		cell.Print("signatures")
@@ -317,7 +409,7 @@ func (cell *Cell) rlift(cad *CAD, lv Level, proj_num []int) error {
 	return nil
 }
 
-func (cell *Cell) lift(cad *CAD) error {
+func (cell *Cell) lift(cad *CAD, stack *cellStack) error {
 	cad.log(2, "lift (%v)\n", cell.Index())
 	cad.stat.lift[cell.lv+1]++
 	ciso := make([][]*Cell, cad.proj[cell.lv+1].Len())
@@ -394,14 +486,14 @@ func (cell *Cell) lift(cad *CAD) error {
 	}
 
 	// 真偽値確認して
-	cell.lift_term(cad, undefined)
+	cell.lift_term(cad, undefined, stack)
 
 	return nil
 }
 
-func (cell *Cell) lift_term(cad *CAD, undefined bool) {
+func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 	cs := cell.children
-	if cad.q[cell.lv+1] >= 0 {
+	if cad.q[cell.lv+1] >= 0 { // 束縛変数
 		qx := cad.q[cell.lv+1]
 		for _, c := range cs {
 			if c.truth == qx {
@@ -422,7 +514,7 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool) {
 		}
 
 		// quantifier なら親の真偽値に影響する
-		cad.stack.push(cell)
+		stack.push(cell)
 	}
 	if !undefined {
 		// 子供のセルの真偽値がすべて確定
@@ -434,14 +526,14 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool) {
 	// rebuild CAD のときに子供が既にいるかもしれないのでチェックが必要
 	for i := 1; i < len(cs); i += 2 {
 		if cs[i].truth < 0 && cs[i].children == nil {
-			cad.stack.push(cs[i])
+			stack.push(cs[i])
 		}
 	}
 	// sector をあとで．
 	for i := 0; i < len(cs); i += 2 {
 		if cs[i].truth < 0 && cs[i].children == nil {
 			cad.setSamplePoint(cs, i)
-			cad.stack.push(cs[i])
+			stack.push(cs[i])
 		}
 	}
 
@@ -788,6 +880,9 @@ func (cad *CAD) cellmerge2(cis, cjs []*Cell, dup bool) []*Cell {
 func (cell *Cell) root_iso_q(cad *CAD, pf ProjFactor, p *Poly) []*Cell {
 	// returns (roots, sign(lc(p)))
 	fctrs := cad.g.ox.Factor(p)
+	if fctrs == nil {
+		panic("cas.Factor() returns nil. stop")
+	}
 	cad.stat.fctr++
 	// fmt.Printf("root_iso(%v,%d): %v -> %v\n", cell.Index(), pf.index, p, fctrs)
 	ciso := make([][]*Cell, fctrs.Len()-1)
@@ -1267,16 +1362,15 @@ func (cell *Cell) root_iso_i(cad *CAD, pf ProjFactor, porg, pp *Poly, prec uint,
 }
 
 /*
- *
- *
- * @MEMO
+*
+*
+* @MEMO
 
- sage: K.<a> = NumberField(x^2-2)
- sage: Q.<x> = PolynomialRing(K)
- sage: factor(x^2-4*a*x+6)
- (x - 3*a) * (x - a)
-
- */
+sage: K.<a> = NumberField(x^2-2)
+sage: Q.<x> = PolynomialRing(K)
+sage: factor(x^2-4*a*x+6)
+(x - 3*a) * (x - a)
+*/
 func (cell *Cell) improveIsoIntv(p *Poly, parent bool) {
 	// 分離区間の改善
 	if parent && cell.lv >= 0 {
@@ -1321,7 +1415,7 @@ func (cell *Cell) improveIsoIntv(p *Poly, parent bool) {
 	// 精度をあげて判定する
 	var prec uint
 	for prec = cell.nintv.Prec() + 64; prec < 1000; prec += 60 {
-		if cell.nintv_divide(prec) {	// 区間を半分にして．．．．
+		if cell.nintv_divide(prec) { // 区間を半分にして．．．．
 			return
 		}
 
