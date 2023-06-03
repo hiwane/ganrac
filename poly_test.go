@@ -717,12 +717,14 @@ func TestPQuoRem(t *testing.T) {
 		a, q, r := s.f.pquorem(s.g)
 
 		if ap, ok := a.(*Poly); ok {
+			// 係数をかける故，レベルが異なるはず
 			if ap.lv == s.g.lv {
 				t.Errorf("invalid a\nf=%v\ng=%v\na=%v\nq=%v\nr=%v\n", s.f, s.g, a, q, r)
 				continue
 			}
 		}
 		if rp, ok := r.(*Poly); ok {
+			// 余りは次数が g より小さいはず
 			if rp.lv == s.g.lv && len(rp.c) >= len(s.g.c) {
 				t.Errorf("invalid r\nf=%v\ng=%v\na=%v\nq=%v\nr=%v\n", s.f, s.g, a, q, r)
 				continue
@@ -780,6 +782,29 @@ func TestDiffConst(t *testing.T) {
 		c, b := s.f.diffConst(s.g)
 		if b != s.b || c*s.c < 0 {
 			t.Errorf("%d\nf=%v\ng=%v\nc=%d ==> %d\nb=%v ==> %v\n", ii, s.f, s.g, s.c, c, s.b, b)
+		}
+	}
+}
+
+func TestSdivLt(t *testing.T) {
+	for ii, s := range []struct {
+		f      *Poly
+		g      *Poly
+		expect RObj
+	}{
+		{
+			NewPolyCoef(0, 0, 3, 2, 5),
+			NewPolyCoef(0, 0, 1),
+			NewPolyCoef(0, 0, 0, 5),
+		}, {
+			NewPolyCoef(0, 0, 1, -3, 2),
+			NewPolyCoef(0, -1, 1),
+			NewPolyCoef(0, 0, 0, 2),
+		},
+	} {
+		o := sdivlt(s.f, s.g)
+		if !o.Equals(s.expect) {
+			t.Errorf("ii=%d\nf=%v\ng=%v\nexpect=%v\nactual=%v", ii, s.f, s.g, s.expect, o)
 		}
 	}
 }
