@@ -706,7 +706,7 @@ func TestPolReduce(t *testing.T) {
 }
 
 func TestPQuoRem(t *testing.T) {
-	for _, s := range []struct {
+	for ii, s := range []struct {
 		f, g *Poly
 	}{
 		{NewPolyCoef(0, 2, 3, 1), NewPolyCoef(0, 2, 1)},
@@ -714,12 +714,13 @@ func TestPQuoRem(t *testing.T) {
 		{NewPolyCoef(0, 5, 0, 2, 3), NewPolyCoef(0, 1, 2)},
 		{NewPolyCoef(1, 5, 0, 2, 3), NewPolyCoef(1, NewInt(4), NewPolyCoef(0, 0, 1))},
 	} {
+		// fmt.Printf("TestPQuoRem() ii=%d ==========================\n", ii)
 		a, q, r := s.f.pquorem(s.g)
 
 		if ap, ok := a.(*Poly); ok {
 			// 係数をかける故，レベルが異なるはず
 			if ap.lv == s.g.lv {
-				t.Errorf("invalid a\nf=%v\ng=%v\na=%v\nq=%v\nr=%v\n", s.f, s.g, a, q, r)
+				t.Errorf("invalid a [%d]\nf=%v\ng=%v\na=%v\nq=%v\nr=%v\n", ii, s.f, s.g, a, q, r)
 				continue
 			}
 		}
@@ -733,8 +734,9 @@ func TestPQuoRem(t *testing.T) {
 
 		af := Mul(a, s.f)
 		qg := Mul(q, s.g)
-		if !Sub(af, qg).Equals(r) {
-			t.Errorf("invalid\nf=%v\ng=%v\na=%v\nq=%v\nr=%v\n", s.f, s.g, a, q, r)
+		sub := Sub(af, qg)
+		if !sub.Equals(r) {
+			t.Errorf("invalid\nf=%v\ng=%v\na=%v\nq=%v\nr=%v\naf=%v\nqg=%v\nsub=af-qg=%v\n\n", s.f, s.g, a, q, r, af, qg, sub)
 			continue
 		}
 	}
@@ -805,6 +807,101 @@ func TestSdivLt(t *testing.T) {
 		o := sdivlt(s.f, s.g)
 		if !o.Equals(s.expect) {
 			t.Errorf("ii=%d\nf=%v\ng=%v\nexpect=%v\nactual=%v", ii, s.f, s.g, s.expect, o)
+		}
+	}
+}
+
+func TestDivLt(t *testing.T) {
+	for ii, s := range []struct {
+		f      RObj
+		g      RObj
+		expect RObj
+	}{
+		{
+			NewPolyCoef(0, 0, 3, 2, 5),
+			NewPolyCoef(0, 0, 1),
+			NewPolyCoef(0, 0, 0, 5),
+		}, {
+			NewPolyCoef(0, 0, 1, -3, 2),
+			NewPolyCoef(0, -1, 1),
+			NewPolyCoef(0, 0, 0, 2),
+		}, {
+			NewPolyCoef(0, 0, 1, -3, 10),
+			NewInt(2),
+			NewPolyCoef(0, 0, 0, 0, 5),
+		}, {
+			NewPolyCoef(0, 0, 1, -3, 10),
+			NewInt(3),
+			nil,
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(1, 3, NewPolyCoef(0, -1, 3, 4, 77))),
+			NewInt(3),
+			nil,
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(1, 3, NewPolyCoef(0, -1, 3, 4, 77))),
+			NewInt(11),
+			NewPolyCoef(2, 0, 0, 0, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 7))),
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(0, -1, 3, 4, 77)),
+			NewPolyCoef(0, 1, 3, 7),
+			NewPolyCoef(2, 0, 0, 0, NewPolyCoef(0, 0, 11)),
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(0, -1, 3, 4, 71)),
+			NewPolyCoef(0, 1, 3, 7),
+			nil,
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(1, 3, NewPolyCoef(0, -1, 3, 4, 77))),
+			NewPolyCoef(0, 1, 3, 7),
+			NewPolyCoef(2, 0, 0, 0, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 11))),
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(1, 3, NewPolyCoef(0, -1, 3, 4, 79))),
+			NewPolyCoef(0, 1, 3, 7),
+			nil,
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(1, 3, NewPolyCoef(0, -1, 3, 4, 77))),
+			NewPolyCoef(1, 1, 3, 7),
+			nil,
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(1, 3, -4, NewPolyCoef(0, -1, 3, 4, 77))),
+			NewPolyCoef(1, 1, 3, 7),
+			NewPolyCoef(2, 0, 0, 0, NewPolyCoef(0, 0, 0, 0, 11)),
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(1, 3, -4, 5, NewPolyCoef(0, -1, 3, 4, 77))),
+			NewPolyCoef(1, 1, 3, 7),
+			NewPolyCoef(2, 0, 0, 0, NewPolyCoef(1, 0, NewPolyCoef(0, 0, 0, 0, 11))),
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(0, -1, 3, 4, 77)),
+			NewPolyCoef(2, 1, 3, NewPolyCoef(1, 3, 7)),
+			nil,
+		}, {
+			NewPolyCoef(2, 0, 1, -3, NewPolyCoef(1, -1, 3, 4, 77)),
+			NewPolyCoef(2, 1, 3, NewPolyCoef(0, 3, 7)),
+			nil,
+		},
+	} {
+		if err := s.f.valid(); err != nil {
+			t.Errorf("test setting error: ii=%d: f=%v\nerr=%v", ii, s.f, err)
+			break
+		}
+		if err := s.g.valid(); err != nil {
+			t.Errorf("test setting error: ii=%d: g=%v\nerr=%v", ii, s.g, err)
+			break
+		}
+
+		o := div_lt(s.f, s.g)
+		if (o == nil) != (s.expect == nil) {
+			t.Errorf("nil errorrrrr ii=%d\nf=%v\ng=%v\nexpect=%v\nactual=%v", ii, s.f, s.g, s.expect, o)
+			break
+		}
+		if o == nil {
+			continue
+		}
+		if err := o.valid(); err != nil {
+			t.Errorf("o is invalid: ii=%d: g=%v\nerr=%v", ii, o, err)
+			break
+		}
+		if o != nil && !o.Equals(s.expect) {
+			t.Errorf("not match ii=%d\nf=%v\ng=%v\nexpect=%v\nactual=%v", ii, s.f, s.g, s.expect, o)
 		}
 	}
 }

@@ -156,6 +156,13 @@ func (x *Int) Div(yy NObj) RObj {
 	panic("not implemented") // @TODO
 }
 
+func (x *Int) QuoRem(y *Int) (*Int, *Int) {
+	q := newInt()
+	r := newInt()
+	q.n.QuoRem(x.n, y.n, r.n)
+	return q, r
+}
+
 func (x *Int) Pow(y *Int) RObj {
 	// return x^y
 	if y.Sign() < 0 {

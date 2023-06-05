@@ -74,8 +74,12 @@ func NewPolyCoef(lv Level, coeffs ...interface{}) *Poly {
 	return p
 }
 
+func (p *Poly) NewPoly() *Poly {
+	return NewPoly(p.lv, len(p.c))
+}
+
 func (z *Poly) Clone() *Poly {
-	u := NewPoly(z.lv, len(z.c))
+	u := z.NewPoly()
 	copy(u.c, z.c)
 	return u
 }
@@ -178,7 +182,7 @@ func (z *Poly) Coef(lv Level, deg uint) RObj {
 			return zero
 		}
 	}
-	r := NewPoly(z.lv, len(z.c))
+	r := z.NewPoly()
 	for i, c := range z.c {
 		p, ok := c.(*Poly)
 		if ok {
@@ -441,14 +445,14 @@ func (p *Poly) Sub(y RObj) RObj {
 		z.c[0] = Sub(z.c[0], y)
 		return z
 	} else if p.lv < q.lv {
-		z := NewPoly(q.lv, len(q.c))
+		z := q.NewPoly()
 		z.c[0] = p.Sub(q.c[0])
 		for i := 1; i < len(q.c); i++ {
 			z.c[i] = q.c[i].Neg()
 		}
 		return z
 	} else if len(p.c) > len(q.c) {
-		z := NewPoly(p.lv, len(p.c))
+		z := p.NewPoly()
 		m := len(q.c)
 		for i := 0; i < m; i++ {
 			z.c[i] = Sub(p.c[i], q.c[i])
@@ -456,7 +460,7 @@ func (p *Poly) Sub(y RObj) RObj {
 		copy(z.c[m:], p.c[m:])
 		return z
 	} else if len(p.c) < len(q.c) {
-		z := NewPoly(p.lv, len(q.c))
+		z := q.NewPoly()
 		for i := 0; i < len(p.c); i++ {
 			z.c[i] = Sub(p.c[i], q.c[i])
 		}
@@ -647,6 +651,23 @@ func (x *Poly) Div(y NObj) RObj {
 	return z
 }
 
+// 整数係数多項式か
+func (x *Poly) IsZZ() bool {
+	for _, c := range x.c {
+		switch cc := c.(type) {
+		case *Poly:
+			if !cc.IsZZ() {
+				return false
+			}
+		case *Int:
+			continue
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 func (p *Poly) leadingCoef() NObj {
 	for {
 		switch q := p.c[len(p.c)-1].(type) {
@@ -723,9 +744,9 @@ func sdivlt(x, y *Poly) RObj {
 	z := zret
 
 	for j := len(x.c); j >= 0; j-- {
-		switch yp := y.c[len(y.c)-1].(type) {
-		case NObj:
-			c := x.c[len(x.c)-1].Div(yp)
+		switch yp := y.lc().(type) {
+		case NObj: // y の主係数が定数である.
+			c := x.lc().Div(yp)
 			if z == nil {
 				return c
 			}
@@ -791,10 +812,7 @@ func (xorg *Poly) Sdiv(y *Poly) RObj {
 		}
 		x = xx.(*Poly)
 	}
-	fmt.Printf("Poly.Sdiv() X=%v\n", xorg)
-	fmt.Printf("Poly.Sdiv() x=%v\n", x)
-	fmt.Printf("Poly.Sdiv() y=%v\n", y)
-	panic("toooooo")
+	// unreachable.
 }
 
 func (x *Poly) powi(y int64) RObj {
@@ -1300,6 +1318,8 @@ func (p *Poly) reduce(q *Poly) RObj {
 	}
 }
 
+// lc(g) がかけられており, f は擬剰余の準備ができている状態
+// return (q, r) where r = forg - g*q
 func (forg *Poly) _quorem(g *Poly) (RObj, RObj) {
 	var q RObj
 	q = zero
@@ -1416,9 +1436,30 @@ func (f *Poly) pquorem(g *Poly) (RObj, RObj, RObj) {
 	}
 
 	gc := g.lc()
-	a := gc.Pow(NewInt(int64(len(f.c) - len(g.c) + 1)))
+	m := len(f.c) - len(g.c) + 1
+	a := gc.Pow(NewInt(int64(m)))
 	pp := f.Mul(a).(*Poly)
 	q, r := pp._quorem(g)
+	if true {
+		gq := Mul(g, q)
+		sub := pp.Sub(gq)
+		if !sub.Equals(r) {
+			fmt.Printf("f =%v\n", f)
+			fmt.Printf("pp=%v\n", pp)
+			fmt.Printf("g =%v\n", g)
+			fmt.Printf("q =%v\n", q)
+			fmt.Printf("r =%v\n", r)
+			panic("boo")
+		}
+		if rp, ok := r.(*Poly); ok && rp.lv == f.lv && rp.deg() >= g.deg() {
+			fmt.Printf("f =%v\n", f)
+			fmt.Printf("pp=%v\n", pp)
+			fmt.Printf("g =%v\n", g)
+			fmt.Printf("q =%v\n", q)
+			fmt.Printf("r =%v\n", r)
+			panic("baa")
+		}
+	}
 
 	if err := a.valid(); err != nil {
 		panic(err)
@@ -1430,46 +1471,152 @@ func (f *Poly) pquorem(g *Poly) (RObj, RObj, RObj) {
 		panic(err)
 	}
 	if gg, ok := gc.(*Poly); ok {
-		for {
-			rr, ok1 := r.(*Poly)
-			qq, ok2 := q.(*Poly)
-			if ok1 && ok2 {
-				rk := sdivlt(rr, gg)
-				if rk == nil {
-					break
-				}
-				qk := sdivlt(qq, gg)
-				if qk == nil {
-					break
-				}
-				q = qk
-				r = rk
+		var m1, m2 int
+		q, m1 = pquorem_simplify_max(q, gg, m)
+		r, m2 = pquorem_simplify_max(r, gg, m1)
+		fmt.Printf(" m1=%d, m2=%d\n", m1, m2)
+		if m2 < m1 { // q を割りすぎたので...
+			m = m2
+			for i := m2; i < m1; i++ {
+				q = q.Mul(gc)
 			}
+		} else {
+			m = m1
 		}
+		a, _ = pquorem_simplify_max(a, gg, m)
 	}
-
-	q = pquorem_simplify(gc, q)
-	r = pquorem_simplify(gc, r)
 	return a, q, r
 }
 
-func pquorem_simplify(a, q RObj) RObj {
-	if gg, ok := a.(*Poly); ok {
-		for {
-			if qq, ok2 := q.(*Poly); ok2 {
-				qk := sdivlt(qq, gg)
-				if qk == nil {
-					break
-				}
-				q = qk
+func (f *Poly) div_lt(a RObj) RObj {
+	switch aa := a.(type) {
+	case *Poly:
+		if f.lv == aa.lv {
+			if f.deg() < aa.deg() {
+				return nil
 			}
+			c := div_lt(f.lc(), aa.lc())
+			if c == nil {
+				return nil
+			}
+			if df := f.deg() - aa.deg(); df > 0 {
+				x := NewPolyVarn(f.lv, f.deg()-aa.deg())
+				return x.Mul(c)
+			} else {
+				return c
+			}
+		} else if f.lv > aa.lv {
+			c := div_lt(f.lc(), aa)
+			if c == nil {
+				return nil
+			}
+			x := NewPolyVarn(f.lv, f.deg())
+			return x.Mul(c)
+		}
+		return nil
+	case *Int:
+		c := div_lt(f.lc(), aa)
+		if c == nil {
+			return nil
+		}
+		x := NewPolyVarn(f.lv, f.deg())
+		return x.Mul(c)
+	default:
+		return nil
+	}
+}
+
+func (f *Int) div_lt(a RObj) RObj {
+	if aa, ok := a.(*Int); ok {
+		q, r := f.QuoRem(aa)
+		if !r.IsZero() {
+			return nil
+		}
+		return q
+	} else {
+		return nil
+	}
+
+}
+
+// 主係数を割る
+func div_lt(f, a RObj) RObj {
+	switch ff := f.(type) {
+	case *Poly:
+		return ff.div_lt(a)
+	case *Int:
+		return ff.div_lt(a)
+	default:
+		return nil
+	}
+}
+
+func (forg *Poly) pquorem_simplify(a RObj) RObj {
+	f := forg
+	var ret RObj = zero
+	for {
+		q := f.div_lt(a)
+		if q == nil {
+			return nil
+		}
+		fsub := f.Sub(Mul(q, a))
+		switch aa := a.(type) {
+		case *Poly:
+			ret = Add(ret, q)
+			switch fp := fsub.(type) {
+			case *Poly:
+				if fp.lv < aa.lv || fp.lv == aa.lv && fp.deg() < aa.deg() {
+					return nil
+				}
+				f = fp
+			case NObj:
+				if fp.IsZero() {
+					return ret
+				} else {
+					return nil
+				}
+			default:
+				return nil
+			}
+		case *Int:
+			return q
+		default:
+			return nil
+		}
+	}
+}
+
+// q を a で割り切れるだけ割る
+// max 割って良い最大回数
+func pquorem_simplify_max(qorg RObj, a *Poly, maxn int) (RObj, int) {
+	qold := qorg
+	maxi := maxn
+	for ; maxi > 0; maxi-- {
+		if qq, ok2 := qold.(*Poly); ok2 {
+			q := qq.pquorem_simplify(a)
+			if q == nil {
+				break
+			}
+			qold = q
+		} else {
+			break
+		}
+	}
+	retn := maxn - maxi
+	if true {
+		qx := Mul(qold, a.Pow(NewInt(int64(retn))))
+		if !qx.Equals(qorg) {
+			fmt.Printf("pquorem_simplify_max() invalid\n")
+			fmt.Printf("q=%v\n", qorg)
+			fmt.Printf("a=%v\n", a)
+			fmt.Printf("m=%v, max=%d, maxi=%d\n", retn, maxn, maxi)
+			fmt.Printf("q*a^m=%v\n", qx)
+			fmt.Printf("ret=%v\n", qold)
+			panic("stop")
 		}
 	}
 
-	if qq, ok := q.(*Poly); ok {
-		q = qq.primpart()
-	}
-	return q
+	return qold, retn
 }
 
 func (p *Poly) content(k *Int) *Int {
