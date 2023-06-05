@@ -84,9 +84,9 @@ func TestQuadEq1(t *testing.T) {
 	}
 	defer g.Close()
 
-	z := NewPolyCoef(2, 0, 1)                                            // 主係数
-	p1 := NewPolyCoef(3, -5, NewPolyCoef(1, 0, 1), NewPolyCoef(2, 0, 1)) // z*w^2+y*w-5
-	p2 := NewPolyCoef(3, -3, NewPolyCoef(0, 0, 1))                       // x*w-3;
+	z := NewPolyCoef(2, 0, 1)                         // 主係数
+	p1 := NewPolyCoef(3, -5, NewPolyCoef(1, 0, 1), z) // z*w^2+y*w-5
+	p2 := NewPolyCoef(3, -3, NewPolyCoef(0, 0, 1))    // x*w-3;
 
 	tbl := NewFofQuadEq(g, p1, 3)
 
@@ -166,7 +166,7 @@ func TestQuadEq1(t *testing.T) {
 		case *AtomT:
 			continue
 		default:
-			t.Errorf("ii=%d, op=%d\ninput= (%v != 0) AND %v = 0 AND %v %s 0.\nexpect= %v.\nactual= (%v)\n   AND  (%v).\ncmp=%v", ii, ss.op,
+			t.Errorf("ii=%d, op=%d\ninput=ex([%v], (%v != 0) AND %v = 0 AND %v %s 0).\nexpect= %v.\nactual= (%v)\n   AND  (%v).\ncmp=%v", ii, ss.op, NewPolyVar(3),
 				z, p1, p2, ss.op, ss.expect, o, dge, cmp)
 			return
 		}
