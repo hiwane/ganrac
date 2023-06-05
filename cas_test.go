@@ -85,6 +85,19 @@ func makeSage(t *testing.T, g *ganrac.Ganrac) ganrac.CAS {
 }
 
 func makeOX(t *testing.T, g *ganrac.Ganrac) ganrac.CAS {
+	time.Sleep(time.Second / 2)
+	for i := 1; i <= 10; i++ {
+		ox := _makeOX(t, g)
+		if ox != nil {
+			return ox
+		}
+		fmt.Printf("waiting for openxm server... %d sec\n", i*3)
+		time.Sleep(time.Second * 3)
+	}
+	return nil
+}
+
+func _makeOX(t *testing.T, g *ganrac.Ganrac) ganrac.CAS {
 	cport := "localhost:1234"
 	dport := "localhost:4321"
 	connc, err := net.Dial("tcp", cport)
