@@ -21,6 +21,10 @@ func TestSimplNum(t *testing.T) {
 		expect Fof
 	}{
 		{
+			// 20*z+y^2>=0
+			NewAtom(NewPolyCoef(2, NewPolyVarn(1, 2), 20), GE),
+			NewAtom(NewPolyCoef(2, NewPolyVarn(1, 2), 20), GE),
+		}, {
 			// adam2-1 && projection
 			// 4*y^2+4*x^2-1<=0 && y^2-y+x^2-x==2
 			NewFmlAnds(

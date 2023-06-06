@@ -129,7 +129,7 @@ func (op OP) strict() OP {
 
 func (op OP) neg() OP {
 	// 負  :        1 <--> 4, 2 <-->2, 3 <--> 6, 5 <-->5
-	if op == EQ || op == NE {
+	if op == EQ || op == NE || op == OP_TRUE || op == OP_FALSE {
 		return op
 	} else {
 		return op ^ (LT | GT)

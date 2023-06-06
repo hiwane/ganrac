@@ -631,6 +631,7 @@ func (poly *Poly) simplNumPolyFctr(g *Ganrac, t, f *NumRegion) (OP, *NumRegion, 
 	if cont.(RObj).Sign() > 0 {
 		return ret_op, pret, nret
 	} else {
+		// ret_op は OP_TRUE/OP_FALSE の場合がある
 		return ret_op.neg(), nret, pret
 	}
 }
@@ -798,7 +799,12 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 	// fmt.Printf("   And.simplNum And=%v\n", p)
 	for i := range p.fml {
 		fml, tt, ff := p.fml[i].simplNum(g, t, f)
-		// fmt.Printf("@@ And.simplNum[1st,%d/%d] %v -> %v, false=%v\n", i+1, len(p.fml), p.fml[i], fml, ff)
+		if false && !p.fml[i].Equals(fml) {
+			fmt.Printf("@@ And.simplNum @AND@ %v\n", p)
+			fmt.Printf("@@ And.simplNum[1st,%d/%d] %v -> %v, false=%v\n", i+1, len(p.fml), p.fml[i], fml, ff)
+			fmt.Printf("@@ t=%v\n", t)
+			fmt.Printf("@@ f=%v\n", f)
+		}
 		if _, ok := fml.(*AtomF); ok {
 			return falseObj, nil, nil
 		}
@@ -831,6 +837,9 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 		}
 
 		fmls[i], tt, ff = fml.simplNum(g, t, ff)
+		if false && !fml.Equals(fmls[i]) {
+			fmt.Printf("@@ And.simplNum[2nd,%d/%d] %v -> %v, false=%v\n", i+1, len(p.fml), p.fml[i], fml, ff)
+		}
 		if _, ok := fmls[i].(*AtomF); ok {
 			return falseObj, nil, NewNumRegion()
 		}
