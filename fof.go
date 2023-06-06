@@ -2102,6 +2102,9 @@ func (p *AtomF) normalize() Fof {
 }
 
 func (p *FmlAnd) normalize() Fof {
+	for i := 0; i < len(p.fml); i++ {
+		p.fml[i] = p.fml[i].normalize()
+	}
 	f := p.fml
 	sort.Slice(f, func(i, j int) bool {
 		return f[i].FmlLess(f[j])
@@ -2110,6 +2113,9 @@ func (p *FmlAnd) normalize() Fof {
 }
 
 func (p *FmlOr) normalize() Fof {
+	for i := 0; i < len(p.fml); i++ {
+		p.fml[i] = p.fml[i].normalize()
+	}
 	f := p.fml
 	sort.Slice(f, func(i, j int) bool {
 		return f[i].FmlLess(f[j])

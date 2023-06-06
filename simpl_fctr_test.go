@@ -22,18 +22,30 @@ func testSameFormAndOrFctr(output, expect Fof) bool {
 	var oofmls, eefmls []Fof
 	switch oo := output.(type) {
 	case *FmlAnd:
+		oo.Normalize()
 		oofmls = oo.Fmls()
 		ee := expect.(*FmlAnd)
+		ee.Normalize()
 		eefmls = ee.Fmls()
 	case *FmlOr:
+		oo.Normalize()
 		oofmls = oo.Fmls()
 		ee := expect.(*FmlOr)
+		ee.Normalize()
 		eefmls = ee.Fmls()
+	case *Atom:
+		if oo.Equals(expect) {
+			return true
+		}
+		oo.Normalize()
+		expect.(*Atom).Normalize()
+		return oo.Equals(expect)
 	default:
 		return oo.Equals(expect)
 	}
 
 	if len(oofmls) != len(eefmls) {
+		fmt.Printf("len %d, %d\n", len(oofmls), len(eefmls))
 		return false
 	}
 
@@ -59,7 +71,6 @@ func testSameFormAndOrFctr(output, expect Fof) bool {
 			}
 		}
 		if m != 1 {
-			fmt.Printf("gege %d\n", m)
 			return false
 		}
 	}

@@ -169,3 +169,13 @@ func Mul_mod(a, b Moder, p Uint) Moder {
 func Add_mod(a, b Moder, p Uint) Moder {
 	return a.add_mod(b, p)
 }
+
+func (p *Atom) Normalize() Fof {
+	return p.normalize()
+}
+func (p *FmlAnd) Normalize() Fof {
+	return p.normalize()
+}
+func (p *FmlOr) Normalize() Fof {
+	return p.normalize()
+}
