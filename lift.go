@@ -5,6 +5,7 @@ package ganrac
 // symoblic numeric computation 2009.
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
@@ -119,31 +120,43 @@ func (cad *CAD) liftallpara() error {
 	cad.stack.pop() // root を捨てる
 	cad.root.lift(cad, cad.stack)
 
+	ctx_bare := context.Background()
+	ctx_pare, cancel := context.WithCancel(ctx_bare)
 	ch := make(chan *Cell, cad.g.paranum)
 	cherr := make(chan error, cad.g.paranum)
-	defer close(ch)
 	defer close(cherr)
 
 	var wg sync.WaitGroup
 	wg.Add(cad.g.paranum)
 
-	fn := func(ch chan *Cell, cad *CAD, stack *cellStack, cherr chan<- error, idx int) {
+	fn := func(ctx context.Context, ch chan *Cell, cad *CAD, stack *cellStack, cherr chan<- error, idx int) {
 		var err error
 		defer wg.Done()
 		for {
-			cell := <-ch
-			if cell == nil {
-				// fmt.Fprintf(os.Stderr, "[%2d] EXIT   >>   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n", idx)
+			select {
+			case <-ctx.Done(): // どこかでエラーが発生し，cancel された
 				cherr <- nil
 				return
-			}
-			// fmt.Fprintf(os.Stderr, "[%2d] LIFT   >> %v  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n", idx, cell.Index())
-			stack.push(cell)
-			err = cad.liftall(stack)
-			// fmt.Fprintf(os.Stderr, "[%2d] LIFTed << %v  @@@@@@@@@@@@@@@@@@@@@@@@\n", idx, cell.Index())
-			if err != nil {
-				cherr <- err // エラー返っても最後まで処理を続けてしまう. @TODO
-				return
+			default:
+				cell := <-ch
+				if cell == nil {
+					// 番兵.. 処理するセルがない
+					cherr <- nil
+					return
+				}
+				//fmt.Fprintf(os.Stderr, "[%2d] LIFT   >> %v  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n", idx, cell.Index())
+				if cell.Index()[0] == 48 && true { ///// adam3 でのテストを想定
+					cherr <- fmt.Errorf("dummmy errrrrorrrrrrrrr")
+					return
+				}
+
+				stack.push(cell)
+				err = cad.liftall(stack)
+				// fmt.Fprintf(os.Stderr, "[%2d] LIFTed << %v  @@@@@@@@@@@@@@@@@@@@@@@@\n", idx, cell.Index())
+				if err != nil { // エラー発生
+					cherr <- err // 親にエラーを返し，cancel してもらう
+					return
+				}
 			}
 		}
 	}
@@ -151,32 +164,46 @@ func (cad *CAD) liftallpara() error {
 	stacks := make([]*cellStack, cad.g.paranum)
 	for i := 0; i < cad.g.paranum; i++ {
 		stacks[i] = newCellStack()
-		go fn(ch, cad, stacks[i], cherr, i)
+		go fn(ctx_pare, ch, cad, stacks[i], cherr, i)
 	}
 
 	has_root := false
+	var perr error
 	for !cad.stack.empty() { // level 1 で並列化
-		cell := cad.stack.pop()
-		if cell.truth >= 0 {
-			continue
-		} else if cell == cad.root {
-			has_root = true // level 1 が束縛変数の場合
-		} else {
-			ch <- cell
+		select {
+		case perr = <-cherr:
+			// エラー検出
+			goto _END_LOOP
+		default:
+			cell := cad.stack.pop()
+			if cell.truth >= 0 {
+				continue
+			} else if cell == cad.root {
+				has_root = true // level 1 が束縛変数の場合
+			} else {
+				ch <- cell
+			}
 		}
 	}
+_END_LOOP:
 
-	// 番兵... 途中でエラーになったら？？
+	// 番兵
 	for i := 0; i < cad.g.paranum; i++ {
 		ch <- nil
 	}
 
-	wg.Wait()
-	for i := 0; i < cad.g.paranum; i++ { // これやるなら wg.Wait() いらんくない？
-		perr := <-cherr
-		if perr != nil {
-			return perr
+	if perr == nil {
+		for i := 0; i < cad.g.paranum; i++ { // これやるなら wg.Wait() いらんくない？
+			perr = <-cherr
+			if perr != nil {
+				break
+			}
 		}
+	}
+	cancel()
+	wg.Wait()
+	if perr != nil {
+		return perr
 	}
 
 	// 結果が真偽値になるときにエラーになるのかな
