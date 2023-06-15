@@ -160,6 +160,7 @@ opt: dictionary.
   %9s: inequational constraints (Iwane15)
   %9s: simplify  even formula
   %9s: simplify  homogeneous formula
+  %9s: simplify  translatation formula
 
 Example
 =======
@@ -173,6 +174,7 @@ Example
 			getQEoptStr(QEALGO_NEQ),
 			getQEoptStr(QEALGO_SMPL_EVEN),
 			getQEoptStr(QEALGO_SMPL_HOMO),
+			getQEoptStr(QEALGO_SMPL_TRAN),
 		)},
 		{"quit", 0, 1, funcQuit, false, "([code])\t\tbye.", ""},
 		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)\t\treal root isolation", ""},
@@ -260,7 +262,7 @@ func funcImpl(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%s(2nd-arg): expected a first-order formula", name)
 	}
 
-	return FofImpl(f0, f1), nil
+	return NewFmlImpl(f0, f1), nil
 }
 
 func funcEquiv(g *Ganrac, name string, args []interface{}) (interface{}, error) {
@@ -273,7 +275,7 @@ func funcEquiv(g *Ganrac, name string, args []interface{}) (interface{}, error) 
 		return nil, fmt.Errorf("%s(2nd-arg): expected a first-order formula", name)
 	}
 
-	return FofEquiv(f0, f1), nil
+	return NewFmlEquiv(f0, f1), nil
 }
 
 func funcExists(g *Ganrac, name string, args []interface{}) (interface{}, error) {

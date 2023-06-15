@@ -1631,12 +1631,8 @@ func NewQuantifier(forex bool, lvv []Level, fml Fof) Fof {
 	}
 }
 
-func newFmlImplies(f1, f2 Fof) Fof {
-	return NewFmlOr(f1.Not(), f2)
-}
-
 func NewFmlEquiv(f1, f2 Fof) Fof {
-	return NewFmlAnd(newFmlImplies(f1, f2), newFmlImplies(f2, f1))
+	return NewFmlAnd(NewFmlImpl(f1, f2), NewFmlImpl(f2, f1))
 }
 
 func (p *FmlAnd) Len() int {
@@ -2133,12 +2129,8 @@ func (p *Exists) normalize() Fof {
 	return p
 }
 
-func FofImpl(f1, f2 Fof) Fof {
+func NewFmlImpl(f1, f2 Fof) Fof {
 	return NewFmlOr(f1.Not(), f2)
-}
-
-func FofEquiv(f1, f2 Fof) Fof {
-	return NewFmlAnd(FofImpl(f1, f2), FofImpl(f2, f1))
 }
 
 func (a *Atom) getPoly() *Poly {

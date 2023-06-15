@@ -191,7 +191,7 @@ func TestVsLin2(t *testing.T) {
 			for i := Level(0); i < ss.lv; i++ {
 				q[i] = i
 			}
-			g := NewQuantifier(true, q, FofEquiv(f, sss.expect))
+			g := NewQuantifier(true, q, NewFmlEquiv(f, sss.expect))
 			for i := Level(0); i < ss.lv; i++ {
 				g = vsLinear(g, i)
 				switch g.(type) {
