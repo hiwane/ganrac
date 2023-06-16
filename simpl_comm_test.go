@@ -23,13 +23,13 @@ func TestSimplComm1(t *testing.T) {
 			NewFmlOr(X, Y),
 		}, { // 1
 			NewFmlAnd(NewFmlOr(X, Y), NewFmlOrs(X, Y, Z)),
-			NewFmlOrs(X, Y, Z),
+			NewFmlOrs(X, Y),
 		}, { // 2
 			NewFmlAnd(NewFmlOrs(X, Y, W, Z), NewFmlOrs(X, Y, Z)),
-			NewFmlOrs(X, Y, W, Z),
+			NewFmlOrs(X, Y, Z),
 		}, { // 3
 			NewFmlAnd(NewFmlOrs(W, X, Y, Z), NewFmlOrs(X, Y, Z)),
-			NewFmlOrs(X, Y, W, Z),
+			NewFmlOrs(X, Y, Z),
 		}, { // 4
 			NewFmlAnd(NewFmlOrs(X, Y, NewAtom(z, GT)), NewFmlOrs(X, Y, NewAtom(z, GE))),
 			NewFmlOrs(X, Y, NewAtom(z, GT)),

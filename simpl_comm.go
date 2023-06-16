@@ -64,7 +64,7 @@ func (p *FmlOr) simplComm() Fof {
 		im++
 	}
 
-	// A        || (A && C) ==> A && C
+	// A        || (A && C) ==> A
 	// (A && B) || (A && C) ==> A && (B || C)
 	for ; i < im; i++ {
 		a := fmls[i].(*FmlAnd)
@@ -90,6 +90,7 @@ func (p *FmlOr) simplComm() Fof {
 			}
 			if m == len(a.fml) {
 				// 全部含まれた.... 不要
+				fmls[j] = fmls[i]
 				fmls[i] = falseObj
 				break
 			} else if m+1 == len(a.fml) {
