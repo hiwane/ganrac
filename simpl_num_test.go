@@ -75,6 +75,35 @@ func TestSimplNum(t *testing.T) {
 		}, {
 			NewFmlAnds(NewAtom(NewPolyCoef(1, -1, 1), GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 0, 1), LT)),
 			NewFmlAnds(NewAtom(NewPolyCoef(1, -1, 1), GT), NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -1), 0, 1), LT)),
+		}, {
+			// (3*x+1!=0 && x<0) || (3*x-1>=0 && 3*x-2<0)
+			NewFmlOrs(
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, 1, 3), NE),
+					NewAtom(NewPolyCoef(0, 0, 1), LT)),
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, -1, 3), GE),
+					NewAtom(NewPolyCoef(0, -2, 3), LT))),
+			nil,
+		}, {
+			// (3*x+1<0 && 3*x-1<=0) || ((3*x-2)*(3*x+1)<0 && (x<0 || 3*x-1>=0));
+			NewFmlOrs(
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, 1, 3), LT),
+					NewAtom(NewPolyCoef(0, -1, 3), LE)),
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, -2, -3, 9), LT),
+					NewFmlOrs(
+						NewAtom(NewPolyCoef(0, 0, 1), LT),
+						NewAtom(NewPolyCoef(0, -1, 3), GE)))),
+			// 3*x+1<0 || ((3*x-2)*(3*x+1)<0 && (x<0 || 3*x-1>=0))
+			NewFmlOrs(
+				NewAtom(NewPolyCoef(0, 1, 3), LT),
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, -2, -3, 9), LT),
+					NewFmlOrs(
+						NewAtom(NewPolyCoef(0, 0, 1), LT),
+						NewAtom(NewPolyCoef(0, -1, 3), GE)))),
 		},
 	} {
 		if ss.expect == nil {
