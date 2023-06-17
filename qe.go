@@ -301,7 +301,7 @@ func (qeopt QEopt) qe_simpl(fof FofQ, cond qeCond) Fof {
 	// 偶論理式
 	if (qeopt.Algo & QEALGO_SMPL_EVEN) != 0 {
 		qeopt.log(cond, 2, "eveni", "%v\n", fof)
-		if ff := qeopt.qe_evenq(fof, cond); ff != nil {
+		if ff := qeopt.qe_evenq(fof, cond, 4); ff != nil {
 			qeopt.log(cond, 2, "eveno", "%v\n", ff)
 			return ff
 		}

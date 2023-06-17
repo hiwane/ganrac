@@ -104,11 +104,11 @@ func (tbl *fof_quad_eq) SetSgnS(v int) {
 	tbl.sgn_s = v
 }
 
-func (qeopt *QEopt) Qe_evenq(prenex_fof Fof, cond qeCond) Fof {
+func (qeopt *QEopt) Qe_evenq(prenex_fof Fof, cond qeCond, maxdeg int) Fof {
 	if qeopt.g.ox == nil {
 		panic("muri-yan")
 	}
-	return qeopt.qe_evenq(prenex_fof, cond)
+	return qeopt.qe_evenq(prenex_fof, cond, maxdeg)
 }
 
 func QeQuadEq(a Fof, tbl *fof_quad_eq) Fof {
