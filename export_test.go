@@ -121,6 +121,10 @@ func QeLinEq(a Fof, tbl *fof_quad_eq) Fof {
 	return a.qe_quadeq(qe_lineq, tbl)
 }
 
+func QeVS(a Fof, lv Level, m int, g *Ganrac) Fof {
+	return vs_main(a, lv, m, g)
+}
+
 func SimplNum(
 	fof simpler, g *Ganrac, true_region, false_region *NumRegion) (Fof, *NumRegion, *NumRegion) {
 	return fof.simplNum(g, true_region, false_region)
@@ -133,6 +137,10 @@ func (poly *Poly) SimplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) 
 	return poly.simplNumUniPoly(gray)
 }
 
+func SimplBasic(fof, nec, suf Fof) Fof {
+	return fof.simplBasic(nec, suf)
+}
+
 func SimplFctr(fof simpler, g *Ganrac) Fof {
 	return fof.simplFctr(g)
 }
@@ -143,6 +151,10 @@ func SimplReduce(p Fof, g *Ganrac, inf *reduce_info) Fof {
 
 func (t *NumRegion) Append(lv Level, inf, sup NObj) {
 	t.r[lv] = append(t.r[lv], &ninterval{inf, sup})
+}
+
+func (g *Ganrac) SimplFof(f Fof) Fof {
+	return g.simplFof(f, trueObj, falseObj)
 }
 
 func FofTag(fof Fof) uint {
@@ -180,4 +192,11 @@ func (p *FmlAnd) Normalize() Fof {
 }
 func (p *FmlOr) Normalize() Fof {
 	return p.normalize()
+}
+
+func HasVar(q Fof, lv Level) bool {
+	return q.hasVar(lv)
+}
+func ValidFof(q Fof) error {
+	return q.valid()
 }

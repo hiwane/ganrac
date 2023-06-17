@@ -965,6 +965,87 @@ func (z *Poly) Subst(xs RObj, lv Level) RObj {
 	return p
 }
 
+func (z *Poly) subst_frac_sqr(num, sqr RObj, sgn int, dens []RObj, lv Level) (RObj, RObj) {
+	// VS からの呼び出しを仮定.
+	// dens = [1, den, ..., den^d]
+	// d = len(dens) - 1
+	// z(x[lv]=(num+sgn*root(sqr)/den) * den^d = to + tc * root(sqr)
+
+	if len(dens) > 3 {
+		panic("unsupprted len(dens)")
+	}
+	if z.lv > lv {
+		p := make([]RObj, len(z.c))
+		q := make([]RObj, len(z.c))
+		for i := 0; i < len(z.c); i++ {
+			switch zc := z.c[i].(type) {
+			case *Poly:
+				p[i], q[i] = zc.subst_frac_sqr(num, sqr, sgn, dens, lv)
+			case NObj:
+				p[i] = dens[len(dens)-1].Mul(zc)
+				q[i] = zero
+			default:
+				fmt.Printf("panic! %v\n", zc)
+			}
+		}
+		// 代入している num/den 等がパラメータ付きである場合，
+		// level によっては係数に持てないので，別途和を計算する必要がある
+		x := NewPolyVar(z.lv)
+		xn := x
+		to := p[0]
+		tc := q[0]
+		for i := 1; i < len(p); i++ {
+			to = Add(to, xn.Mul(p[i]))
+			tc = Add(tc, xn.Mul(q[i]))
+			xn = xn.Mul(x).(*Poly)
+		}
+		return to, tc
+	} else if z.lv < lv {
+		vv := z.Mul(dens[len(dens)-1])
+		if err := vv.valid(); err != nil {
+			panic("!")
+		}
+		return vv, zero
+	}
+
+	dd := len(dens) - 1
+
+	// Horner 法は使えない.
+	// [z2*x^2 + z1*x + z0](x // (a +- sqrt(b))/d)
+	// z2(a^2+b +- 2*a*sqrt(b)) + z1*d*(a +- sqrt(b)) + d^2*z0
+	// to + tc*sqrt(b)
+
+	var to RObj
+	var tc RObj // 根号の係数
+
+	// 0次
+	to = Mul(z.c[0], dens[dd-0]) // 根号の外
+
+	// 1次
+	tc = Mul(dens[dd-1], z.c[1])
+	to = Add(to, Mul(tc, num))
+	if sgn < 0 {
+		tc = tc.Neg()
+	}
+
+	if z.deg() == 2 {
+		// 2次
+		// (a+sqrt(b))^2 = a^2 + b + 2a*sqrt(b)
+		vv := Mul(z.c[2], dens[dd-2])
+		to = Add(to, Mul(vv, Add(Mul(num, num), sqr)))
+		if sgn < 0 {
+			tc = Sub(tc, Mul(vv, Mul(num, two)))
+		} else {
+			tc = Add(tc, Mul(vv, Mul(num, two)))
+		}
+	}
+	if z.deg() > 2 {
+		panic("unsupported VS")
+	}
+
+	return to, tc
+}
+
 func (z *Poly) subst_frac(num RObj, dens []RObj, lv Level) RObj {
 	// VS からの呼び出しを仮定.
 	// dens = [1, den, ..., den^d]
@@ -1900,7 +1981,7 @@ func (p *Poly) discrim2(lv Level) RObj {
 	a := p.Coef(lv, 2)
 	b := p.Coef(lv, 1)
 	c := p.Coef(lv, 0)
-	return Sub(Mul(b, b), Mul(NewInt(4), Mul(a, c)))
+	return Sub(Mul(b, b), Mul(four, Mul(a, c)))
 }
 
 func (f *Poly) karatsuba_divide(d int) (RObj, RObj) {

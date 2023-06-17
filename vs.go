@@ -10,145 +10,199 @@ import (
 	"fmt"
 )
 
+const OPVS_SHIFT = 8
+
 type fof_vser interface {
-	apply_vs(fm func(atom *Atom, p vs_sample_point) Fof, p vs_sample_point) Fof
+	apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof
 }
 
-type vs_sample_point interface {
-	lc() RObj
-	DenSign() int
-	SetDenSign(int)
-	neccon() Fof
-	virtual_subst(atom *Atom) Fof   // sp を代入する
-	virtual_subst_e(atom *Atom) Fof // sp+e を代入する
-	//	virtual_subst_i(atom *Atom) Fof	// -inf を代入する
-	level() Level
-}
-
-type vslin_sample_point struct {
+type vs_sample_point struct {
+	// (num + sqrt(v)) / den
 	num    RObj
 	den    []RObj // [den^0, den, den^2, den^3, ...]
+	sqr    RObj
+	lc     RObj
+	deg    int
+	sqrc   int
 	densgn int
-	lv     Level
+	// 線形なら +1, ２次なら +1 or -1.
+	// 一番大きな根なら +1 = 主係数の符号と x+e の符号が一致
+	// 一番小さな根なら -1 = 主係数の符号と x+e の符号が一致しない
+
+	idx    int
+	neccon Fof
 }
 
-func (sp *vslin_sample_point) level() Level {
-	return sp.lv
+func (sp *vs_sample_point) Format(s fmt.State, format rune) {
+	fmt.Fprintf(s, "[sp, (")
+	if sp.sqr != nil {
+		fmt.Fprintf(s, "(")
+		sp.num.Format(s, format)
+		op := "+"
+		if sp.sqrc < 0 {
+			op = "-"
+		}
+		fmt.Fprintf(s, ")%ssqrt(", op)
+		sp.sqr.Format(s, format)
+		fmt.Fprintf(s, ")")
+	} else {
+		sp.num.Format(s, format)
+	}
+	fmt.Fprintf(s, ")/(")
+	sp.den[1].Format(s, format)
+	fmt.Fprintf(s, "), @densgn=%+d,idx=%+d,nec=", sp.densgn, sp.idx)
+	sp.neccon.Format(s, format)
+	fmt.Fprintf(s, "]")
 }
 
-func (sp *vslin_sample_point) DenSign() int {
+func newVslinSamplePoint(maxd int, num, den RObj) *vs_sample_point {
+	sp := new(vs_sample_point)
+	sp.num = num
+	sp.deg = 1
+	if den.IsNumeric() {
+		sp.densgn = 1
+	} else {
+		sp.densgn = 0
+	}
+	if den.Sign() < 0 {
+		den = den.Neg()
+	} else {
+		sp.num = sp.num.Neg()
+	}
+
+	sp.idx = 1
+	sp.den = make([]RObj, maxd+1)
+	sp.den[0] = one
+	sp.den[1] = den
+	for i := 2; i <= maxd; i++ {
+		sp.den[i] = sp.den[i-1].Mul(den)
+	}
+	sp.neccon = trueObj
+	sp.lc = den
+	return sp
+}
+
+func (sp *vs_sample_point) DenSign() int {
 	return sp.densgn
 }
 
-func (sp *vslin_sample_point) SetDenSign(sgn int) {
+func (sp *vs_sample_point) SetDenSign(sgn int) {
 	sp.densgn = sgn
 }
 
-func (sp *vslin_sample_point) lc() RObj {
-	return sp.den[1]
+func (sp *vs_sample_point) LC() RObj {
+	return sp.lc
 }
 
-func (sp *vslin_sample_point) neccon() Fof {
-	return trueObj
+func (sp *vs_sample_point) necessaryCondition() Fof {
+	return sp.neccon
+}
+
+func (sp *vs_sample_point) isRational() bool {
+	return sp.sqr == nil || sp.sqr.IsZero()
 }
 
 type vs_elimination_set struct {
-	equ []*Poly // <=, >=, ==
-	ine []*Poly // <, >, !=
-	lv  Level
+	ps []*vs_elimination_elem
 }
 
-func newVsEliminationSet(lv Level) *vs_elimination_set {
+type vs_elimination_elem struct {
+	p *Poly
+	// EQ if =, <=, >=
+	// GT if >, !=
+	// LT if <, !=
+	kind int
+}
+
+func newVsEliminationSet() *vs_elimination_set {
 	p := new(vs_elimination_set)
-	p.equ = make([]*Poly, 0)
-	p.ine = make([]*Poly, 0)
-	p.lv = lv
+	p.ps = make([]*vs_elimination_elem, 0)
 	return p
 }
 
-func (es *vs_elimination_set) exists(atom *Atom, pset []*Poly) bool {
-	if err := atom.valid(); err != nil {
-		fmt.Printf("atom=%v\n", atom)
-		panic("invalid atom")
-	}
-	for i, p := range atom.p {
-		for _, qq := range pset {
-			if qq.Equals(p) {
-				atom.p[i] = qq
-				return true
-			}
+func (es *vs_elimination_set) append(p *Poly, oop OP) {
+	op := int(oop)
+	for _, qq := range es.ps {
+		if qq.p.Equals(p) {
+			qq.kind |= (1 << (OPVS_SHIFT + op)) | op
+			return
 		}
 	}
-	return false
+	q := new(vs_elimination_elem)
+	q.p = p
+	q.kind = (1 << (OPVS_SHIFT + op)) | op
+	es.ps = append(es.ps, q)
 }
 
-func (es *vs_elimination_set) addAtom(atom *Atom) {
+// get_vs_polys から呼び出される
+func (es *vs_elimination_set) addAtom(atom *Atom, lv Level) {
 	for _, pol := range atom.p {
-		if pol.hasVar(es.lv) {
-			if (atom.op & EQ) == 0 {
-				if !es.exists(atom, es.ine) {
-					es.ine = append(es.ine, pol)
-				}
+		if pol.hasVar(lv) {
+			if len(atom.p) == 1 {
+				es.append(pol, atom.op)
+			} else if atom.op&EQ != 0 {
+				es.append(pol, GE)
+				es.append(pol, LE)
 			} else {
-				if !es.exists(atom, es.equ) {
-					es.equ = append(es.equ, pol)
-				}
+				es.append(pol, NE)
 			}
 		}
 	}
 }
 
-func (fof *AtomT) apply_vs(fm func(atom *Atom, p vs_sample_point) Fof, p vs_sample_point) Fof {
+func (fof *AtomT) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
 	return fof
 }
-func (fof *AtomF) apply_vs(fm func(atom *Atom, p vs_sample_point) Fof, p vs_sample_point) Fof {
+func (fof *AtomF) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
 	return fof
 }
 
-func (fof *Atom) apply_vs(fm func(atom *Atom, p vs_sample_point) Fof, ptt vs_sample_point) Fof {
-	lv := ptt.level()
+func (fof *Atom) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, ptt *vs_sample_point, lv Level) Fof {
 	if fof.hasVar(lv) {
-		return fm(fof, ptt)
+		return fm(fof, ptt, lv)
 	} else {
 		return fof
 
 	}
 }
 
-func (fof *FmlAnd) apply_vs(fm func(atom *Atom, p vs_sample_point) Fof, p vs_sample_point) Fof {
+func (fof *FmlAnd) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
 	var r Fof = trueObj
 
 	for _, f := range fof.fml {
-		r = NewFmlAnd(r, f.apply_vs(fm, p))
+		r = NewFmlAnd(r, f.apply_vs(fm, p, lv))
 	}
 
 	return r
 }
 
-func (fof *FmlOr) apply_vs(fm func(atom *Atom, p vs_sample_point) Fof, p vs_sample_point) Fof {
+func (fof *FmlOr) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
 	var r Fof = falseObj
 
 	for _, f := range fof.fml {
-		r = NewFmlOr(r, f.apply_vs(fm, p))
+		r = NewFmlOr(r, f.apply_vs(fm, p, lv))
 	}
 
 	return r
 }
 
-func (fof *ForAll) apply_vs(fm func(atom *Atom, p vs_sample_point) Fof, p vs_sample_point) Fof {
+func (fof *ForAll) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
 	fmt.Printf("forall %v\n", fof)
 	panic("invalid......... apply_vs(forall)")
 }
 
-func (fof *Exists) apply_vs(fm func(atom *Atom, p vs_sample_point) Fof, p vs_sample_point) Fof {
+func (fof *Exists) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
 	fmt.Printf("exists %v\n", fof)
 	panic("invalid......... apply_vs(exists)")
 }
 
-func gen_sample_vs(p *Poly, lv Level, maxd int) []vs_sample_point {
+// サンプル点を生成する.
+// 2 次の場合に 3 サンプルになるので slice で返す
+func (vee *vs_elimination_elem) vs_make_samples(lv Level, maxd int) []*vs_sample_point {
+	p := vee.p
 	if p.Deg(lv) == 1 {
 		sp := gen_sample_vslin(p, lv, maxd)
-		return []vs_sample_point{sp}
+		return []*vs_sample_point{sp}
 	}
 	if p.Deg(lv) == 2 {
 		return gen_sample_vsquad(p, lv, maxd)
@@ -156,59 +210,129 @@ func gen_sample_vs(p *Poly, lv Level, maxd int) []vs_sample_point {
 	return nil
 }
 
-// @TODO
-func gen_sample_vsquad(p *Poly, lv Level, maxd int) []vs_sample_point {
-	sp := make([]vs_sample_point, 0)
-	return sp
-}
+func gen_sample_vsquad(p *Poly, lv Level, maxd int) []*vs_sample_point {
+	sps := make([]*vs_sample_point, 0, 3)
 
-func gen_sample_vslin(p *Poly, lv Level, maxd int) *vslin_sample_point {
-	sp := new(vslin_sample_point)
-	sp.lv = lv
-	sp.num = p.Coef(lv, 0)
-	den := p.Coef(lv, 1)
-	if den.IsNumeric() {
-		sp.densgn = 1
-		if den.Sign() < 0 {
-			den = den.Neg()
-		} else {
-			sp.num = sp.num.Neg()
-		}
+	c0 := p.Coef(lv, 0)
+	c1 := p.Coef(lv, 1)
+	c2 := p.Coef(lv, 2)
+
+	// c2=0 の場合は，1次のものに条件付き
+	if !c2.IsNumeric() {
+		sp := newVslinSamplePoint(maxd, c0, c1)
+		sp.neccon = NewAtom(c2, EQ)
+		sps = append(sps, sp)
+	}
+
+	// 2次の場合は，解の公式を用いて...
+	sp1 := newVslinSamplePoint(maxd, c1, Mul(c2, two))
+	sp1.sqr = Sub(c1.Mul(c1), Mul(Mul(c2, c0), four)) // 混合部分は判別式
+	sp1.neccon = NewAtom(sp1.sqr, GE)                 // 判別式が非負
+	sp1.sqrc = 1
+	sp1.deg = 2
+	if sp1.num != c1 {
+		sp1.lc = c2
 	} else {
-		if den.Sign() < 0 {
-			den = den.Neg()
-		} else {
-			sp.num = sp.num.Neg()
-		}
-		sp.densgn = 0
+		sp1.lc = c2.Neg()
 	}
+	if c2.Sign() < 0 {
+		// 分母の符号を反転しているので，sp1 が小さい根を表す．
+		// b/-2a + sqrt(b^2 - 4ac)/-2a
+		sp1.idx = -1
+	} else {
+		// 分子の符号を反転しているので，sp1 が大きい根を表す．
+		sp1.idx = 1
+	}
+	sps = append(sps, sp1)
 
-	sp.den = make([]RObj, maxd+1)
-	sp.den[0] = one
-	sp.den[1] = den
-	for i := 2; i <= maxd; i++ {
-		sp.den[i] = sp.den[i-1].Mul(den)
-	}
-	return sp
+	sp2 := new(vs_sample_point)
+	*sp2 = *sp1
+	sp2.sqrc = -1
+	sp2.idx = -sp1.idx
+	sps = append(sps, sp2)
+
+	return sps
 }
 
-func virtual_subst(atom *Atom, ptt vs_sample_point) Fof {
+func gen_sample_vslin(p *Poly, lv Level, maxd int) *vs_sample_point {
+	num := p.Coef(lv, 0)
+	den := p.Coef(lv, 1)
+	return newVslinSamplePoint(maxd, num, den)
+}
+
+func virtual_subst(atom *Atom, ptt *vs_sample_point, lv Level) Fof {
 	// 線形なサンプル点の代入
 	// 分母は非ゼロと仮定し，
 	// その符号は pt.densgn
-	return ptt.virtual_subst(atom)
+	if ptt.isRational() {
+		return ptt.virtual_subst(atom, lv)
+	} else {
+		return ptt.virtual_subst_sqr(atom, lv)
+	}
 }
 
-func (pt *vslin_sample_point) virtual_subst(atom *Atom) Fof {
-	pp := make([]RObj, len(atom.p))
-
+func (pt *vs_sample_point) virtual_subst_sqr(atom *Atom, lv Level) Fof {
+	d := atom.Deg(lv)
+	if d <= 0 {
+		return atom
+	}
 	op := atom.op
-	if pt.densgn < 0 && atom.Deg(pt.lv)%2 != 0 {
+	if pt.densgn < 0 && atom.Deg(lv)%2 != 0 {
 		op = op.neg()
 	}
+	// fmt.Printf("      virtual_subst_sqr densgn=%d, Deg=%d, op=%v\n", pt.densgn, atom.Deg(lv), op)
+
+	p := atom.getPoly()
+	q, r := p.subst_frac_sqr(pt.num, pt.sqr, pt.sqrc, pt.den[:d+1], lv)
+	if err := q.valid(); err != nil {
+		panic(err)
+	}
+	if op == GE || op == GT {
+		op = op.neg()
+		q = q.Neg()
+		r = r.Neg()
+	}
+	fmt.Printf("      virtual_subst_sqr q=%v, r=%v, op=%v, pt=%v\n", q, r, op, pt)
+
+	q2_r2x := Sub(Mul(q, q), Mul(Mul(r, r), pt.sqr))
+	switch op {
+	case EQ:
+		return NewFmlAnds(
+			NewAtoms([]RObj{q, r}, LE),
+			NewAtom(q2_r2x, EQ))
+	case NE:
+		return NewFmlOrs(
+			NewAtoms([]RObj{q, r}, GT),
+			NewAtom(q2_r2x, NE),
+		)
+	case LE:
+		return NewFmlOrs(
+			NewFmlAnd(NewAtom(q, LE), NewAtom(q2_r2x, GE)),
+			NewFmlAnd(NewAtom(r, LE), NewAtom(q2_r2x, LE)),
+		)
+	case LT:
+		qlt := NewAtom(q, LT)
+		rle := NewAtom(r, LE)
+		return NewFmlOrs(
+			NewFmlAnd(qlt, NewAtom(q2_r2x, GT)),
+			NewFmlAnd(qlt, rle),
+			NewFmlAnd(rle, NewAtom(q2_r2x, LT)),
+		)
+	default:
+		panic(fmt.Sprintf("why? op=%v, lv=%d, pt=%v, atom=%v", op, lv, pt, atom))
+	}
+}
+
+func (pt *vs_sample_point) virtual_subst(atom *Atom, lv Level) Fof {
+	op := atom.op
+	if pt.densgn < 0 && atom.Deg(lv)%2 != 0 {
+		op = op.neg()
+	}
+
+	pp := make([]RObj, len(atom.p))
 	for i, p := range atom.p {
-		d := p.Deg(pt.lv)
-		pp[i] = p.subst_frac(pt.num, pt.den[:d+1], pt.lv)
+		d := p.Deg(lv)
+		pp[i] = p.subst_frac(pt.num, pt.den[:d+1], lv)
 		if err := pp[i].valid(); err != nil {
 			panic(err)
 		}
@@ -218,102 +342,108 @@ func (pt *vslin_sample_point) virtual_subst(atom *Atom) Fof {
 	return NewAtoms(pp, op)
 }
 
-func vs_nu(polys []*Poly, op OP, pt *vslin_sample_point) Fof {
+func vs_nu(polys []*Poly, op OP, pt *vs_sample_point, lv Level) Fof {
 	// pt + epsilon を代入する
 	d := 0
 	if pt.densgn < 0 {
 		for _, p := range polys {
-			d += p.Deg(pt.lv)
+			d += p.Deg(lv)
 		}
 	}
 
 	var f1 Fof
 	if d%2 == 0 || true {
 		// 偶数次数か，分母の符号が正ならそのまま.
-		f1 = virtual_subst(newAtoms(polys, op), pt)
+		f1 = virtual_subst(newAtoms(polys, op), pt, lv)
 	} else {
-		f1 = virtual_subst(newAtoms(polys, op.neg()), pt)
+		f1 = virtual_subst(newAtoms(polys, op.neg()), pt, lv)
 	}
-	// fmt.Printf("vsnu(): f1=%v\n", f1)
+	// fmt.Printf("    vsnu(): f1=%v, \tatom=%v\n", f1, newAtoms(polys, op))
 	if err := f1.valid(); err != nil { // debug
-		fmt.Printf("%V\ninvalid f1 %v\n", f1, f1)
-		panic(err.Error())
-	}
-	var f2 Fof = virtual_subst(newAtoms(polys, EQ), pt)
-	// fmt.Printf("vsnu(): f2=%v\n", f2)
-	if err := f2.valid(); err != nil { // debug
-		fmt.Printf("%V\ninvalid f2 %v\n", f1, f1)
+		fmt.Printf("%V\ninvalid f1 %v\natom=%v\npt=%v\nlv=%d\n", f1, f1, newAtoms(polys, op), pt, lv)
 		panic(err.Error())
 	}
 
-	ps := make([]*Poly, 0, len(polys))
+	rs := make([]RObj, 0, len(polys))
 	var pmul *Poly = nil
 	for i, p := range polys {
-		if !p.hasVar(pt.lv) {
-			ps = append(ps, p)
+		if !p.hasVar(lv) {
+			rs = append(rs, p)
 		} else if pmul == nil {
 			pmul = polys[i]
 		} else {
 			pmul = pmul.Mul(polys[i]).(*Poly)
 		}
 	}
+	if pmul == nil {
+		return f1
+	}
+
+	var f2 Fof = virtual_subst(newAtoms(polys, EQ), pt, lv)
+	// fmt.Printf("    vsnu(): f2=%v\n", f2)
+	if err := f2.valid(); err != nil { // debug
+		fmt.Printf("%V\ninvalid f2 %v\n", f1, f1)
+		panic(err.Error())
+	}
 
 	var v RObj
 	if pmul == nil {
 		v = one
 	} else {
-		v = pmul.Diff(pt.lv)
+		v = pmul.Diff(lv)
 	}
-	// fmt.Printf("vsnu(): v=%v: %v\n", v, v.IsNumeric())
+	//	fmt.Printf("    vsnu(): v=%v: %v\n", v, v.IsNumeric())
 
 	if v.IsNumeric() {
-		rs := make([]RObj, len(ps))
-		for i := 0; i < len(ps); i++ {
-			rs[i] = ps[i]
-		}
 		// fmt.Printf("vsnu(): rs=%v, %d\n", rs, v.Sign())
-		if v.Sign() > 0 {
-			return NewFmlOr(f1, NewFmlAnd(f2, NewAtoms(rs, op)))
-		} else {
-			return NewFmlOr(f1, NewFmlAnd(f2, NewAtoms(rs, op.neg())))
+		if v.Sign() < 0 {
+			op = op.neg()
 		}
+		return NewFmlOr(f1, NewFmlAnd(f2, NewAtoms(rs, op)))
 	} else {
-		ps = append(ps, v.(*Poly))
-		sfml := vs_nu(ps, op, pt)
-		// fmt.Printf("vsnu(): sfml=%v\n", sfml)
+		rs = append(rs, v)
+		atm := NewAtoms(rs, op).(*Atom)
+
+		// fmt.Printf("    vsnu(): ps=%v\n", ps)
+		sfml := vs_nu(atm.p, atm.op, pt, lv)
+		// fmt.Printf("    vsnu(): sfml=%v\n", sfml)
 		return NewFmlOr(f1, NewFmlAnd(f2, sfml))
 	}
 }
 
-func virtual_subst_e(atom *Atom, ptt vs_sample_point) Fof {
+func virtual_subst_e(atom *Atom, ptt *vs_sample_point, lv Level) Fof {
 	// ptt+ infinitesimal を代入する
-	return ptt.virtual_subst_e(atom)
+	return ptt.virtual_subst_e(atom, lv)
 }
 
-func (pt *vslin_sample_point) virtual_subst_e(atom *Atom) Fof {
+func (pt *vs_sample_point) virtual_subst_e(atom *Atom, lv Level) Fof {
 	if atom.op == EQ {
 		var ret Fof = falseObj
 		for _, p := range atom.p {
 			var pi Fof = trueObj
-			d := p.Deg(pt.lv)
+			d := p.Deg(lv)
 			for i := 0; i <= d; i++ {
-				c := p.Coef(pt.lv, uint(i))
+				c := p.Coef(lv, uint(i))
 				pi = NewFmlAnd(pi, NewAtom(c, EQ))
 			}
 			ret = NewFmlOr(ret, pi)
 		}
 		return ret
 	} else if atom.op == NE {
-		return pt.virtual_subst_e(newAtoms(atom.p, EQ)).Not()
+		return pt.virtual_subst_e(newAtoms(atom.p, EQ), lv).Not()
 	} else if atom.op == LT || atom.op == GT {
 		if err := atom.valid(); err != nil {
 			fmt.Printf("%V\ninvalid atom %v\n", atom, atom)
 			panic(err.Error())
 		}
-		ret := vs_nu(atom.p, atom.op, pt)
+		// fmt.Printf("    go vs_nu(%v, %v)\n", atom, pt)
+		ret := vs_nu(atom.p, atom.op, pt, lv)
+		// fmt.Printf("    vs_nu(LT|GT) %v\n", ret)
 		return ret
 	} else if atom.op == LE || atom.op == GE {
-		return pt.virtual_subst_e(newAtoms(atom.p, atom.op.not())).Not()
+		ret := pt.virtual_subst_e(newAtoms(atom.p, atom.op.not()), lv).Not()
+		// fmt.Printf("    vs_nu(LE|GE) %v\n", ret)
+		return ret
 	} else {
 		panic("invalid op")
 	}
@@ -347,8 +477,8 @@ func vs_mu(atom *Atom, lv Level) Fof {
 	return ret
 }
 
-func virtual_subst_i(atom *Atom, ptt vs_sample_point) Fof {
-	return virtual_subst_i_lv(atom, ptt.level())
+func virtual_subst_i(atom *Atom, ptt *vs_sample_point, lv Level) Fof {
+	return virtual_subst_i_lv(atom, lv)
 }
 
 func virtual_subst_i_lv(atom *Atom, lv Level) Fof {
@@ -388,7 +518,7 @@ func virtual_subst_i_lv(atom *Atom, lv Level) Fof {
 func get_vs_polys(p Fof, lv Level) *vs_elimination_set {
 	// algorithm 2 is not implemented
 	// p に含まれる lv変数を含む多項式のリスト.
-	peqlt := newVsEliminationSet(lv)
+	peqlt := newVsEliminationSet()
 
 	pstack := make([]Fof, 1)
 	pstack[0] = p
@@ -401,7 +531,7 @@ func get_vs_polys(p Fof, lv Level) *vs_elimination_set {
 			pstack[len(pstack)-1] = q.fml
 		case *Atom:
 			pstack = pstack[:len(pstack)-1]
-			peqlt.addAtom(q)
+			peqlt.addAtom(q, lv)
 		case *FmlAnd:
 			pstack[len(pstack)-1] = q.fml[0]
 			for i := 1; i < len(q.fml); i++ {
@@ -418,12 +548,12 @@ func get_vs_polys(p Fof, lv Level) *vs_elimination_set {
 }
 
 func vsLinear(fof Fof, lv Level) Fof {
-	return vs_main(fof, lv, 1)
+	return vs_main(fof, lv, 1, nil)
 }
 
 // target_deg in [1, 2]: vs 対象とする最大次数
 // 2 を指定したときは，線形しかないケースは適用対象外
-func vs_main(fof Fof, lv Level, target_deg int) Fof {
+func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 	maxd := fof.Deg(lv)
 	if maxd != target_deg {
 		return fof
@@ -449,100 +579,140 @@ func vs_main(fof Fof, lv Level, target_deg int) Fof {
 	// fmt.Printf("peq[%d]=%v\n", len(elset.equ), elset.equ)
 	// fmt.Printf("plt[%d]=%v\n", len(elset.ine), elset.ine)
 	required_zero := true
-	for _, pp := range elset.equ {
-		for _, pt := range gen_sample_vs(pp, lv, maxd) {
+	required_minf := false
+
+	const OPVS_LT = 1 << (LT + OPVS_SHIFT)
+	const OPVS_GT = 1 << (GT + OPVS_SHIFT)
+	const OPVS_LE = 1 << (LE + OPVS_SHIFT)
+	const OPVS_GE = 1 << (GE + OPVS_SHIFT)
+	const OPVS_EQ = 1 << (EQ + OPVS_SHIFT)
+	const OPVS_NE = 1 << (NE + OPVS_SHIFT)
+
+	for i, pp := range elset.ps {
+		for j, pt := range pp.vs_make_samples(lv, maxd) {
 			sgn := pt.DenSign()
-			if sgn != 0 {
-				required_zero = false
+			if sgn != 0 && pt.neccon.Equals(trueObj) { // 主係数が定数, かつ, 判別式が必ず非負/線形
+				required_zero = false // もう 0 評価は不要
 			}
+			fmt.Printf(" @@  i,j=%d,%d, %v, %v:%#x, zero=%v, sgn=%d\n", i, j, pt, pp.p, pp.kind, required_zero, sgn)
 
-			if sgn >= 0 {
-				pt.SetDenSign(1)
-				sfml := fml.apply_vs(virtual_subst, pt)
-				// fmt.Printf("add2:+[%v]/[%v]: %v\n", pt.num, pt.den[1], sfml)
-				if err := sfml.valid(); err != nil {
-					panic(err)
-				}
-				ret = NewFmlOr(ret, NewFmlAnds(sfml, NewAtom(pt.lc(), GT), pt.neccon()))
-			}
+			for _, stbl := range []struct {
+				do  bool // 実行するか
+				sgn int  // lc の符号
+				op  OP   // lc の符号に対応する OP
+			}{
+				{sgn >= 0, +1, GT},
+				{sgn <= 0, -1, LT},
+			} {
 
-			if sgn <= 0 {
-				pt.SetDenSign(-1)
-				sfml := fml.apply_vs(virtual_subst, pt)
-				// fmt.Printf("add3:-[%v]/[%v]: %v\n", pt.num, pt.den[1], sfml)
-				if err := sfml.valid(); err != nil {
-					panic(err)
+				if !stbl.do {
+					continue
 				}
-				ret = NewFmlOr(ret, NewFmlAnds(sfml, NewAtom(pt.lc(), LT), pt.neccon()))
-			}
-		}
-	}
-	if len(elset.ine) > 0 {
-		required_minf := true
-		for _, pp := range elset.ine {
-			for _, pt := range gen_sample_vs(pp, lv, maxd) {
-				sgn := pt.DenSign()
-				if sgn <= 0 {
+				pt.SetDenSign(stbl.sgn)
+
+				lc := NewAtom(pt.LC(), stbl.op)
+				if pp.kind&int(EQ) != 0 {
+					// >=, <=, == のどれかまたは複数だが，>=, <= のみの場合は主係数の符号を制限できる
+					// しかし，主係数の符号を制限する場合には，-inf の追加が必要になる
+					if false && pp.kind&(OPVS_LE|OPVS_EQ) == 0 {
+						// GE のみ ... sgnl < 0
+						if stbl.sgn*pt.idx > 0 {
+							goto _NEXT_GT
+						}
+					} else if false && pp.kind&(OPVS_GE|OPVS_EQ) == 0 {
+						// LE のみ ... sgnl > 0
+						if stbl.sgn*pt.idx < 0 {
+							goto _NEXT_GT
+						}
+					}
+					sfml := fml.apply_vs(virtual_subst, pt, lv)
+					fmt.Printf("add2:=:%d:%d %v  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
+					if gan != nil {
+						sfmlx := gan.simplFof(NewFmlAnds(sfml, lc, pt.necessaryCondition()), trueObj, falseObj)
+						fmt.Printf("ADD2:=:%d:%d %v\n", stbl.sgn, pt.idx, sfmlx)
+					}
+					if err := sfml.valid(); err != nil {
+						panic(err)
+					}
+					ret = NewFmlOr(ret, NewFmlAnds(sfml, lc, pt.necessaryCondition()))
+				}
+
+			_NEXT_GT:
+				if pp.kind&(OPVS_GT|OPVS_NE|OPVS_LT) != 0 {
 					required_minf = true
 				}
-				if sgn != 0 {
-					required_zero = false
-				}
 
-				if sgn >= 0 {
-					pt.SetDenSign(1)
-					// fmt.Printf("add5:+e[%v]/[%v]: >>>>\n", pt.num, pt.den[1])
-					sfml := fml.apply_vs(virtual_subst_e, pt)
-					// fmt.Printf("add5:+e[%v]/[%v]: %v\n", pt.num, pt.den[1], sfml)
+				// 線形なら，stbl.sgn < 0, pt.idx = 1
+				// 2次なら,  stbl.sgn = ?, pt.idx < 0
+				if pp.kind&(OPVS_LT|OPVS_NE) != 0 && (pt.deg == 1 && stbl.sgn < 0 || pt.deg == 2 && pt.idx < 0) {
+					// p < 0 ==> signr < 0
+					sfml := fml.apply_vs(virtual_subst_e, pt, lv)
+					fmt.Printf("add6:>e:%d:%d %v  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
+					if gan != nil {
+						sfmlx := gan.simplFof(NewFmlAnds(sfml, lc, pt.necessaryCondition()), trueObj, falseObj)
+						fmt.Printf("ADD6:>e:%d:%d %v\n", stbl.sgn, pt.idx, sfmlx)
+					}
 					if err := sfml.valid(); err != nil {
 						panic(err)
 					}
-					ret = NewFmlOr(ret, NewFmlAnds(sfml, NewAtom(pt.lc(), GT), pt.neccon()))
+					ret = NewFmlOr(ret, NewFmlAnds(sfml, lc, pt.necessaryCondition()))
 					if err := ret.valid(); err != nil {
 						panic(err)
 					}
 				}
-				if sgn <= 0 {
-					pt.SetDenSign(-1)
-					// fmt.Printf("add6:-e[%v]/[%v]: >>>>\n", pt.num, pt.den[1])
-					sfml := fml.apply_vs(virtual_subst_e, pt)
-					// fmt.Printf("add6:-e[%v]/[%v]: %v\n", pt.num, pt.den[1], sfml)
+				if pp.kind&(OPVS_GT|OPVS_NE) != 0 && (pt.deg == 1 && stbl.sgn > 0 || pt.deg == 2 && pt.idx > 0) {
+					// p > 0 ==> sgnr > 0
+					sfml := fml.apply_vs(virtual_subst_e, pt, lv)
+					fmt.Printf("add7:>e:%d:%d %v  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
+					if gan != nil {
+						sfmlx := gan.simplFof(NewFmlAnds(sfml, lc, pt.necessaryCondition()), trueObj, falseObj)
+						fmt.Printf("ADD7:<e:%d:%d %v\n", stbl.sgn, pt.idx, sfmlx)
+						if i == 1 && j == 1 && stbl.sgn > 0 {
+							fmt.Printf("coyp!\n")
+							sfml = sfmlx
+						}
+					}
 					if err := sfml.valid(); err != nil {
 						panic(err)
 					}
-					ret = NewFmlOr(ret, NewFmlAnds(sfml, NewAtom(pt.lc(), LT), pt.neccon()))
+					ret = NewFmlOr(ret, NewFmlAnds(sfml, lc, pt.necessaryCondition()))
 					if err := ret.valid(); err != nil {
 						panic(err)
 					}
 				}
-			}
-		}
-		if err := ret.valid(); err != nil {
-			panic(err)
-		}
-		if required_minf {
-			pt := new(vslin_sample_point)
-			pt.lv = lv
-			sfml := fml.apply_vs(virtual_subst_i, pt)
-			// fmt.Printf("-inf] %v\n", sfml)
-			if err := sfml.valid(); err != nil {
-				panic(err)
-			}
-			// fmt.Printf("before\nret%x= %v\nsfm%x= %v\n", ret.fofTag(), ret, sfml.fofTag(), sfml)
-			ret = NewFmlOr(ret, sfml)
-			if err := ret.valid(); err != nil {
-				fmt.Printf("ret=%v\n", ret)
-				ppp, ok := ret.(*FmlOr)
-				if ok {
-					fmt.Printf("len=%d\n", ppp.Len())
-				}
-
-				panic(err)
 			}
 		}
 	}
-	if required_zero {	// ??
-		ret = NewFmlOr(ret, fml.Subst(zero, lv))
+
+	if err := ret.valid(); err != nil {
+		panic(err)
+	}
+	if required_minf { // -inf
+		pt := new(vs_sample_point) // ダミー
+		sfml := fml.apply_vs(virtual_subst_i, pt, lv)
+		fmt.Printf("j=x, [-inf] %v\n", sfml)
+		if gan != nil {
+			sfmlx := gan.simplFof(sfml, trueObj, falseObj)
+			fmt.Printf("-INF] %v\n", sfmlx)
+		}
+		if err := sfml.valid(); err != nil {
+			panic(err)
+		}
+		// fmt.Printf("before\nret%x= %v\nsfm%x= %v\n", ret.fofTag(), ret, sfml.fofTag(), sfml)
+		ret = NewFmlOr(ret, sfml)
+		if err := ret.valid(); err != nil {
+			ppp, ok := ret.(*FmlOr)
+			if ok {
+				fmt.Printf("len=%d\n", ppp.Len())
+			}
+
+			panic(err)
+		}
+	}
+	if required_zero { // サンプル点の分母がパラメータのみの場合に必要
+		sfml := fml.Subst(zero, lv)
+		fmt.Printf("j=x, [zero] %v\n", sfml)
+		ret = NewFmlOr(ret, sfml)
 		if err := ret.valid(); err != nil {
 			panic(err)
 		}
@@ -559,9 +729,9 @@ func vs_main(fof Fof, lv Level, target_deg int) Fof {
 	return ret
 }
 
-func (qeopt QEopt) qe_vslin(fof FofQ, cond qeCond) Fof {
+func (qeopt QEopt) qe_vs(fof FofQ, cond qeCond, d int) Fof {
 	for _, q := range fof.Qs() {
-		ff := vs_main(fof, q, 1)
+		ff := vs_main(fof, q, d, nil)
 		if ff != fof {
 			return ff
 		}

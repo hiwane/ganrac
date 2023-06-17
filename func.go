@@ -212,7 +212,7 @@ Examples*
   > x;
   error: undefined variable ` + "`x`\n"},
 		{"verbose", 1, 2, funcVerbose, false, "(int [, int])\t\tset verbose level", ""},
-		{"vs", 1, 1, funcVS, true, "(FOF)* ", ""},
+		{"vs", 1, 2, funcVS, true, "(FOF, int)* ", "virtual substitution"},
 	}
 }
 
@@ -609,11 +609,19 @@ func funcVS(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if !ok || !fof.Fml().IsQff() {
 		return nil, fmt.Errorf("%s() expected prenex-FOF", name)
 	}
+	maxdeg := 1
+	if len(args) > 1 {
+		deg, ok := args[1].(*Int)
+		if !ok || (!deg.Equals(two) && !deg.IsOne()) {
+			return nil, fmt.Errorf("%s(2nd-arg) expected 1 or 2", name)
+		}
+		maxdeg = int(deg.Int64())
+	}
 
 	var fml Fof
 	fml = fof
 	for _, q := range fof.Qs() {
-		fml = vs_main(fml, q, 1)
+		fml = vs_main(fml, q, maxdeg, nil)
 	}
 	return fml, nil
 }
