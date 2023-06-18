@@ -615,8 +615,8 @@ func (qeopt QEopt) qe_nonpreq(fofq FofQ, cond qeCond) Fof {
 
 func (qeopt QEopt) qe_andor(fof FofAO, cond qeCond) Fof {
 	// fof: non-prenex-formula
-	qeopt.log(cond, 2, "qeao", "%v\n", fof)
 	fmls := fof.Fmls()
+	qeopt.log(cond, 2, "qeaoI", "<<%d>> %v\n", len(fmls), fof)
 	sort.Slice(fmls, func(i, j int) bool {
 		return qeopt.fmlcmp(fmls[i], fmls[j])
 	})
@@ -660,6 +660,7 @@ func (qeopt QEopt) qe_andor(fof FofAO, cond qeCond) Fof {
 			}
 		}
 	}
-
-	return fof.gen(fmls)
+	ret := fof.gen(fmls)
+	qeopt.log(cond, 2, "qeaoO", "<<%d>> %v\n", len(fmls), fof)
+	return ret
 }

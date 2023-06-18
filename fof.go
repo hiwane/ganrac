@@ -145,6 +145,13 @@ func (op OP) String() string {
 	return []string{"@false@", "<", "==", "<=", ">", "!=", ">=", "@true@"}[op]
 }
 
+func (op OP) valid() error {
+	if op < 0 || 7 < op {
+		return fmt.Errorf("invalid op: %#x", op)
+	}
+	return nil
+}
+
 ///////////////////////
 // FofQ
 ///////////////////////
@@ -539,6 +546,9 @@ func (p *Exists) Tag() uint {
 }
 
 func (p *Atom) valid() error {
+	if len(p.p) == 0 {
+		return fmt.Errorf("empty atom")
+	}
 	for i, pp := range p.p {
 		err := pp.valid()
 		if err != nil {

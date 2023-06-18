@@ -517,6 +517,9 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = fof.valid(); err != nil {
+		return nil, err
+	}
 	var algo ProjectionAlgo = PROJ_McCallum
 	if len(args) > 1 {
 		algoi, ok := args[1].(*Int)
@@ -836,6 +839,9 @@ func funcArgBoolVal(val GObj) bool {
 func funcQE(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	fof, err := funcGetFormula(name, args[0])
 	if err != nil {
+		return nil, err
+	}
+	if err = fof.valid(); err != nil {
 		return nil, err
 	}
 	opt := NewQEopt()

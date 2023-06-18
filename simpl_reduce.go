@@ -112,7 +112,7 @@ func (p *Atom) simplReduce(g *Ganrac, inf *reduce_info) Fof {
 	q := p.getPoly()
 	r, neg := inf.Reduce(g, q)
 	if !q.Equals(r) {
-		g.log(3, 1, "simplReduce(Atom) %v => %v\n", q, r)
+		g.log(3, 1, "simplReduce(Atom) %v => %v [eq=%v]\n", q, r, inf.eqns)
 		var a Fof
 		if neg {
 			a = NewAtom(r, p.op.neg())
