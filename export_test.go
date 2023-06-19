@@ -96,10 +96,12 @@ func FuncCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	return funcCAD(g, name, args)
 }
 
+// 主係数の符号を設定
 func (tbl *fof_quad_eq) SetSgnLcp(v int) {
 	tbl.sgn_lcp = v
 }
 
+// ２つの根のうち，+ なら 1, - なら -1
 func (tbl *fof_quad_eq) SetSgnS(v int) {
 	tbl.sgn_s = v
 }

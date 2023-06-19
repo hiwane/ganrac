@@ -166,8 +166,8 @@ func TestQuadEq1(t *testing.T) {
 		case *AtomT:
 			continue
 		default:
-			t.Errorf("ii=%d, op=%d\ninput=ex([%v], (%v != 0) AND %v = 0 AND %v %s 0).\nexpect= %v.\nactual= (%v)\n   AND  (%v).\ncmp=%v", ii, ss.op, NewPolyVar(3),
-				z, p1, p2, ss.op, ss.expect, o, dge, cmp)
+			t.Errorf("ii=%d, op=%d\ninput=ex([%v], (%v != 0) && %v == 0 && %v %s 0).\nexpect= %v.\nactual= (%v)\n   AND  (%v).\ncmp=%v\nfof=%v", ii, ss.op, NewPolyVar(3),
+				z, p1, p2, ss.op, ss.expect, o, dge, cmp, fof)
 			return
 		}
 	}
@@ -205,7 +205,7 @@ func TestQuadEq2(t *testing.T) {
 		op     OP
 		expect Fof
 	}{
-		// ex([w], z*w==3 && x*w+y op 0)
+		// ex([w], z*w^2-2*w==3 && x*w+y op 3)
 		{EQ,
 			NewFmlAnds(dge, NewAtom(z, NE), NewAtom(r, EQ)),
 		}, {GT,
@@ -242,7 +242,8 @@ func TestQuadEq2(t *testing.T) {
 		case *AtomT:
 			continue
 		default:
-			t.Errorf("ii=%d, op=%d\nexpect= %v.\nactual= (%v) AND %v.\ncmp=%v", ii, ss.op, ss.expect, o, d, cmp)
+			fff := g.SimplFof(NewFmlAnd(o, dge))
+			t.Errorf("ii=%d, op=%d\ninput =(%v == 0) && %v\nexpect= %v.\nactual= (%v) AND %v.\n      =%v\ncmp=%v", ii, ss.op, p1, a, ss.expect, o, dge, fff, cmp)
 			return
 		}
 	}
