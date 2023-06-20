@@ -292,7 +292,6 @@ func (pt *vs_sample_point) virtual_subst_sqr(atom *Atom, lv Level) Fof {
 		q = q.Neg()
 		r = r.Neg()
 	}
-	fmt.Printf("      virtual_subst_sqr q=%v, r=%v, op=%v, pt=%v\n", q, r, op, pt)
 
 	q2_r2x := Sub(Mul(q, q), Mul(Mul(r, r), pt.sqr))
 	switch op {
@@ -594,7 +593,9 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 			if sgn != 0 && pt.neccon.Equals(trueObj) { // 主係数が定数, かつ, 判別式が必ず非負/線形
 				required_zero = false // もう 0 評価は不要
 			}
-			fmt.Printf(" @@  i,j=%d,%d, %v, %v:%#x, zero=%v, sgn=%d\n", i, j, pt, pp.p, pp.kind, required_zero, sgn)
+			if false {
+				fmt.Printf(" @@  i,j=%d,%d, %v,%#x, zero=%v, sgn=%d, %v\n", i, j, pt, pp.kind, required_zero, sgn, pp.p)
+			}
 
 			for _, stbl := range []struct {
 				do  bool // 実行するか
@@ -604,7 +605,6 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 				{sgn >= 0, +1, GT},
 				{sgn <= 0, -1, LT},
 			} {
-
 				if !stbl.do {
 					continue
 				}
@@ -626,11 +626,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 						}
 					}
 					sfml := fml.apply_vs(virtual_subst, pt, lv)
-					fmt.Printf("add2:=:%d:%d %v  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
-					if gan != nil {
-						sfmlx := gan.simplFof(NewFmlAnds(sfml, lc, pt.necessaryCondition()), trueObj, falseObj)
-						fmt.Printf("ADD2:=:%d:%d %v\n", stbl.sgn, pt.idx, sfmlx)
-					}
+					// fmt.Printf("add2:=:%d:%d: {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
 					}
@@ -647,11 +643,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 				if pp.kind&(OPVS_LT|OPVS_NE) != 0 && (pt.deg == 1 && stbl.sgn < 0 || pt.deg == 2 && pt.idx < 0) {
 					// p < 0 ==> signr < 0
 					sfml := fml.apply_vs(virtual_subst_e, pt, lv)
-					fmt.Printf("add6:>e:%d:%d %v  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
-					if gan != nil {
-						sfmlx := gan.simplFof(NewFmlAnds(sfml, lc, pt.necessaryCondition()), trueObj, falseObj)
-						fmt.Printf("ADD6:>e:%d:%d %v\n", stbl.sgn, pt.idx, sfmlx)
-					}
+					// fmt.Printf("add6:>e:%d:%d {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
 					}
@@ -663,15 +655,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 				if pp.kind&(OPVS_GT|OPVS_NE) != 0 && (pt.deg == 1 && stbl.sgn > 0 || pt.deg == 2 && pt.idx > 0) {
 					// p > 0 ==> sgnr > 0
 					sfml := fml.apply_vs(virtual_subst_e, pt, lv)
-					fmt.Printf("add7:>e:%d:%d %v  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
-					if gan != nil {
-						sfmlx := gan.simplFof(NewFmlAnds(sfml, lc, pt.necessaryCondition()), trueObj, falseObj)
-						fmt.Printf("ADD7:<e:%d:%d %v\n", stbl.sgn, pt.idx, sfmlx)
-						if i == 1 && j == 1 && stbl.sgn > 0 {
-							fmt.Printf("coyp!\n")
-							sfml = sfmlx
-						}
-					}
+					// fmt.Printf("add7:>e:%d:%d {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
 					}
@@ -690,11 +674,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 	if required_minf { // -inf
 		pt := new(vs_sample_point) // ダミー
 		sfml := fml.apply_vs(virtual_subst_i, pt, lv)
-		fmt.Printf("j=x, [-inf] %v\n", sfml)
-		if gan != nil {
-			sfmlx := gan.simplFof(sfml, trueObj, falseObj)
-			fmt.Printf("-INF] %v\n", sfmlx)
-		}
+		//    fmt.Printf("j=x, [-inf] {%v}\n", sfml)
 		if err := sfml.valid(); err != nil {
 			panic(err)
 		}
@@ -711,7 +691,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 	}
 	if required_zero { // サンプル点の分母がパラメータのみの場合に必要
 		sfml := fml.Subst(zero, lv)
-		fmt.Printf("j=x, [zero] %v\n", sfml)
+		// fmt.Printf("j=x, [zero] {%v}\n", sfml)
 		ret = NewFmlOr(ret, sfml)
 		if err := ret.valid(); err != nil {
 			panic(err)
