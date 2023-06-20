@@ -21,21 +21,43 @@ type simpler interface {
 	homo_reconstruct(lv Level, lvs Levels, sgn int) Fof
 }
 
+func logSimplFof(c Fof, g *Ganrac, eyec string) {
+	if false {
+		return
+	}
+	// f, err := funcCAD(g, "fnCAD", []any{c})
+	// if err != nil {
+	// 	fmt.Printf("errrrr %v\n", err)
+	// 	panic("stop")
+	// }
+	// c = f.(Fof)
+	// @5->@6
+	g.log(4, 1, "simplFof() step%s: %v\n", eyec, c)
+}
+
 func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {
-	g.log(3, 1, "simpl %v\n", c)
+	g.log(3, 1, "simpli %v, nec=%v, suf=%v\n", c, neccon, sufcon)
 	c = c.simplFctr(g)
+	logSimplFof(c, g, "@1")
 	c.normalize()
+	logSimplFof(c, g, "@2")
 	inf := NewReduceInfo()
 	c = c.simplReduce(g, inf)
+	logSimplFof(c, g, "@3")
 
 	for {
 		cold := c
 		c = c.simplComm()
+		logSimplFof(c, g, "@4")
 		c = c.simplBasic(neccon, sufcon)
+		logSimplFof(c, g, "@5")
 		c, _, _ = c.simplNum(g, nil, nil)
+		logSimplFof(c, g, "@6")
 		if c.Equals(cold) {
 			break
 		}
 	}
+
+	g.log(3, 1, "simplo %v\n", c)
 	return c
 }
