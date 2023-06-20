@@ -17,8 +17,11 @@ const (
 	EVEN_LIN  = EVEN_LIN1 | EVEN_LIN2
 )
 
-// FofAObase FofQbase
-func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond) Fof {
+/* FofAObase FofQbase
+ *
+ * mindeg: 線形かつ主変数に他の変数がのっている場合に，evenQE を適用する最低次数
+ */
+func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond, mindeg int) Fof {
 	fof := prenex_fof
 
 	bs := make([]bool, qeopt.varn)
@@ -31,11 +34,15 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond) Fof {
 			fqs = append(fqs, fofq)
 			for _, q := range fofq.Qs() {
 				bs[q] = false
+				deg := fofq.Deg(q)
+				if deg < 2 {
+					continue
+				}
 				v := fofq.isEven(q)
 				if v&EVEN_NG != 0 {
 					continue
 				}
-				if v&EVEN_OK != 0 {
+				if v&EVEN_OK != 0 && (deg >= mindeg || v&EVEN_LIN2 == 0) {
 					// 単純に次数を下げればいい．
 					qeopt.log(cond, 3, "evenI", "<%s,%#x> %v\n", VarStr(q), v, fofq)
 

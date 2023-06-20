@@ -34,12 +34,12 @@ func (ox *OpenXM) Discrim(p *Poly, lv Level) RObj {
 	ox.ExecFunction("res", NewPolyVar(lv), p, dp)
 	qq, _ := ox.PopCMO()
 	q := ox.toGObj(qq).(RObj)
-	n := p.Deg(p.Level())
+	n := p.Deg(lv)
 	if (n & 0x2) != 0 {
 		q = q.Neg()
 	}
 	// 主係数で割る
-	switch pc := p.Coef(p.Level(), uint(n)).(type) {
+	switch pc := p.Coef(lv, uint(n)).(type) {
 	case *Poly:
 		return q.(*Poly).Sdiv(pc)
 	case NObj:

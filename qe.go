@@ -301,7 +301,7 @@ func (qeopt QEopt) qe_simpl(fof FofQ, cond qeCond) Fof {
 	// 偶論理式
 	if (qeopt.Algo & QEALGO_SMPL_EVEN) != 0 {
 		qeopt.log(cond, 2, "eveni", "%v\n", fof)
-		if ff := qeopt.qe_evenq(fof, cond); ff != nil {
+		if ff := qeopt.qe_evenq(fof, cond, 4); ff != nil {
 			qeopt.log(cond, 2, "eveno", "%v\n", ff)
 			return ff
 		}
@@ -351,6 +351,19 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	////////////////////////////////
 
 	////////////////////////////////
+	// 非等式 QE
+	////////////////////////////////
+	if (qeopt.Algo & QEALGO_NEQ) != 0 {
+		qeopt.log(cond, 2, "neqi", "%v\n", fof)
+		if ff := qeopt.qe_neq(fof, cond); ff != nil {
+			ff = qeopt.reconstruct(fqs, ff, cond)
+			ff = qeopt.simplify(ff, cond)
+			qeopt.log(cond, 2, "neqo", "%v\n", ff)
+			return ff
+		}
+	}
+
+	////////////////////////////////
 	// SDC
 	// 分解後に All->DNF/Ex->CNF になるので,
 	// quantifier がひとつの場合のみに限定してみる
@@ -374,7 +387,7 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	////////////////////////////////
 	if (qeopt.Algo & QEALGO_VSLIN) != 0 {
 		qeopt.log(cond, 2, "qevs1i", "%v\n", fof)
-		if ff := qeopt.qe_vslin(fof, cond); ff != nil {
+		if ff := qeopt.qe_vs(fof, cond, 1); ff != nil {
 			ff = qeopt.reconstruct(fqs, ff, cond)
 			ff = qeopt.simplify(ff, cond)
 			qeopt.log(cond, 2, "qevs1o", "%v\n", ff)
@@ -382,15 +395,12 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 		}
 	}
 
-	////////////////////////////////
-	// 非等式 QE
-	////////////////////////////////
-	if (qeopt.Algo & QEALGO_NEQ) != 0 {
-		qeopt.log(cond, 2, "neqi", "%v\n", fof)
-		if ff := qeopt.qe_neq(fof, cond); ff != nil {
+	if (qeopt.Algo & QEALGO_VSQUAD) != 0 {
+		qeopt.log(cond, 2, "qevs2i", "%v\n", fof)
+		if ff := qeopt.qe_vs(fof, cond, 2); ff != nil {
 			ff = qeopt.reconstruct(fqs, ff, cond)
 			ff = qeopt.simplify(ff, cond)
-			qeopt.log(cond, 2, "neqo", "%v\n", ff)
+			qeopt.log(cond, 2, "qevs2o", "%v\n", ff)
 			return ff
 		}
 	}
@@ -615,8 +625,8 @@ func (qeopt QEopt) qe_nonpreq(fofq FofQ, cond qeCond) Fof {
 
 func (qeopt QEopt) qe_andor(fof FofAO, cond qeCond) Fof {
 	// fof: non-prenex-formula
-	qeopt.log(cond, 2, "qeao", "%v\n", fof)
 	fmls := fof.Fmls()
+	qeopt.log(cond, 2, "qeaoI", "<<%d>> %v\n", len(fmls), fof)
 	sort.Slice(fmls, func(i, j int) bool {
 		return qeopt.fmlcmp(fmls[i], fmls[j])
 	})
@@ -660,6 +670,7 @@ func (qeopt QEopt) qe_andor(fof FofAO, cond qeCond) Fof {
 			}
 		}
 	}
-
-	return fof.gen(fmls)
+	ret := fof.gen(fmls)
+	qeopt.log(cond, 2, "qeaoO", "<<%d>> %v\n", len(fmls), fof)
+	return ret
 }

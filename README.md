@@ -43,6 +43,8 @@ See https://github.com/hiwane/ganrac/releases
 
 ### compiling from source code
 
+Required: go (1.18 or newer)
+
 ox-asir version
 ```sh
 > go install github.com/hiwane/ganrac/cmd/ganrac-ox@latest

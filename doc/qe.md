@@ -6,7 +6,7 @@
 | :-- | :--: | :--: |
 | [Cylindrical algebraic decomposition](../cad.go) | ✔ | [[cad](cad.md)] |
 | [Linear virtual substitution](../vs.go) | ✔ | [[Weispfenning88](https://www.sciencedirect.com/science/article/pii/S0747717188800038)] |
-| Quadratic virtual substitution | | [[Weispfenning97](https://link.springer.com/article/10.1007/s002000050055)] |
+| Quadratic virtual substitution | ✔| [[Weispfenning97](https://link.springer.com/article/10.1007/s002000050055)] |
 | Cubic virtual substitution |  | [[Weispfenning94](https://dl.acm.org/doi/10.1145/190347.190425)] |
 | [Linear equational constraints](../quadeq.go) `ex([x], a*x+b==0 && phi)` | ✔ | [[Hong93](https://dl.acm.org/doi/10.1145/164081.164140)] |
 | [Quadratic equational constraints](../quadeq.go) `ex([x], a*x^2+b*x+c==0 && phi)` | ✔ | [[Hong93](https://dl.acm.org/doi/10.1145/164081.164140)] |

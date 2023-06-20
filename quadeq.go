@@ -29,7 +29,7 @@ func NewFofQuadEq(g *Ganrac, p *Poly, lv Level) *fof_quad_eq {
 }
 
 // ///////////////////////////////////////////////
-//
+// 主係数の符号によって不等号の向きが変わらないような論理式か
 // ///////////////////////////////////////////////
 func quadeq_isEven(f Fof, lv Level) bool {
 	stack := make([]Fof, 1)
@@ -251,7 +251,7 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 		// minatom.deg == 2
 		even := quadeq_isEven(fff, minatom.lv)
 		discrim := NewAtom(qeopt.g.ox.Discrim(minatom.p, minatom.lv), GE)
-		qeopt.log(cond, 2, "eq2", "%v [%v] discrim=%v\n", fof, minatom.p, discrim)
+		qeopt.log(cond, 2, "eq2", "%v [%v] discrim=%v, even=%v\n", fof, minatom.p, discrim, even)
 		var o Fof = falseObj
 		for _, sgns := range []struct {
 			sgn_s int // 2つの根のうち，大きい方なら正.
@@ -272,7 +272,13 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 			} else {
 				tbl.sgn_lcp = -1
 			}
-			opp := NewFmlAnds(fff.qe_quadeq(qe_quadeq, tbl), NewAtom(minatom.z, sgns.op), discrim)
+			var aop OP
+			if even {
+				aop = NE
+			} else {
+				aop = sgns.op
+			}
+			opp := NewFmlAnds(fff.qe_quadeq(qe_quadeq, tbl), NewAtom(minatom.z, aop), discrim)
 			o = NewFmlOr(o, opp)
 		}
 
@@ -293,6 +299,7 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 		return o
 	}
 
+	// 1次の等式制約の場合
 	qeopt.log(cond, 2, "eq1", "%v [%v]\n", fff, minatom.p)
 	tbl.sgn_lcp = 1
 	opos := NewFmlAnd(fff.qe_quadeq(qe_lineq, tbl), NewAtom(minatom.z, GT))

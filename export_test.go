@@ -96,19 +96,21 @@ func FuncCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	return funcCAD(g, name, args)
 }
 
+// 主係数の符号を設定
 func (tbl *fof_quad_eq) SetSgnLcp(v int) {
 	tbl.sgn_lcp = v
 }
 
+// ２つの根のうち，+ なら 1, - なら -1
 func (tbl *fof_quad_eq) SetSgnS(v int) {
 	tbl.sgn_s = v
 }
 
-func (qeopt *QEopt) Qe_evenq(prenex_fof Fof, cond qeCond) Fof {
+func (qeopt *QEopt) Qe_evenq(prenex_fof Fof, cond qeCond, maxdeg int) Fof {
 	if qeopt.g.ox == nil {
 		panic("muri-yan")
 	}
-	return qeopt.qe_evenq(prenex_fof, cond)
+	return qeopt.qe_evenq(prenex_fof, cond, maxdeg)
 }
 
 func QeQuadEq(a Fof, tbl *fof_quad_eq) Fof {
@@ -117,6 +119,10 @@ func QeQuadEq(a Fof, tbl *fof_quad_eq) Fof {
 
 func QeLinEq(a Fof, tbl *fof_quad_eq) Fof {
 	return a.qe_quadeq(qe_lineq, tbl)
+}
+
+func QeVS(a Fof, lv Level, m int, g *Ganrac) Fof {
+	return vs_main(a, lv, m, g)
 }
 
 func SimplNum(
@@ -131,6 +137,10 @@ func (poly *Poly) SimplNumUniPoly(t, f *NumRegion) (OP, *NumRegion, *NumRegion) 
 	return poly.simplNumUniPoly(gray)
 }
 
+func SimplBasic(fof, nec, suf Fof) Fof {
+	return fof.simplBasic(nec, suf)
+}
+
 func SimplFctr(fof simpler, g *Ganrac) Fof {
 	return fof.simplFctr(g)
 }
@@ -141,6 +151,10 @@ func SimplReduce(p Fof, g *Ganrac, inf *reduce_info) Fof {
 
 func (t *NumRegion) Append(lv Level, inf, sup NObj) {
 	t.r[lv] = append(t.r[lv], &ninterval{inf, sup})
+}
+
+func (g *Ganrac) SimplFof(f Fof) Fof {
+	return g.simplFof(f, trueObj, falseObj)
 }
 
 func FofTag(fof Fof) uint {
@@ -178,4 +192,11 @@ func (p *FmlAnd) Normalize() Fof {
 }
 func (p *FmlOr) Normalize() Fof {
 	return p.normalize()
+}
+
+func HasVar(q Fof, lv Level) bool {
+	return q.hasVar(lv)
+}
+func ValidFof(q Fof) error {
+	return q.valid()
 }

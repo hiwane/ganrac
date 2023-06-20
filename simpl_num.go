@@ -557,15 +557,30 @@ _LT:
 	return LT, gray.t, gray.f
 }
 
-func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]*Poly, OP, *NumRegion, *NumRegion) {
+/*
+ * 因数分解された多項式のリストを受け取り，それらを単純化する．
+ * start: 0 / 1 がくることを想定. ox.fctr からの復帰で，0番目の要素は定数で skip する必要があるため
+ *
+ * 復帰値の []RObj は fctr.get(*, 1) % 2 == 0 の場合があると正しくない
+ *  simplNumPolyFctr() から呼び出す場合には復帰を利用しない
+ *  それ以外の場合には，simplFctr() により重複は取り除かれていることを期待する
+ */
+func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]RObj, OP, *NumRegion, *NumRegion) {
+
+	// start > 0 の場合は，0番目の要素の符号を見る必要があるが，
+	// 呼び出し元にまかせる
 	ret_op := GT
 
 	var pret *NumRegion
 	var nret *NumRegion
 
-	ps := make([]*Poly, 0, fctr.Len()-start)
-
+	ps := make([]RObj, 0, fctr.Len()-start) // 復帰用
+	es := make([]int, 0, fctr.Len()-start)  // 次数
+	var pos, neg *NumRegion
 	n := fctr.Len() - 1
+
+	var mul_even RObj = one
+	var mul_odd RObj = one
 	for i := n; i >= start; i-- {
 		ei, _ := fctr.Geti(i, 1)
 		e := ei.(*Int).Int64()
@@ -573,30 +588,8 @@ func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]*Poly,
 		pi, _ := fctr.Geti(i, 0)
 		p := pi.(*Poly)
 
-		op, pos, neg := p.simplNumPoly(g, t, f, p.lv)
-
-		if e%2 == 0 {
-			pn := pos.union(neg)
-			if i == n {
-				pret = pn
-				nret = nil
-			} else {
-				pret = pret.intersect(pn)
-				nret = nret.intersect(pn)
-			}
-		} else {
-			if i == n {
-				pret = pos
-				nret = neg
-			} else {
-				pp := pret.intersect(pos)
-				nn := nret.intersect(neg)
-				pn := pret.intersect(neg)
-				np := nret.intersect(pos)
-				pret = pp.union(nn)
-				nret = np.union(pn)
-			}
-		}
+		var op OP
+		op, pos, neg = p.simplNumPoly(g, t, f, p.lv)
 		if op == GT {
 			continue
 		} else if op == LT {
@@ -619,10 +612,38 @@ func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]*Poly,
 			ret_op = OP_TRUE
 		}
 		ps = append(ps, p)
+		es = append(es, int(e))
+		if n != start {
+			if e%2 == 0 {
+				mul_even = Mul(mul_even, p)
+			} else {
+				mul_odd = Mul(mul_odd, p)
+			}
+		}
 	}
+
+	if n <= start || len(ps) == 0 {
+		return ps, ret_op, pos, neg
+	}
+
+	// 一変数の場合，実根の分離を行うので，平方因子があると困る
+	if mul_even == one {
+		if mul, ok := mul_odd.(*Poly); ok {
+			_, pos, neg = mul.simplNumPoly(g, t, f, mul.lv)
+			pret = pret.intersect(pos)
+			nret = nret.intersect(nret)
+			return ps, ret_op, pos, neg
+		}
+	}
+	// fmt.Printf("p^%d=%v, t=%v, f=%v => op=%v, pos=%v, neg=%v\n", p, e, t, f, op, pos, neg)
 	return ps, ret_op, pret, nret
 }
 
+/*
+ * atom の外の多項式の符号評価
+ *
+ *   2 次の場合に，主係数，判別式の符号を判定する
+ */
 func (poly *Poly) simplNumPolyFctr(g *Ganrac, t, f *NumRegion) (OP, *NumRegion, *NumRegion) {
 	fctr := g.ox.Factor(poly)
 	cont, _ := fctr.Geti(0, 0)
@@ -708,9 +729,7 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 			nc = NewNumRegion()
 			s = LT
 		}
-		c1 := poly.Coef(v, 1)
-		c0 := poly.Coef(v, 0)
-		discrim := Sub(c1.Mul(c1), Mul(c2, c0).Mul(four))
+		discrim := poly.discrim2(v)
 		// 判別式の符号を考える
 		var sgn_op OP = 0
 		var nd *NumRegion = nil // sgn of Discrimination
@@ -741,6 +760,9 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 		} else { // LE, EQ
 			op_ret &= (s | EQ)
 		}
+		if err := op_ret.valid(); err != nil {
+			panic(fmt.Sprintf("invalid op_ret=%v", op_ret))
+		}
 
 		if op_ret == GT || op_ret == LT {
 			break
@@ -763,21 +785,56 @@ func (p *AtomF) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegio
 
 func (atom *Atom) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegion) {
 	// simplFctr 通過済みと仮定したいところだが.
+	if err := atom.valid(); err != nil {
+		fmt.Printf("simplNum input invalid atom=%V: %v\n", atom, atom)
+		panic("stop")
+	}
 
 	fctr := NewListN(len(atom.p))
 	for _, p := range atom.p {
 		fctr.Append(NewList(p, one))
 	}
 
-	ps, s, pp, nn := fctr.simplNumPolys(g, 0, t, f)
-	if len(ps) != len(atom.p) {
-		atom = newAtoms(ps, atom.op)
+	rs, s, pp, nn := fctr.simplNumPolys(g, 0, t, f)
+	if len(rs) < len(atom.p) { // 因子が減ったということ
+		var atom2 Fof
+		if len(rs) == 0 {
+			if atom.op&s == 0 {
+				atom2 = falseObj
+			} else if atom.op|s == atom.op {
+				atom2 = trueObj
+			} else {
+				atom2 = NewAtoms(rs, atom.op&s)
+			}
+		} else {
+			atom2 = NewAtoms(rs, atom.op)
+		}
+		if err := atom2.valid(); err != nil {
+			fmt.Printf("simplNum(%v) => %v\n", atom, rs)
+			for iii, ppp := range rs {
+				fmt.Printf("  %d: %v\n", iii, ppp)
+			}
+			fmt.Printf("simplNum newAtoms=%V: %v\n", atom, atom)
+			panic("stop, bug")
+		}
+		// fmt.Printf("simplNum(%v) => %v, t=%v, f=%v, s=%d, pp=%v, nn=%v, rs=%v\n", atom, atom2, t, f, s, pp, nn, rs)
+		switch atomx := atom2.(type) {
+		case *AtomT, *AtomF:
+			return atom2, t, f
+		case *Atom:
+			atom = atomx
+		default:
+			panic(fmt.Sprintf("unknown type, bug, atom=%v => %v, ps=%v", atom, atom2, rs))
+		}
 	}
 
 	if s&atom.op == 0 {
 		return falseObj, nil, NewNumRegion()
 	} else if s|atom.op == atom.op {
-		g.log(3, 1, "smplnum: <%v> ==> true\n", atom)
+		if err := atom.valid(); err != nil {
+			panic("bug")
+		}
+		g.log(3, 1, "smplnum: {%V:%v} ==> true: t=%v, f=%v\n", atom, atom, t, f)
 		return trueObj, NewNumRegion(), nil
 	} else if atom.op == LT || atom.op == LE {
 		return atom, nn, pp
@@ -837,8 +894,16 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 		}
 
 		fmls[i], tt, ff = fml.simplNum(g, t, ff)
+		if err := fmls[i].valid(); err != nil {
+			fmt.Printf("simplNum(%v) => %v; %V\n", fml, fmls[i], fmls[i])
+			panic("stop, bug")
+		}
 		if false && !fml.Equals(fmls[i]) {
-			fmt.Printf("@@ And.simplNum[2nd,%d/%d] %v -> %v, false=%v\n", i+1, len(p.fml), p.fml[i], fml, ff)
+			fmt.Printf("@@ And.simplNum @AND@ %v\n", p)
+			fmt.Printf("@@ And.simplNum[2nd,%d/%d] %v -> %v, ff=%v\n", i+1, len(p.fml), fml, p.fml[i], ff)
+			fmt.Printf("@@ And.simplNum[2nd,%d/%d] %V -> %V\n", i+1, len(p.fml), fml, p.fml[i])
+			fmt.Printf("@@ t=%v\n", t)
+			fmt.Printf("@@ f=%v\n", f)
 		}
 		if _, ok := fmls[i].(*AtomF); ok {
 			return falseObj, nil, NewNumRegion()

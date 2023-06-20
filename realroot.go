@@ -136,6 +136,7 @@ func (p *Poly) convertRange(low *BinInt) *Poly {
 	}
 	q = q.SubsXinv()
 	if err := q.valid(); err != nil {
+		fmt.Printf("p is not square free\n")
 		fmt.Printf("p=%v\n", p)
 		fmt.Printf("q=%v\n", q)
 		panic(err)

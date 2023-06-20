@@ -160,6 +160,7 @@ opt: dictionary.
   %9s: inequational constraints (Iwane15)
   %9s: simplify  even formula
   %9s: simplify  homogeneous formula
+  %9s: simplify  translatation formula
 
 Example
 =======
@@ -173,6 +174,7 @@ Example
 			getQEoptStr(QEALGO_NEQ),
 			getQEoptStr(QEALGO_SMPL_EVEN),
 			getQEoptStr(QEALGO_SMPL_HOMO),
+			getQEoptStr(QEALGO_SMPL_TRAN),
 		)},
 		{"quit", 0, 1, funcQuit, false, "([code])\t\tbye.", ""},
 		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)\t\treal root isolation", ""},
@@ -210,7 +212,7 @@ Examples*
   > x;
   error: undefined variable ` + "`x`\n"},
 		{"verbose", 1, 2, funcVerbose, false, "(int [, int])\t\tset verbose level", ""},
-		{"vs", 1, 1, funcVS, true, "(FOF)* ", ""},
+		{"vs", 1, 2, funcVS, true, "(FOF, int)* ", "virtual substitution"},
 	}
 }
 
@@ -260,7 +262,7 @@ func funcImpl(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%s(2nd-arg): expected a first-order formula", name)
 	}
 
-	return FofImpl(f0, f1), nil
+	return NewFmlImpl(f0, f1), nil
 }
 
 func funcEquiv(g *Ganrac, name string, args []interface{}) (interface{}, error) {
@@ -273,7 +275,7 @@ func funcEquiv(g *Ganrac, name string, args []interface{}) (interface{}, error) 
 		return nil, fmt.Errorf("%s(2nd-arg): expected a first-order formula", name)
 	}
 
-	return FofEquiv(f0, f1), nil
+	return NewFmlEquiv(f0, f1), nil
 }
 
 func funcExists(g *Ganrac, name string, args []interface{}) (interface{}, error) {
@@ -515,6 +517,9 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = fof.valid(); err != nil {
+		return nil, err
+	}
 	var algo ProjectionAlgo = PROJ_McCallum
 	if len(args) > 1 {
 		algoi, ok := args[1].(*Int)
@@ -604,11 +609,19 @@ func funcVS(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if !ok || !fof.Fml().IsQff() {
 		return nil, fmt.Errorf("%s() expected prenex-FOF", name)
 	}
+	maxdeg := 1
+	if len(args) > 1 {
+		deg, ok := args[1].(*Int)
+		if !ok || (!deg.Equals(two) && !deg.IsOne()) {
+			return nil, fmt.Errorf("%s(2nd-arg) expected 1 or 2", name)
+		}
+		maxdeg = int(deg.Int64())
+	}
 
 	var fml Fof
 	fml = fof
 	for _, q := range fof.Qs() {
-		fml = vsLinear(fml, q)
+		fml = vs_main(fml, q, maxdeg, nil)
 	}
 	return fml, nil
 }
@@ -834,6 +847,9 @@ func funcArgBoolVal(val GObj) bool {
 func funcQE(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	fof, err := funcGetFormula(name, args[0])
 	if err != nil {
+		return nil, err
+	}
+	if err = fof.valid(); err != nil {
 		return nil, err
 	}
 	opt := NewQEopt()

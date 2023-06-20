@@ -286,7 +286,7 @@ func TestEvenSimpl(t *testing.T) { // @TEST @TODO
 		cond := NewQeCond()
 		opt.Qe_init(g, f)
 
-		h := opt.Qe_evenq(f, *cond)
+		h := opt.Qe_evenq(f, *cond, 2)
 		if h == nil {
 			if ss.expect != nil {
 				t.Errorf("ii=%d, %s not worked: %v", ii, funcname, ss.input)
@@ -308,7 +308,7 @@ func TestEvenSimpl(t *testing.T) { // @TEST @TODO
 		}
 
 		fnot := f.Not()
-		hnot := opt.Qe_evenq(fnot, *cond)
+		hnot := opt.Qe_evenq(fnot, *cond, 2)
 		if hnot == nil {
 			if ss.expect != nil {
 				t.Errorf("ii=%d, %s.not not worked: %v", ii, funcname, ss.input)

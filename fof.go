@@ -145,6 +145,13 @@ func (op OP) String() string {
 	return []string{"@false@", "<", "==", "<=", ">", "!=", ">=", "@true@"}[op]
 }
 
+func (op OP) valid() error {
+	if op < 0 || 7 < op {
+		return fmt.Errorf("invalid op: %#x", op)
+	}
+	return nil
+}
+
 ///////////////////////
 // FofQ
 ///////////////////////
@@ -539,6 +546,9 @@ func (p *Exists) Tag() uint {
 }
 
 func (p *Atom) valid() error {
+	if len(p.p) == 0 {
+		return fmt.Errorf("empty atom")
+	}
 	for i, pp := range p.p {
 		err := pp.valid()
 		if err != nil {
@@ -1631,12 +1641,8 @@ func NewQuantifier(forex bool, lvv []Level, fml Fof) Fof {
 	}
 }
 
-func newFmlImplies(f1, f2 Fof) Fof {
-	return NewFmlOr(f1.Not(), f2)
-}
-
 func NewFmlEquiv(f1, f2 Fof) Fof {
-	return NewFmlAnd(newFmlImplies(f1, f2), newFmlImplies(f2, f1))
+	return NewFmlAnd(NewFmlImpl(f1, f2), NewFmlImpl(f2, f1))
 }
 
 func (p *FmlAnd) Len() int {
@@ -2133,12 +2139,8 @@ func (p *Exists) normalize() Fof {
 	return p
 }
 
-func FofImpl(f1, f2 Fof) Fof {
+func NewFmlImpl(f1, f2 Fof) Fof {
 	return NewFmlOr(f1.Not(), f2)
-}
-
-func FofEquiv(f1, f2 Fof) Fof {
-	return NewFmlAnd(FofImpl(f1, f2), FofImpl(f2, f1))
 }
 
 func (a *Atom) getPoly() *Poly {
