@@ -50,25 +50,29 @@ func (sp *vs_sample_point) Format(s fmt.State, format rune) {
 	}
 	fmt.Fprintf(s, ")/(")
 	sp.den[1].Format(s, format)
-	fmt.Fprintf(s, "), @densgn=%+d,idx=%+d,nec=", sp.densgn, sp.idx)
+	fmt.Fprintf(s, "), @densgn=%+d,idx=%+d,lc=", sp.densgn, sp.idx)
+	sp.lc.Format(s, format)
+	fmt.Fprintf(s, ",nec=")
 	sp.neccon.Format(s, format)
+	fmt.Fprintf(s, ",den=[")
+	for i := 0; i < len(sp.den); i++ {
+		sp.den[i].Format(s, format)
+		fmt.Fprintf(s, ",")
+	}
 	fmt.Fprintf(s, "]")
 }
 
-func newVslinSamplePoint(maxd int, num, den RObj) *vs_sample_point {
+func newVslinSamplePoint(deg, maxd int, num, den RObj) *vs_sample_point {
 	sp := new(vs_sample_point)
 	sp.num = num
-	sp.deg = 1
+	sp.deg = deg
 	if den.IsNumeric() {
-		sp.densgn = 1
+		sp.densgn = den.Sign()
 	} else {
 		sp.densgn = 0
 	}
-	if den.Sign() < 0 {
-		den = den.Neg()
-	} else {
-		sp.num = sp.num.Neg()
-	}
+	sp.lc = den
+	sp.num = sp.num.Neg()
 
 	sp.idx = 1
 	sp.den = make([]RObj, maxd+1)
@@ -78,7 +82,6 @@ func newVslinSamplePoint(maxd int, num, den RObj) *vs_sample_point {
 		sp.den[i] = sp.den[i-1].Mul(den)
 	}
 	sp.neccon = trueObj
-	sp.lc = den
 	return sp
 }
 
@@ -219,30 +222,20 @@ func gen_sample_vsquad(p *Poly, lv Level, maxd int) []*vs_sample_point {
 
 	// c2=0 の場合は，1次のものに条件付き
 	if !c2.IsNumeric() {
-		sp := newVslinSamplePoint(maxd, c0, c1)
+		sp := newVslinSamplePoint(1, maxd, c0, c1)
 		sp.neccon = NewAtom(c2, EQ)
 		sps = append(sps, sp)
 	}
 
 	// 2次の場合は，解の公式を用いて...
-	sp1 := newVslinSamplePoint(maxd, c1, Mul(c2, two))
+	sp1 := newVslinSamplePoint(2, maxd, c1, Mul(c2, two))
 	sp1.sqr = Sub(c1.Mul(c1), Mul(Mul(c2, c0), four)) // 混合部分は判別式
 	sp1.neccon = NewAtom(sp1.sqr, GE)                 // 判別式が非負
 	sp1.sqrc = 1
 	sp1.deg = 2
-	if sp1.num != c1 {
-		sp1.lc = c2
-	} else {
-		sp1.lc = c2.Neg()
-	}
-	if c2.Sign() < 0 {
-		// 分母の符号を反転しているので，sp1 が小さい根を表す．
-		// b/-2a + sqrt(b^2 - 4ac)/-2a
-		sp1.idx = -1
-	} else {
-		// 分子の符号を反転しているので，sp1 が大きい根を表す．
-		sp1.idx = 1
-	}
+	sp1.lc = c2 // 2倍しているのが嫌い
+	sp1.idx = 1
+
 	sps = append(sps, sp1)
 
 	sp2 := new(vs_sample_point)
@@ -257,7 +250,7 @@ func gen_sample_vsquad(p *Poly, lv Level, maxd int) []*vs_sample_point {
 func gen_sample_vslin(p *Poly, lv Level, maxd int) *vs_sample_point {
 	num := p.Coef(lv, 0)
 	den := p.Coef(lv, 1)
-	return newVslinSamplePoint(maxd, num, den)
+	return newVslinSamplePoint(1, maxd, num, den)
 }
 
 func virtual_subst(atom *Atom, ptt *vs_sample_point, lv Level) Fof {
@@ -280,7 +273,7 @@ func (pt *vs_sample_point) virtual_subst_sqr(atom *Atom, lv Level) Fof {
 	if pt.densgn < 0 && atom.Deg(lv)%2 != 0 {
 		op = op.neg()
 	}
-	// fmt.Printf("      virtual_subst_sqr densgn=%d, Deg=%d, op=%v\n", pt.densgn, atom.Deg(lv), op)
+	// fmt.Printf("      virtual_subst_sqr densgn=%d, Deg=%d, atom=%v : %v: \n", pt.densgn, atom.Deg(lv), atom, op)
 
 	p := atom.getPoly()
 	q, r := p.subst_frac_sqr(pt.num, pt.sqr, pt.sqrc, pt.den[:d+1], lv)
@@ -350,14 +343,16 @@ func vs_nu(polys []*Poly, op OP, pt *vs_sample_point, lv Level) Fof {
 		}
 	}
 
-	var f1 Fof
+	var opx OP
 	if d%2 == 0 || true {
 		// 偶数次数か，分母の符号が正ならそのまま.
-		f1 = virtual_subst(newAtoms(polys, op), pt, lv)
+		opx = op
 	} else {
-		f1 = virtual_subst(newAtoms(polys, op.neg()), pt, lv)
+		opx = op.neg()
 	}
-	// fmt.Printf("    vsnu(): f1=%v, \tatom=%v\n", f1, newAtoms(polys, op))
+	f1 := virtual_subst(newAtoms(polys, opx), pt, lv)
+
+	// fmt.Printf("    vsnu(): f1=%v, \tatom=%v, lv=%v\n", f1, newAtoms(polys, op), lv)
 	if err := f1.valid(); err != nil { // debug
 		fmt.Printf("%V\ninvalid f1 %v\natom=%v\npt=%v\nlv=%d\n", f1, f1, newAtoms(polys, op), pt, lv)
 		panic(err.Error())
@@ -387,11 +382,11 @@ func vs_nu(polys []*Poly, op OP, pt *vs_sample_point, lv Level) Fof {
 
 	var v RObj
 	if pmul == nil {
-		v = one
+		v = zero
 	} else {
 		v = pmul.Diff(lv)
 	}
-	//	fmt.Printf("    vsnu(): v=%v: %v\n", v, v.IsNumeric())
+	// fmt.Printf("    vsnu(): pmul=%v, v=%v: %v\n", pmul, v, v.IsNumeric())
 
 	if v.IsNumeric() {
 		// fmt.Printf("vsnu(): rs=%v, %d\n", rs, v.Sign())
@@ -403,7 +398,7 @@ func vs_nu(polys []*Poly, op OP, pt *vs_sample_point, lv Level) Fof {
 		rs = append(rs, v)
 		atm := NewAtoms(rs, op).(*Atom)
 
-		// fmt.Printf("    vsnu(): ps=%v\n", ps)
+		// fmt.Printf("    vsnu(): ps=%v\n", rs)
 		sfml := vs_nu(atm.p, atm.op, pt, lv)
 		// fmt.Printf("    vsnu(): sfml=%v\n", sfml)
 		return NewFmlOr(f1, NewFmlAnd(f2, sfml))
@@ -546,13 +541,16 @@ func get_vs_polys(p Fof, lv Level) *vs_elimination_set {
 	return peqlt
 }
 
+// テストから呼び出すための関数
 func vsLinear(fof Fof, lv Level) Fof {
-	return vs_main(fof, lv, 1, nil)
+	return vs_main(fof, lv, 1, NewGANRAC())
 }
 
 // target_deg in [1, 2]: vs 対象とする最大次数
 // 2 を指定したときは，線形しかないケースは適用対象外
+// *Ganrac はログ出力用
 func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
+	loglv := 9
 	maxd := fof.Deg(lv)
 	if maxd != target_deg {
 		return fof
@@ -593,9 +591,8 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 			if sgn != 0 && pt.neccon.Equals(trueObj) { // 主係数が定数, かつ, 判別式が必ず非負/線形
 				required_zero = false // もう 0 評価は不要
 			}
-			if false {
-				fmt.Printf(" @@  i,j=%d,%d, %v,%#x, zero=%v, sgn=%d, %v\n", i, j, pt, pp.kind, required_zero, sgn, pp.p)
-			}
+
+			gan.log(loglv, 1, " @@  i,j=%d,%d, %v,%#x, zero=%v, sgn=%d, %v\n", i, j, pt, pp.kind, required_zero, sgn, pp.p)
 
 			for _, stbl := range []struct {
 				do  bool // 実行するか
@@ -626,7 +623,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 						}
 					}
 					sfml := fml.apply_vs(virtual_subst, pt, lv)
-					// fmt.Printf("add2:=:%d:%d: {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
+					gan.log(loglv, 1, "add2:=:%d:%d: {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
 					}
@@ -638,12 +635,13 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 					required_minf = true
 				}
 
-				// 線形なら，stbl.sgn < 0, pt.idx = 1
-				// 2次なら,  stbl.sgn = ?, pt.idx < 0
+				// 微分が非正である.
+				//   1次の場合.... 主係数 < 0
+				//   2次の場合.... idx < 0
 				if pp.kind&(OPVS_LT|OPVS_NE) != 0 && (pt.deg == 1 && stbl.sgn < 0 || pt.deg == 2 && pt.idx < 0) {
 					// p < 0 ==> signr < 0
 					sfml := fml.apply_vs(virtual_subst_e, pt, lv)
-					// fmt.Printf("add6:>e:%d:%d {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
+					gan.log(loglv, 1, "add6:<e:%d:%d {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
 					}
@@ -655,7 +653,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 				if pp.kind&(OPVS_GT|OPVS_NE) != 0 && (pt.deg == 1 && stbl.sgn > 0 || pt.deg == 2 && pt.idx > 0) {
 					// p > 0 ==> sgnr > 0
 					sfml := fml.apply_vs(virtual_subst_e, pt, lv)
-					// fmt.Printf("add7:>e:%d:%d {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
+					gan.log(loglv, 1, "add7:>e:%d:%d {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
 					}
@@ -674,7 +672,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 	if required_minf { // -inf
 		pt := new(vs_sample_point) // ダミー
 		sfml := fml.apply_vs(virtual_subst_i, pt, lv)
-		//    fmt.Printf("j=x, [-inf] {%v}\n", sfml)
+		gan.log(loglv, 1, "j=x, [-inf] {%v}\n", sfml)
 		if err := sfml.valid(); err != nil {
 			panic(err)
 		}
@@ -691,7 +689,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 	}
 	if required_zero { // サンプル点の分母がパラメータのみの場合に必要
 		sfml := fml.Subst(zero, lv)
-		// fmt.Printf("j=x, [zero] {%v}\n", sfml)
+		gan.log(loglv, 1, "j=x, [zero] {%v}\n", sfml)
 		ret = NewFmlOr(ret, sfml)
 		if err := ret.valid(); err != nil {
 			panic(err)
@@ -711,7 +709,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 
 func (qeopt QEopt) qe_vs(fof FofQ, cond qeCond, d int) Fof {
 	for _, q := range fof.Qs() {
-		ff := vs_main(fof, q, d, nil)
+		ff := vs_main(fof, q, d, qeopt.g)
 		if ff != fof {
 			return ff
 		}

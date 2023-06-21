@@ -667,7 +667,7 @@ func funcVS(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	var fml Fof
 	fml = fof
 	for _, q := range fof.Qs() {
-		fml = vs_main(fml, q, maxdeg, nil)
+		fml = vs_main(fml, q, maxdeg, g)
 	}
 	return fml, nil
 }

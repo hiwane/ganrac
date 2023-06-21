@@ -32,7 +32,7 @@ func logSimplFof(c Fof, g *Ganrac, eyec string) {
 	// }
 	// c = f.(Fof)
 	// @5->@6
-	g.log(4, 1, "simplFof() step%s: %v\n", eyec, c)
+	g.log(10, 1, "simplFof() step%s: %v\n", eyec, c)
 }
 
 func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {

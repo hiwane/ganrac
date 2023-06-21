@@ -388,6 +388,9 @@ _found:
 	fs := make([]Fof, 3)
 	for i, v := range []RObj{zero, one, mone} {
 		fs[i] = f.Subst(v, lv)
+		if err := fs[i].valid(); err != nil {
+			panic(fmt.Sprintf("f=%v\nv=%v\nlv=%v\nfs[%d]=%v\nerr=%s", f, v, lv, i, fs[i], err))
+		}
 		fs[i] = qeopt.qe(fs[i], cond)
 	}
 	switch f.(type) {

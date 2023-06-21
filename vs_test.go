@@ -61,9 +61,9 @@ func TestVsLin1(t *testing.T) {
 			}
 
 			lv := Level(1)
-			fmt.Printf(">>>>>>>> go   %v[%s]\n", fof, VarStr(lv))
-			qff := QeVS(fof, lv, 1, nil)
-			fmt.Printf("<<<<<<<< done %v[%s]\n", fof, VarStr(lv))
+			// fmt.Printf(">>>>>>>> go   %v[%s]\n", fof, VarStr(lv))
+			qff := QeVS(fof, lv, 1, g)
+			// fmt.Printf("<<<<<<<< done %v[%s]\n", fof, VarStr(lv))
 			if err = ValidFof(qff); err != nil {
 				t.Errorf("%d: formula is broken input=`%s`: out=`%s`, %v", i, s.qff, qff, err)
 				return
@@ -83,7 +83,7 @@ func TestVsLin1(t *testing.T) {
 				lllv := []Level{0, 2, 3, 4, 5, 6}
 				q = NewQuantifier(true, lllv, NewFmlEquiv(qff, ans.(Fof)))
 				for _, llv := range lllv {
-					q = QeVS(q, llv, 1, nil)
+					q = QeVS(q, llv, 1, g)
 					if HasVar(q, llv) {
 						t.Errorf("%d: variable %d is not eliminated: X1 out=%s", i, llv, q)
 						return
@@ -107,7 +107,7 @@ func TestVsLin1(t *testing.T) {
 				lllv := []Level{0, 2, 3, 4, 5, 6}
 				q = NewQuantifier(true, lllv, NewFmlEquiv(sqff, ans.(Fof)))
 				for _, llv := range lllv {
-					q = QeVS(q, llv, 1, nil)
+					q = QeVS(q, llv, 1, g)
 					if HasVar(q, llv) {
 						t.Errorf("%d: variable %d is not eliminated: X1 out=%s", i, llv, q)
 						return
@@ -124,6 +124,8 @@ func TestVsLin1(t *testing.T) {
 }
 
 func TestVsLin2(t *testing.T) {
+
+	gan := NewGANRAC() // log 用
 
 	for ii, ss := range []struct {
 		lv     Level
@@ -189,7 +191,7 @@ func TestVsLin2(t *testing.T) {
 			{ss.p, ss.expect},
 			{ss.p.Not(), ss.expect.Not()},
 		} {
-			f := QeVS(sss.p, ss.lv, 1, nil)
+			f := QeVS(sss.p, ss.lv, 1, gan)
 			f = SimplBasic(f, TrueObj, FalseObj)
 
 			q := make([]Level, ss.lv)
@@ -198,7 +200,7 @@ func TestVsLin2(t *testing.T) {
 			}
 			g := NewQuantifier(true, q, NewFmlEquiv(f, sss.expect))
 			for i := Level(0); i < ss.lv; i++ {
-				g = QeVS(g, i, 1, nil)
+				g = QeVS(g, i, 1, gan)
 				switch g.(type) {
 				case *AtomF:
 					t.Errorf("invalid %d, %d, F\n in=%v\nexp=%v\nout=%v", ii, jj, sss.p, sss.expect, f)
@@ -221,8 +223,9 @@ func TestVsLin2(t *testing.T) {
 	}
 }
 
-func TestVsQuad(t *testing.T) {
-	funcname := "TestVsQuad"
+func TestVsLin3(t *testing.T) {
+	funcname := "TestVsLin3"
+	print_log := false
 	g := makeCAS(t)
 	if g == nil {
 		fmt.Printf("skip %s... (no cas)\n", funcname)
@@ -230,22 +233,20 @@ func TestVsQuad(t *testing.T) {
 	}
 	defer g.Close()
 
-	optbl := []string{">=", "!=", "==", "<=", ">", "<"}
+	optbl := []string{"==", "!=", ">=", "<=", ">", "<"}
 
 	for i, ss := range []string{
-		"a*x^2+b*x+c %s 0 && x %s 0",
-		"a*x^2+b*x-1 %s 0 && c %s 0",
-		"a*x^2+b*x+1 %s 0 && c %s 0",
-		"x^2-6*b*x+9*b^2 %s 0 && a %s 0",
-		"x^2+b*x+c %s 0 && a %s 0",
+		"a*x-b %s 0 && x %s c",
+		"a*x-b %s 0 && c*x %s -1",
 	} {
 		for j, vars := range []struct {
 			v  string // 変数順序
 			lv Level  // 消去する変数のレベル
 		}{
+			{"b,x,c,a", 1},
 			{"a,b,c,x", 3},
 			{"a,b,x,c", 2},
-			{"x,a,b,c", 0},
+			{"x,c,b,a", 0},
 		} {
 			vstr := fmt.Sprintf("vars(%s);", vars.v)
 			_, err := g.Eval(strings.NewReader(vstr))
@@ -257,7 +258,112 @@ func TestVsQuad(t *testing.T) {
 				op1 := optbl[ops/6]
 				op2 := optbl[ops%6]
 				input := fmt.Sprintf("ex([x], %s);", fmt.Sprintf(ss, op1, op2))
-				fmt.Printf(" == [%d,%d,%d] ==== %s ==[%s:%d]======================\n", i, j, ops, input, vars.v, vars.lv)
+				if print_log {
+					fmt.Printf(" == [%d,%d,%d] ==== %s ==[%s:%d]======================\n", i, j, ops, input, vars.v, vars.lv)
+				}
+				_fof, err := g.Eval(strings.NewReader(input))
+				if err != nil {
+					t.Errorf("[%d] parse error: %s, %s, %s\nerr=%s\ninput=%s", i, vstr, op1, op2, err, input)
+					return
+				}
+				fof, ok := _fof.(Fof)
+				if !ok {
+					t.Errorf("[%d] eval failed\ninput=%s\neval=%v", i, ss, _fof)
+					return
+				}
+				if err := ValidFof(fof); err != nil {
+					t.Errorf("[%d] invalid fvs\ninput=%s\nactual=%v", i, ss, fof)
+					return
+				}
+
+				fvs := QeVS(fof, vars.lv, 1, g)
+				if print_log {
+					fmt.Printf(">>>>>>>>>>>>\n")
+				}
+				if err := ValidFof(fvs); err != nil {
+					t.Errorf("[%d] invalid fvs\ninput=%s\nactual=%v", i, ss, fvs)
+					return
+				}
+				if HasVar(fvs, vars.lv) {
+					t.Errorf("[%d,%d,%s] vs2 failed: has `%s`[%d]\ninput=%s\nactual=%s", i, j, vars.v, VarStr(vars.lv), vars.lv, input, fvs)
+					return
+				}
+
+				// VS2次を使わないモードで
+				opt := NewQEopt()
+				opt.SetAlgo(QEALGO_VSQUAD|QEALGO_VSLIN, false)
+				fqe := g.QE(fof, opt)
+				// fmt.Printf(">>>>>>>>>>>>EQUIV\n")
+
+				eq := g.QE(NewForAll([]Level{0, 1, 2, 3}, NewFmlEquiv(fvs, fqe)), opt)
+				if eq != TrueObj {
+					t.Errorf("[%d,%d,%d,'%s'] invalid\ninputt=%v\nexpect=%v\nactual=%v\nactua2=%v\nequall=%v", i, j, ops, vars.v, fof, fqe, fvs, g.SimplFof(fvs), eq)
+
+					opt.SetAlgo(QEALGO_VSLIN, false)
+					for _, lvs := range [][]Level{
+						{},
+						{0, 1},
+						{0, 2},
+						{0, 3},
+						{1, 2},
+						{1, 3},
+						{2, 3},
+					} {
+						if len(lvs) == 0 {
+							break
+						}
+						vv := g.QE(NewForAll(lvs, NewFmlEquiv(fvs, fqe)), opt)
+						im := g.QE(NewForAll(lvs, NewFmlImpl(fvs, fqe)), opt)
+						re := g.QE(NewForAll(lvs, NewFmlImpl(fqe, fvs)), opt)
+						t.Errorf("%v: %v, im=%v, re=%v", lvs, vv, im, re)
+					}
+					return
+				}
+			}
+		}
+	}
+}
+
+func TestVsQuad(t *testing.T) {
+	funcname := "TestVsQuad"
+	print_log := true
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip %s... (no cas)\n", funcname)
+		return
+	}
+	defer g.Close()
+
+	optbl := []string{"<", ">", ">=", "!=", "==", "<="}
+
+	for i, ss := range []string{
+		"a*x^2-b*x+1 %s 0 && c %s 3",
+		"a*x^2-3*b*x-5*c %s 0 && x %s 0",
+		"7*x^2-6*b*x+9*b^2 %s 0 && a %s 0",
+	} {
+		for j, vars := range []struct {
+			v  string // 変数順序
+			lv Level  // 消去する変数のレベル
+		}{
+			{"x,a,b,c", 0},
+			{"a,b,c,x", 3},
+			{"a,b,x,c", 2},
+			{"a,c,x,b", 2},
+			{"c,b,a,x", 3},
+		} {
+			vstr := fmt.Sprintf("vars(%s);", vars.v)
+			_, err := g.Eval(strings.NewReader(vstr))
+			if err != nil {
+				t.Errorf("[%d] %s failed: %s", i, vstr, err)
+				return
+			}
+			for ops := 0; ops < 6*6; ops++ {
+				op1 := optbl[ops/6]
+				op2 := optbl[ops%6]
+				input := fmt.Sprintf("ex([x], %s);", fmt.Sprintf(ss, op1, op2))
+				if print_log {
+					fmt.Printf(" == [%d,%d,%d,%v,%v] ==== %s ==[%s:%d]======================\n", i, j, ops, op1, op2, input, vars.v, vars.lv)
+				}
 				_fof, err := g.Eval(strings.NewReader(input))
 				if err != nil {
 					t.Errorf("[%d] parse error: %s, %s, %s\nerr=%s\ninput=%s", i, vstr, op1, op2, err, input)
@@ -274,7 +380,9 @@ func TestVsQuad(t *testing.T) {
 				}
 
 				fvs := QeVS(fof, vars.lv, 2, g)
-				fmt.Printf(">>>>>>>>>>>>\n")
+				if print_log {
+					fmt.Printf(">>>>>>>>>>>>\n")
+				}
 				if err := ValidFof(fvs); err != nil {
 					t.Errorf("[%d] invalid fvs\ninput=%s\nactual=%v", i, ss, fvs)
 					return
@@ -288,11 +396,13 @@ func TestVsQuad(t *testing.T) {
 				opt := NewQEopt()
 				opt.SetAlgo(QEALGO_VSQUAD, false)
 				fqe := g.QE(fof, opt)
-				fmt.Printf(">>>>>>>>>>>>EQUIV\n")
+				if print_log {
+					fmt.Printf(">>>>>>>>>>>>EQUIV\n")
+				}
 
 				eq := g.QE(NewForAll([]Level{0, 1, 2, 3}, NewFmlEquiv(fvs, fqe)), opt)
 				if eq != TrueObj {
-					t.Errorf("[%d,%d,%d,'%s'] invalid\ninputt=%v\nexpect=%v\nactual=%v\nactua2=%v\nequall=%v", i, j, ops, vars.v, fof, fqe, fvs, g.SimplFof(fvs), eq)
+					t.Errorf("[%d,%d,%d,%v,%v,'%s'] invalid\ninputt=%v\nexpect=%v\nactual=%v\nactua2=%v\nequall=%v", i, j, ops, op1, op2, vars.v, fof, fqe, fvs, g.SimplFof(fvs), eq)
 
 					opt.SetAlgo(QEALGO_VSLIN, false)
 					for _, lvs := range [][]Level{
