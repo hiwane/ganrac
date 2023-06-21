@@ -1287,15 +1287,9 @@ func (z *Poly) Diff(lv Level) RObj {
 				p.c[i] = zero
 			}
 		}
-		for i := len(p.c) - 1; i > 0; i-- {
-			if !p.c[i].IsZero() {
-				p.c = p.c[:i+1]
-				return p
-			}
-		}
-		return p.c[0]
+		return p.normalize()
 	} else if z.lv < lv {
-		return z
+		return zero
 	}
 
 	if len(z.c) == 2 {

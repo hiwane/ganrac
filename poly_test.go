@@ -491,7 +491,7 @@ func TestSubstFrac(t *testing.T) {
 	}
 }
 
-func TestPolyDiff(t *testing.T) {
+func TestPolyDiff1(t *testing.T) {
 	for _, s := range []struct {
 		p      *Poly
 		lv     Level
@@ -529,6 +529,66 @@ func TestPolyDiff(t *testing.T) {
 
 		if !c.Equals(s.expect) {
 			t.Errorf("f[%d]=%v, expect=%v, actual=%v", s.lv, s.p, s.expect, c)
+		}
+	}
+}
+
+func TestPolyDiff2(t *testing.T) {
+	//funcname := "TestPolyDiff2"
+	g := NewGANRAC()
+
+	for i, vars := range []struct {
+		v  string // 変数順序
+		lv Level  // x のレベル
+	}{
+		{"a,b,c,d,x", 4},
+		{"a,b,x,c,d", 2},
+		{"c,d,x,a,b", 2},
+		{"b,x,c,a,d", 1},
+		{"x,a,b,c,d", 0},
+	} {
+		vstr := fmt.Sprintf("vars(%s);", vars.v)
+		_, err := g.Eval(strings.NewReader(vstr))
+		if err != nil {
+			t.Errorf("[%d] %s failed: %s", i, vstr, err)
+			return
+		}
+
+		for j, ss := range []struct {
+			input  string
+			expect string
+		}{
+			{
+				"a*x^3-5*b*x^2-3*c*x+d",
+				"3*a*x^2-10*b*x-3*c",
+			}, {
+				"x*(a+7*d)-5*b + c^2",
+				"a+7*d",
+			},
+		} {
+			if false {
+				fmt.Printf(" == [%d,%d,'%s'] ==== %s ======================\n", i, j, vars.v, ss.input)
+			}
+			_p, err := g.Eval(strings.NewReader(ss.input + ";"))
+			if err != nil {
+				t.Errorf("[%d,%d,'%s'] parse error: \nerr=%s\ninput=%s", i, j, vars.v, err, ss.input)
+				return
+			}
+			p, ok := _p.(*Poly)
+			if !ok {
+				t.Errorf("[%d,%d,'%s'] parse error: \nerr=%s\ninput=%s", i, j, vars.v, err, ss.input)
+				return
+			}
+			expect, err := g.Eval(strings.NewReader(ss.expect + ";"))
+			if err != nil {
+				t.Errorf("[%d,%d,'%s'] parse error: \nerr=%s\nexpect=%s", i, j, vars.v, err, ss.expect)
+				return
+			}
+			q := p.Diff(vars.lv)
+			if !q.Equals(expect) {
+				t.Errorf("[%d,%d,'%s'] diff error: \ninput =%v\nexpect=%v\nactual=%v", i, j, vars.v, p, expect, q)
+				return
+			}
 		}
 	}
 }
