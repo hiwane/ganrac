@@ -607,7 +607,7 @@ func (p *FmlOr) valid() error {
 		// or の入れ子は許さない
 		switch f.(type) {
 		case *FmlOr:
-			return fmt.Errorf("or is in or [%d] `%v`\n", i, f)
+			return fmt.Errorf("OR is in OR [%d] `%v`\n", i, f)
 		}
 	}
 	return validFmlAndOr("or", p.fml)
@@ -1230,11 +1230,13 @@ func (p *FmlAnd) Subst(xs RObj, lvs Level) Fof {
 	q.fml = make([]Fof, 0, len(p.fml))
 	for i := 0; i < len(p.fml); i++ {
 		fml := p.fml[i].Subst(xs, lvs)
-		switch fml.(type) {
+		switch v := fml.(type) {
 		case *AtomT:
 			break
 		case *AtomF:
 			return fml
+		case *FmlAnd:
+			q.fml = append(q.fml, v.fml...)
 		default:
 			q.fml = append(q.fml, fml)
 		}
@@ -1243,6 +1245,10 @@ func (p *FmlAnd) Subst(xs RObj, lvs Level) Fof {
 		return NewBool(true)
 	} else if len(q.fml) == 1 {
 		return q.fml[0]
+	}
+	if err := q.valid(); err != nil {
+		fmt.Printf("fml invalid Subst(%v, %v, %v) = %v\nerr=%v\n\n", p, xs, lvs, q, err)
+		panic(err)
 	}
 	return q
 }
@@ -1252,11 +1258,13 @@ func (p *FmlOr) Subst(xs RObj, lvs Level) Fof {
 	q.fml = make([]Fof, 0, len(p.fml))
 	for i := 0; i < len(p.fml); i++ {
 		fml := p.fml[i].Subst(xs, lvs)
-		switch fml.(type) {
+		switch v := fml.(type) {
 		case *AtomF:
 			break
 		case *AtomT:
 			return fml
+		case *FmlOr:
+			q.fml = append(q.fml, v.fml...)
 		default:
 			q.fml = append(q.fml, fml)
 		}
@@ -1265,6 +1273,10 @@ func (p *FmlOr) Subst(xs RObj, lvs Level) Fof {
 		return NewBool(true)
 	} else if len(q.fml) == 1 {
 		return q.fml[0]
+	}
+	if err := q.valid(); err != nil {
+		fmt.Printf("fml invalid Subst(%v, %v, %v) = %v\nerr=%v\n\n", p, xs, lvs, q, err)
+		panic(err)
 	}
 	return q
 }
@@ -1287,6 +1299,10 @@ func substQuantifier(forex bool, fml Fof, qorg []Level, lvs []Level) Fof {
 
 func (p *ForAll) Subst(xs RObj, lvs Level) Fof {
 	fml := p.fml.Subst(xs, lvs)
+	if err := fml.valid(); err != nil {
+		fmt.Printf("fml invalid Subst(%v, %v, %v) = %v\nerr=%v\n\n", p, xs, lvs, fml, err)
+		panic(err)
+	}
 	return p.gen(p.q, fml)
 }
 
