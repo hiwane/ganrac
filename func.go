@@ -22,7 +22,14 @@ func (g *Ganrac) setBuiltinFuncTable() {
 		// sorted by name
 		{"all", 2, 2, funcForAll, false, "([x], FOF):\t\tuniversal quantifier.", ""},
 		//		{"and", 2, 2, funcAnd, false, "(FOF, ...):\t\tconjunction (&&)", ""},
-		{"cad", 1, 2, funcCAD, true, "(FOF [, proj])*", ""},
+		{"cad", 1, 2, funcCAD, true, "(fof [, option])*", fmt.Sprintf(`
+Args
+========
+fof: first-order formula
+opt: dictionary.
+	proj: (m|h) projection operator.  (default: m)
+	var : (0|1) 1 if auto             (default: 0)
+`)},
 		{"cadinit", 1, 1, funcCADinit, true, "(FOF)*", ""},
 		{"cadlift", 1, 10, funcCADlift, true, "(CAD)*", ""},
 		{"cadproj", 1, 2, funcCADproj, true, "(CAD [, proj])*", ""},
@@ -153,19 +160,19 @@ Args
 ========
 fof: first-order formula
 opt: dictionary.
-  %9s: linear    virtual substitution
-  %9s: quadratic virtual substitution
-  %9s: linear    equational constraint (Hong93)
-  %9s: quadratic equational constraint (Hong93)
-  %9s: inequational constraints (Iwane15)
-  %9s: simplify  even formula
-  %9s: simplify  homogeneous formula
-  %9s: simplify  translatation formula
+  %9s: (0|1) linear    virtual substitution
+  %9s: (0|1) quadratic virtual substitution
+  %9s: (0|1) linear    equational constraint [Hong93]
+  %9s: (0|1) quadratic equational constraint [Hong93]
+  %9s: (0|1) inequational constraints [Iwane15]
+  %9s: (0|1) simplify  even formula
+  %9s: (0|1) simplify  homogeneous formula
+  %9s: (0|1) simplify  translatation formula
 
 Example
 =======
   > vars(x, b, c);
-  > F = ex([x], x^2+b*x+c == 0);
+  > F = ex([x], x^2+b*x+c == 0, {%s: 0});
 `,
 			getQEoptStr(QEALGO_VSLIN),
 			getQEoptStr(QEALGO_VSQUAD),
@@ -175,6 +182,7 @@ Example
 			getQEoptStr(QEALGO_SMPL_EVEN),
 			getQEoptStr(QEALGO_SMPL_HOMO),
 			getQEoptStr(QEALGO_SMPL_TRAN),
+			getQEoptStr(QEALGO_VSQUAD),
 		)},
 		{"quit", 0, 1, funcQuit, false, "([code])\t\tbye.", ""},
 		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)\t\treal root isolation", ""},
@@ -520,17 +528,47 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if err = fof.valid(); err != nil {
 		return nil, err
 	}
-	var algo ProjectionAlgo = PROJ_McCallum
-	if len(args) > 1 {
-		algoi, ok := args[1].(*Int)
-		if !ok || (!algoi.IsZero() && !algoi.IsOne()) {
-			return nil, fmt.Errorf("%s(2nd-arg) expected proj operator", name)
-		}
-		algo = ProjectionAlgo(algoi.Int64())
+	if !fof.isPrenex() {
+		return nil, fmt.Errorf("%s(1st arg): prenext formula is expected: %v", name, args[0])
 	}
+	var algo ProjectionAlgo = PROJ_McCallum
+	var var_order bool = false
+	if len(args) > 1 {
+		dic, ok := args[1].(*Dict)
+		if !ok {
+			return nil, fmt.Errorf("%s(2nd arg): expected Dict: %v", name, args[1])
+		}
+		for k, v := range dic.v {
+			switch k {
+			case "proj":
+				if vstr, ok := v.(*String); ok && vstr.s == "m" {
+					algo = PROJ_McCallum
+				} else if ok && vstr.s == "h" {
+					algo = PROJ_HONG
+				} else {
+					return nil, fmt.Errorf("%s(2nd arg): invalid proj value: %v", name, v)
+				}
+			case "var":
+				var_order = funcArgBoolVal(v)
+			default:
+				return nil, fmt.Errorf("%s(2nd arg): unknown option: %s", name, k)
+			}
+		}
+	}
+
 	switch fof.(type) {
 	case *AtomT, *AtomF:
 		return fof, nil
+	}
+
+	var qeopt QEopt
+	var cond qeCond
+	var o2 []Level
+	if var_order {
+		cond.neccon = trueObj
+		cond.sufcon = falseObj
+
+		fof, o2 = qeopt.qe_cad_varorder_pre(fof, cond, fof.maxVar()+1)
 	}
 
 	cad, err := NewCAD(fof, g)
@@ -545,7 +583,15 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return cad.Sfc()
+	fml, err := cad.Sfc()
+	if err != nil {
+		return nil, err
+	}
+
+	if var_order {
+		fml = qeopt.qe_cad_varorder_post(fml, cond, fof.maxVar()+1, o2)
+	}
+	return fml, nil
 }
 
 func funcCADinit(g *Ganrac, name string, args []interface{}) (interface{}, error) {

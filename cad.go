@@ -185,7 +185,7 @@ func (c *CAD) String() string {
 
 func (c *CAD) log(lv int, format string, a ...interface{}) {
 	if lv <= c.g.verbose_cad {
-		fmt.Printf(format, a...)
+		c.g.logger.Printf(format, a...)
 	}
 }
 

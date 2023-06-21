@@ -479,37 +479,37 @@ func (qeopt QEopt) appendNecSuf(qff Fof, cond qeCond) Fof {
 	return qff
 }
 
-func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
+// Parameters:
+//
+//	fof: Prenex Formula
+func (qeopt QEopt) qe_cad_varorder_pre(fof Fof, cond qeCond, maxvar Level) (Fof, []Level) {
 	// 変数順序を入れ替える. :: 自由変数 -> 束縛変数
-	maxvar := qeopt.varn
-
 	b := make([]bool, maxvar)
 	fof.Indets(b)
 	numvar := 0
-	for _, b := range b {
-		if b {
+	for _, bb := range b {
+		if bb {
 			numvar++
 		}
 	}
 
 	// 自由変数を探す
-	fq := fof
-	fqs := make([]FofQ, 1, maxvar)
-	fqs[0] = fof
-	var qff Fof
+	fqs := make([]FofQ, 0, maxvar)
+	var qff Fof = fof
 	for {
-		qs := fq.Qs()
-		for _, q := range qs {
-			b[q] = false
-		}
-		if ff, ok := fq.Fml().(FofQ); ok {
-			fq = ff
-			fqs = append(fqs, fq)
+		if ff, ok := qff.(FofQ); ok {
+			fqs = append(fqs, ff)
+			for _, q := range ff.Qs() {
+				b[q] = false
+			}
+			qff = ff.Fml()
 		} else {
-			qff = fq.Fml()
 			break
 		}
 	}
+
+	// fqs: quantifier list
+	// qff: quantifer-free part of the input formula
 
 	// index の下位が自由変数
 	m := Level(0)
@@ -520,7 +520,7 @@ func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
 	}
 
 	for j, bi := range b {
-		if bi {
+		if bi { // 自由変数
 			o1[j] = m
 			o2 = append(o2, Level(j))
 			m++
@@ -533,21 +533,21 @@ func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
 		for i := len(fqs) - 1; i >= 0; i-- {
 			qff = fqs[i].gen(fqs[i].Qs(), qff)
 		}
-		fof = qff.(FofQ)
+		fof = qff
 	}
 	qff = nil
+	fqs = nil
 
 	// 外側の限量子から追加
-	fq = fof
+	fq := fof
 	for {
-		qs := fq.Qs()
-		for _, q := range qs {
-			o1[q] = m
-			o2 = append(o2, q)
-			m++
-		}
-		if ff, ok := fq.Fml().(FofQ); ok {
-			fq = ff
+		if ff, ok := fq.(FofQ); ok {
+			for _, q := range ff.Qs() {
+				o1[q] = m
+				o2 = append(o2, q)
+				m++
+			}
+			fq = ff.Fml()
 		} else {
 			break
 		}
@@ -564,6 +564,14 @@ func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
 		}
 	}
 	fof2 = fof2.replaceVar(vas, lvs)
+	return fof2, o2
+}
+
+func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
+	maxvar := qeopt.varn
+
+	fof2, o2 := qeopt.qe_cad_varorder_pre(fof, cond, maxvar)
+
 	qeopt.log(cond, 2, "cad", "%v\n", fof2)
 	cad, err := NewCAD(fof2, qeopt.g)
 	if err != nil {
@@ -587,8 +595,12 @@ func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
 		panic(fmt.Sprintf("cad.sfc() input=%v\nerr=%v", fof, err))
 	}
 
-	lvs = make([]Level, 0, len(o2))
-	vas = make([]RObj, 0, len(o2))
+	return qeopt.qe_cad_varorder_post(fof3, cond, maxvar, o2)
+}
+
+func (qeopt QEopt) qe_cad_varorder_post(fof3 Fof, cond qeCond, maxvar Level, o2 []Level) Fof {
+	lvs := make([]Level, 0, len(o2))
+	vas := make([]RObj, 0, len(o2))
 	for j := len(o2) - 1; j >= 0; j-- {
 		lvs = append(lvs, Level(j))
 		vas = append(vas, NewPolyVar(o2[Level(j)]+maxvar))
