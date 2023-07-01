@@ -28,7 +28,7 @@ type Sage struct {
 	pResultant *C.PyObject
 	pDiscrim   *C.PyObject
 	pPsc       *C.PyObject
-	pSres      *C.PyObject
+	pSlope     *C.PyObject
 	pGB        *C.PyObject
 	pReduce    *C.PyObject
 	pEval      *C.PyObject
@@ -77,7 +77,7 @@ func (sage *Sage) Close() error {
 	C.Py_DecRef(sage.pResultant)
 	C.Py_DecRef(sage.pDiscrim)
 	C.Py_DecRef(sage.pPsc)
-	C.Py_DecRef(sage.pSres)
+	C.Py_DecRef(sage.pSlope)
 	C.Py_DecRef(sage.pGB)
 	C.Py_DecRef(sage.pReduce)
 	C.Py_DecRef(sage.pEval)
@@ -209,7 +209,7 @@ def gan_comb(A, B):
 		C //= I
 	return C
 
-def gan_sres(varn: int, p, q, x, K):
+def gan_slope(varn: int, p, q, x, K):
 	P, vardic = polyringinit(varn)
 	F = sage.all.sage_eval(p, locals=vardic)
 	G = sage.all.sage_eval(q, locals=vardic)
@@ -336,7 +336,7 @@ def gan_eval(varn: int, s):
 		{"gan_res", &sage.pResultant},
 		{"gan_discrim", &sage.pDiscrim},
 		{"gan_psc", &sage.pPsc},
-		{"gan_sres", &sage.pSres},
+		{"gan_slope", &sage.pSlope},
 		{"gan_gb", &sage.pGB},
 		{"gan_reduce", &sage.pReduce},
 		{"gan_eval", &sage.pEval},
@@ -560,17 +560,17 @@ func (sage *Sage) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 	return sage.EvalRObj(retstr)
 }
 
-func (sage *Sage) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
-	sage.log("Sres(%s) start!\n", p)
+func (sage *Sage) Slope(p *Poly, q *Poly, lv Level, k int32) RObj {
+	sage.log("Slope(%s) start!\n", p)
 	varn := sage.varn(p, q)
 	ps := toPyString(fmt.Sprintf("%I", p))
 	qs := toPyString(fmt.Sprintf("%I", q))
 	lvs := C.PyLong_FromLong(C.long(lv))
 	ks := C.PyLong_FromLong(C.long(k))
 
-	ret := callFunctionv(sage.pSres, varn, ps, qs, lvs, ks)
+	ret := callFunctionv(sage.pSlope, varn, ps, qs, lvs, ks)
 	if ret == nil {
-		fmt.Fprintf(os.Stderr, "<%d> call object failed pSres\n", sage.cnt)
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pSlope\n", sage.cnt)
 		C.PyErr_Print()
 		return nil
 	}

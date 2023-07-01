@@ -1,14 +1,14 @@
 package cas
 
 /*
- * test for sres()
+ * test for slope()
  */
 import (
 	"github.com/hiwane/ganrac"
 	"testing"
 )
 
-func sresTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T, ii int,
+func slopeTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T, ii int,
 	pstr, qstr, xstr string, expects []string) {
 	p, err := str2poly(g, pstr)
 	if err != nil {
@@ -33,9 +33,9 @@ func sresTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T, ii int,
 			return
 		}
 
-		act := cas.Sres(p, q, x.Level(), int32(jj))
+		act := cas.Slope(p, q, x.Level(), int32(jj))
 		if act == nil {
-			t.Errorf("ii=(%d,%d) %s sres error [%s]", ii, jj, expstr, err.Error())
+			t.Errorf("ii=(%d,%d) %s slope error [%s]", ii, jj, expstr, err.Error())
 			return
 		}
 
@@ -46,7 +46,7 @@ func sresTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T, ii int,
 	}
 }
 
-func SresTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T) {
+func SlopeTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T) {
 	for ii, ss := range []struct {
 		f, g, x string
 		expect1 []string
@@ -105,7 +105,7 @@ func SresTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T) {
 			},
 		},
 	} {
-		sresTest(g, cas, t, ii+5000, ss.f, ss.g, ss.x, ss.expect1)
-		sresTest(g, cas, t, ii+1000, ss.g, ss.f, ss.x, ss.expect2)
+		slopeTest(g, cas, t, ii+5000, ss.f, ss.g, ss.x, ss.expect1)
+		slopeTest(g, cas, t, ii+1000, ss.g, ss.f, ss.x, ss.expect2)
 	}
 }

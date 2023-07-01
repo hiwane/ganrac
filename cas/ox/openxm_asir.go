@@ -112,8 +112,8 @@ func (ox *OpenXM) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 	return ox.toGObj(qq).(RObj)
 }
 
-func (ox *OpenXM) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
-	if !ox.sres_defined {
+func (ox *OpenXM) Slope(p *Poly, q *Poly, lv Level, k int32) RObj {
+	if !ox.slope_defined {
 		str := `def comb(A,B) {
 	for (I=1, C=1; I<=B; I++) {
 		C *= (A-I+1)/I;
@@ -122,7 +122,7 @@ func (ox *OpenXM) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
 }`
 		ox.ExecString(str)
 
-		str = `def sres(F, G, X, K) {
+		str = `def slope(F, G, X, K) {
     M = deg(F, X);
     N = deg(G, X);
 
@@ -149,16 +149,16 @@ func (ox *OpenXM) Sres(p *Poly, q *Poly, lv Level, k int32) RObj {
 	return det(S);
 }`
 		ox.ExecString(str)
-		ox.sres_defined = true
+		ox.slope_defined = true
 	}
 
-	err := ox.ExecFunction("sres", p, q, NewPolyVar(lv), k)
+	err := ox.ExecFunction("slope", p, q, NewPolyVar(lv), k)
 	if err != nil {
-		fmt.Printf("err: sres1 %s\n", err.Error())
+		fmt.Printf("err: slope1 %s\n", err.Error())
 	}
 	qq, err := ox.PopCMO()
 	if err != nil {
-		fmt.Printf("err: sres2 %s\n", err.Error())
+		fmt.Printf("err: slope2 %s\n", err.Error())
 		return nil
 	} else if qq == nil {
 		return NewInt(0)

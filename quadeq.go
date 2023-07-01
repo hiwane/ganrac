@@ -89,8 +89,8 @@ func qe_quadeq(a *Atom, param interface{}) Fof {
 		aop = aop.neg()
 		g = g.Neg().(*Poly)
 	}
-	t := u.g.ox.Sres(f, g, u.lv, 0)
-	s := u.g.ox.Sres(f, g, u.lv, 1)
+	t := u.g.ox.Slope(f, g, u.lv, 0)
+	s := u.g.ox.Slope(f, g, u.lv, 1)
 	switch aop {
 	case EQ, NE:
 		opt := LE

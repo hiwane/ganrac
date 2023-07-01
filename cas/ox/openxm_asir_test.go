@@ -33,14 +33,14 @@ func TestAsirDiscrim(t *testing.T) {
 	}
 }
 
-func TestAsirSres(t *testing.T) {
+func TestAsirSlope(t *testing.T) {
 	// Quantifier Elimination for Formulas Constrained by Quadratic Equations via Slope Resultants
 	// Hoon Hong, The computer J., 1993
 
 	g := NewGANRAC()
 	ox := testConnectOx(g)
 	if ox == nil {
-		fmt.Printf("skip TestAsirSres... (no ox)\n")
+		fmt.Printf("skip TestAsirSlope... (no ox)\n")
 		return
 	}
 	defer ox.Close()
@@ -69,7 +69,7 @@ func TestAsirSres(t *testing.T) {
 		{A, C, 0, TC},
 		{A, C, 1, SC},
 	} {
-		o := ox.Sres(ss.p, ss.q, 0, ss.k)
+		o := ox.Slope(ss.p, ss.q, 0, ss.k)
 		if !o.Equals(ss.expect) {
 			t.Errorf("invalid <%d,%d>\ninput=%v\nexpect=%v\noutput=%v\n",
 				ii, ss.k, ss.q, ss.expect, o)

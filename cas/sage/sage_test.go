@@ -68,8 +68,8 @@ func TestPsc(t *testing.T) {
 	castest.PscTest(g, sage, t)
 }
 
-func TestSres(t *testing.T) {
-	funcname := "TestSres"
+func TestSlope(t *testing.T) {
+	funcname := "TestSlope"
 	g := ganrac.NewGANRAC()
 	sage, err := NewSage(g, "/tmp/ganrac.log")
 	if err != nil {
@@ -78,5 +78,5 @@ func TestSres(t *testing.T) {
 		return
 	}
 
-	castest.SresTest(g, sage, t)
+	castest.SlopeTest(g, sage, t)
 }

@@ -31,7 +31,7 @@ type CAS interface {
 	 * slope resultant
 	 * H. Hong. Quantifier elimination for formulas constrained by quadratic equations
 	 */
-	Sres(p *Poly, q *Poly, lv Level, k int32) RObj
+	Slope(p *Poly, q *Poly, lv Level, k int32) RObj
 
 	/* groebner basis */
 	GB(p *List, vars *List, n int) *List

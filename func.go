@@ -201,7 +201,10 @@ Examples
 		{"simpl", 1, 2, funcSimplify, true, "(Fof)\t\t\tsimplify formula FoF", ""},
 		{"sleep", 1, 1, funcSleep, false, "(milisecond)\t\tzzz", ""},
 		// {"sqfr", 1, 1, funcSqfr, false, "(poly)* square-free factorization", ""},
-		{"sres", 4, 4, funcOXSres, true, "(poly, poly, var, int)*\tslope resultant.", ""},
+		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)*\tslope resultant.", ""},
+		// {"sres", 4, 4, funcOXSres, true, "(poly, poly, var, int)*\tsubresultant.", ""},
+		// {"sresh", 4, 4, funcOXSresh, true, "(poly, poly, var, int)*\tj'th principal subresultant coefficient.", ""},
+		// {"sresc", 4, 4, funcOXSresc, true, "(poly, poly, var, int)*\tj'th subresultant constant term.", ""},
 		{"subst", 1, 101, funcSubst, false, "(poly|FOF|List,x,vx,y,vy,...)", ""},
 		{"time", 1, 1, funcTime, false, "(expr)\t\t\trun command and system resource usage", ""},
 		{init_var_funcname, 0, 0, nil, false, "(var, ...)\t\tinit variable order", `
@@ -441,7 +444,7 @@ func funcOXPsc(g *Ganrac, name string, args []interface{}) (interface{}, error) 
 	return g.ox.Psc(f, h, x.lv, int32(j.Int64())), nil
 }
 
-func funcOXSres(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+func funcOXSlope(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	f, ok := args[0].(*Poly)
 	if !ok {
 		return nil, fmt.Errorf("%s(1st arg): expected poly: %d:%v", name, args[0].(GObj).Tag(), args[0])
@@ -461,7 +464,7 @@ func funcOXSres(g *Ganrac, name string, args []interface{}) (interface{}, error)
 		return nil, fmt.Errorf("%s(4th arg): expected nonnegint: %v", name, args[3])
 	}
 
-	return g.ox.Sres(f, h, x.lv, int32(j.Int64())), nil
+	return g.ox.Slope(f, h, x.lv, int32(j.Int64())), nil
 }
 
 // //////////////////////////////////////////////////////////
