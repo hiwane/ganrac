@@ -2,77 +2,80 @@ package ganrac
 
 import (
 	"fmt"
-	. "github.com/hiwane/ganrac"
+	"github.com/hiwane/ganrac"
+	castest "github.com/hiwane/ganrac/cas/test"
 	"testing"
 )
 
-func TestAsirDiscrim(t *testing.T) {
+func TestAsirFactor(t *testing.T) {
+	funcname := "TestAsirFactor"
 
-	g := NewGANRAC()
+	g := ganrac.NewGANRAC()
 	ox := testConnectOx(g)
 	if ox == nil {
-		fmt.Printf("skip TestAsirDiscrim... (no ox)\n")
+		fmt.Printf("skip %s... (no ox)\n", funcname)
 		return
 	}
 	defer ox.Close()
+	castest.FactorTest(g, ox, t)
+}
 
-	for _, s := range []struct {
-		lv     Level
-		input  *Poly
-		expect RObj
-	}{
-		{3,
-			NewPolyCoef(3, NewPolyVar(0), NewPolyVar(1), NewPolyVar(2)),    // ax^2+bx+c
-			NewPolyCoef(2, NewPolyCoef(1, 0, 0, 1), NewPolyCoef(0, 0, -4)), // b^2-4ac
-		},
-	} {
-		output := ox.Discrim(s.input, s.lv)
-		if !output.Equals(s.expect) {
-			t.Errorf("lv=%d\ninput =%v\nexpect=%v\noutput=%v\n", s.lv, s.input, s.expect, output)
-		}
+func TestAsirResultant(t *testing.T) {
+	funcname := "TestAsirResultant"
+	g := ganrac.NewGANRAC()
+	ox := testConnectOx(g)
+	if ox == nil {
+		fmt.Printf("skip %s... (no ox)\n", funcname)
+		return
 	}
+	defer ox.Close()
+	castest.ResultantTest(g, ox, t)
+}
+
+func TestAsirDiscrim(t *testing.T) {
+	funcname := "TestAsirDiscrim"
+	g := ganrac.NewGANRAC()
+	ox := testConnectOx(g)
+	if ox == nil {
+		fmt.Printf("skip %s... (no ox)\n", funcname)
+		return
+	}
+	defer ox.Close()
+	castest.DiscrimTest(g, ox, t)
+}
+
+func TestAsirGBReduce(t *testing.T) {
+	funcname := "TestAsirGBReduce"
+	g := ganrac.NewGANRAC()
+	ox := testConnectOx(g)
+	if ox == nil {
+		fmt.Printf("skip %s... (no ox)\n", funcname)
+		return
+	}
+	defer ox.Close()
+	castest.GBRedTest(g, ox, t)
+}
+
+func TestAsirPsc(t *testing.T) {
+	funcname := "TestAsirPsc"
+	g := ganrac.NewGANRAC()
+	ox := testConnectOx(g)
+	if ox == nil {
+		fmt.Printf("skip %s... (no ox)\n", funcname)
+		return
+	}
+	defer ox.Close()
+	castest.PscTest(g, ox, t)
 }
 
 func TestAsirSlope(t *testing.T) {
-	// Quantifier Elimination for Formulas Constrained by Quadratic Equations via Slope Resultants
-	// Hoon Hong, The computer J., 1993
-
-	g := NewGANRAC()
+	funcname := "TestAsirSlope"
+	g := ganrac.NewGANRAC()
 	ox := testConnectOx(g)
 	if ox == nil {
-		fmt.Printf("skip TestAsirSlope... (no ox)\n")
+		fmt.Printf("skip %s... (no ox)\n", funcname)
 		return
 	}
 	defer ox.Close()
-
-	// > vars(x,u,v,w);
-	// > A = u*x^2+v*x+1;
-	// > B = v*x^3+w*x+u;
-	// > C = w*x^2+v*x+u;
-	A := NewPolyCoef(2, NewPolyCoef(1, 1, NewPolyCoef(0, 0, 0, 1)), NewPolyCoef(0, 0, 1))
-	B := NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 0, 0, 1)), NewPolyCoef(0, 0, 1))
-	C := NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 1), NewPolyCoef(0, 0, 1)), NewPolyCoef(0, 0, 0, 1))
-
-	TB := NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, 0, 0, 2), 0, NewPolyCoef(1, 0, 3), 0, -1), NewPolyCoef(2, 0, NewPolyCoef(1, 0, 0, -1)))
-	SB := NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, -1), 0, 1), NewPolyCoef(1, 0, 0, 1))
-	TC := NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 0, 0, 0, 2), 0, NewPolyCoef(1, 0, -1)), NewPolyCoef(2, NewPolyCoef(1, 0, -2), 0, 1))
-	SC := NewPolyCoef(3, NewPolyCoef(2, 0, NewPolyCoef(1, 0, 1)), NewPolyCoef(2, 0, -1))
-
-	for ii, ss := range []struct {
-		p      *Poly
-		q      *Poly
-		k      int32
-		expect *Poly
-	}{
-		{A, B, 0, TB},
-		{A, B, 1, SB},
-		{A, C, 0, TC},
-		{A, C, 1, SC},
-	} {
-		o := ox.Slope(ss.p, ss.q, 0, ss.k)
-		if !o.Equals(ss.expect) {
-			t.Errorf("invalid <%d,%d>\ninput=%v\nexpect=%v\noutput=%v\n",
-				ii, ss.k, ss.q, ss.expect, o)
-		}
-	}
+	castest.SlopeTest(g, ox, t)
 }
