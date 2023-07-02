@@ -111,15 +111,13 @@ type Flusher interface {
 }
 
 type OpenXM struct {
-	cw, dw        Flusher
-	cr, dr        io.Reader
-	connc         net.Conn
-	connd         net.Conn
-	serial        int32
-	border        binary.ByteOrder
-	logger        *log.Logger
-	psc_defined   bool
-	slope_defined bool
+	cw, dw Flusher
+	cr, dr io.Reader
+	connc  net.Conn
+	connd  net.Conn
+	serial int32
+	border binary.ByteOrder
+	logger *log.Logger
 }
 
 func NewOpenXM(connc, connd net.Conn, logger *log.Logger) (*OpenXM, error) {
@@ -239,6 +237,20 @@ func (ox *OpenXM) init() error {
 	if err != nil {
 		ox.logger.Printf(" --> load failed %v\n", err)
 		return err
+	}
+
+	for _, str := range []string{
+		asir_init_str_sresj,
+		asir_init_str_sres,
+		asir_init_str_psc,
+		asir_init_str_comb,
+		asir_init_str_slope,
+	} {
+		ox.ExecString(str)
+		_, err := ox.PopCMO()
+		if err != nil {
+			ox.logger.Printf(" --> init functions failed %v, %v\n", err, str[:20])
+		}
 	}
 	return err
 }

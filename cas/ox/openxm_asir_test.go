@@ -79,3 +79,15 @@ func TestAsirSlope(t *testing.T) {
 	defer ox.Close()
 	castest.SlopeTest(g, ox, t)
 }
+
+func TestAsirSres(t *testing.T) {
+	funcname := "TestAsirSres"
+	g := ganrac.NewGANRAC()
+	ox := testConnectOx(g)
+	if ox == nil {
+		fmt.Printf("skip %s... (no ox)\n", funcname)
+		return
+	}
+	defer ox.Close()
+	castest.SresTest(g, ox, t)
+}

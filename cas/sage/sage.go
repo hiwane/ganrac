@@ -29,6 +29,7 @@ type Sage struct {
 	pDiscrim   *C.PyObject
 	pPsc       *C.PyObject
 	pSlope     *C.PyObject
+	pSres      *C.PyObject
 	pGB        *C.PyObject
 	pReduce    *C.PyObject
 	pEval      *C.PyObject
@@ -78,6 +79,7 @@ func (sage *Sage) Close() error {
 	C.Py_DecRef(sage.pDiscrim)
 	C.Py_DecRef(sage.pPsc)
 	C.Py_DecRef(sage.pSlope)
+	C.Py_DecRef(sage.pSres)
 	C.Py_DecRef(sage.pGB)
 	C.Py_DecRef(sage.pReduce)
 	C.Py_DecRef(sage.pEval)
@@ -177,6 +179,22 @@ def gan_discrim(varn: int, p, x):
 	F = sage.all.sage_eval(p, locals=vardic)
 	X = vardic[x]
 	return str(F.discriminant(X))
+
+def gan_sres(varn: int, p, q, x, CC):
+	P, vardic = polyringinit(varn)
+	F = sage.all.sage_eval(p, locals=vardic)
+	G = sage.all.sage_eval(q, locals=vardic)
+	X = vardic['x' + str(x)]
+	V = F.subresultants(G, X)
+	if CC == 0:
+		return str(V)
+	if CC == 1:
+		return str([v.coefficient({X: i}) for i, v in enumerate(V)])
+	if CC == 2:
+		return str([v.coefficient({X: 0}) for v in V])
+	if CC == 3:
+		return str([V[0]] + [V[i].coefficient({X: 0}) + X**i * V[i].coefficient({X: i}) for i in range(1, len(V))])
+	return str(V)
 
 def gan_psc(varn: int, p, q, x, J):
 	P, vardic = polyringinit(varn)
@@ -337,6 +355,7 @@ def gan_eval(varn: int, s):
 		{"gan_discrim", &sage.pDiscrim},
 		{"gan_psc", &sage.pPsc},
 		{"gan_slope", &sage.pSlope},
+		{"gan_sres", &sage.pSres},
 		{"gan_gb", &sage.pGB},
 		{"gan_reduce", &sage.pReduce},
 		{"gan_eval", &sage.pEval},
@@ -558,6 +577,26 @@ func (sage *Sage) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 
 	retstr := toGoString(ret)
 	return sage.EvalRObj(retstr)
+}
+
+func (sage *Sage) Sres(p *Poly, q *Poly, lv Level, k int32) *List {
+	sage.log("Sres(%s) start!\n", p)
+	varn := sage.varn(p, q)
+	ps := toPyString(fmt.Sprintf("%I", p))
+	qs := toPyString(fmt.Sprintf("%I", q))
+	lvs := C.PyLong_FromLong(C.long(lv))
+	ks := C.PyLong_FromLong(C.long(k))
+
+	ret := callFunctionv(sage.pSres, varn, ps, qs, lvs, ks)
+	if ret == nil {
+		fmt.Fprintf(os.Stderr, "<%d> call object failed pSres\n", sage.cnt)
+		C.PyErr_Print()
+		return nil
+	}
+	defer C.Py_DecRef(ret)
+
+	retstr := toGoString(ret)
+	return sage.EvalList(retstr)
 }
 
 func (sage *Sage) Slope(p *Poly, q *Poly, lv Level, k int32) RObj {

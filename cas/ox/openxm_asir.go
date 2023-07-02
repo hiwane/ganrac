@@ -5,6 +5,157 @@ import (
 	. "github.com/hiwane/ganrac"
 )
 
+// j次 subresultant の DEG 次の係数を返す.
+// DEG < 0 の場合は, subresultant を返す
+const asir_init_str_sresj = `
+def sresj(Fs, Gs, X, J, DEG) {
+	local M, N, L, S, D, AI, BI, I;
+    M = length(Fs) - 2;
+    N = length(Gs) - 2;
+	if (type(J) == 10) {
+		J = int32ton(J);
+	}
+	L = M+N-2*J;
+	S = newmat(L, L);
+
+	for (D = M; D >= 0; D--) {
+		AI = Fs[D];
+		for (I = 0; I < N - J && M-D+I < L-1; I++) {
+			S[I][M-D+I] = AI;
+		}
+	}
+	if (DEG >= 0) {
+		for (I = N-J-1; I >= 0 && I-(N-J-1)+DEG >= 0; I--) {
+			S[I][L-1] = Fs[I-(N-J-1)+DEG];
+		}
+	} else {
+		for (I = N-J-1; I >= 0; I--) {
+			S[I][L-1] = X^(N-J-1-I) * Fs[M+1];
+		}
+	}
+
+	for (D = N; D >= 0; D--) {
+		BI = Gs[D];
+		for (I = 0; I < M - J && N-D+I < L-1; I++) {
+			S[I+N-J][N-D+I] = BI;
+		}
+	}
+	if (DEG >= 0) {
+		for (I= M-J-1; I >= 0 && I-(M-J-1)+DEG >= 0; I--) {
+			S[I+N-J][L-1] = Gs[I-(M-J-1)+DEG];
+		}
+	} else {
+		for (I= M-J-1; I >= 0; I--) {
+			S[I+N-J][L-1] = X^(M-J-1-I)* Gs[N+1];
+		}
+	}
+	return det(S);
+}
+`
+
+const asir_init_str_sres = `
+def sres(F, G, X, CC) {
+	FS = newvect(deg(F, X)+2);
+	GS = newvect(deg(G, X)+2);
+	for (I = 0; I < length(FS) - 1; I++) {
+		FS[I] = coef(F, I, X);
+	}
+	FS[length(FS)-1] = F;
+	for (I = 0; I < length(GS) - 1; I++) {
+		GS[I] = coef(G, I, X);
+	}
+	GS[length(GS)-1] = G;
+
+	K = length(FS);
+	if (length(GS) < K) {
+		K = length(GS);
+	}
+	K -= 2;
+	if (type(CC) == 10) {
+		CC = int32ton(CC);
+	}
+
+	RET = [];
+	if (CC == 0) {
+		for (J = K - 1; J >= 0; J--) {
+			RET = cons(sresj(FS, GS, X, J, -1), RET);
+		}
+		return RET;
+	}
+	if (CC == 1) {
+		for (J = K - 1; J >= 0; J--) {
+			RET = cons(sresj(FS, GS, X, J, J), RET);
+		}
+		return RET;
+	}
+	if (CC == 2) {
+		for (J = K - 1; J >= 0; J--) {
+			RET = cons(sresj(FS, GS, X, J, 0), RET);
+		}
+		return RET;
+	}
+	if (CC == 3) {
+		for (J = K - 1; J > 0; J--) {
+			RET = cons(sresj(FS, GS, X, J, 0) + sresj(FS, GS, X, J, J) * X^J, RET);
+		}
+		J = 0;
+		RET = cons(sresj(FS, GS, X, J, 0), RET);
+		return RET;
+	}
+	return [];
+}
+`
+
+// principal subresultant coefficient
+const asir_init_str_psc = `
+def psc(F, G, X, J) {
+	FS = newvect(deg(F, X)+2);
+	GS = newvect(deg(G, X)+2);
+	for (I = 0; I < length(FS) - 1; I++) {
+		FS[I] = coef(F, I, X);
+	}
+	FS[length(FS)-1] = F;
+	for (I = 0; I < length(GS) - 1; I++) {
+		GS[I] = coef(G, I, X);
+	}
+	GS[length(GS)-1] = G;
+	return sresj(FS, GS, X, J, J);
+}`
+const asir_init_str_comb = `
+def comb(A,B) {
+	for (I=1, C=1; I<=B; I++) {
+		C *= (A-I+1)/I;
+	}
+	return C;
+}`
+const asir_init_str_slope = `
+def slope(F, G, X, K) {
+    M = deg(F, X);
+    N = deg(G, X);
+
+	if (type(K) == 10) {
+		K = int32ton(K);
+	}
+	L = N - K;
+	S = newmat(L+1, L+1);
+	CMK = comb(M, K+1);
+
+	for (J = 0; J < L; J++) {
+		S[0][J] = coef(F, M-J, X);
+		for (I = 1; J+I < L; I++) {
+			S[I][I+J] = S[0][J];
+		}
+		if (0 <= L-J && L-J <= L) {
+			S[L-J][L] = (CMK - comb(M-J, K+1)) * S[0][J];
+		}
+		S[L][J] = coef(G, N-J, X);
+	}
+	J = L;
+	S[0][L] = (CMK - comb(M-J, K+1)) * coef(F, M-J, X);
+	S[L][L] = CMK * coef(G, K, X);
+	return det(S);
+}`
+
 func (ox *OpenXM) Gcd(p, q *Poly) RObj {
 	ox.ExecFunction("gcd", p, q)
 	s, _ := ox.PopCMO()
@@ -62,42 +213,6 @@ func (ox *OpenXM) Resultant(p *Poly, q *Poly, lv Level) RObj {
 }
 
 func (ox *OpenXM) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
-	if !ox.psc_defined {
-		str := `def psc(F, G, X, J) {
-	local M, N, L, S, D, AI, BI, I;
-    M = deg(F, X);
-    N = deg(G, X);
-	if (type(J) == 10) {
-		J = int32ton(J);
-	}
-	L = M+N-2*J;
-	S = newmat(L, L);
-
-	for (D = M; D >= 0; D--) {
-		AI = coef(F,D,X);
-		for (I = 0; I < N - J && M-D+I < L-1; I++) {
-			S[I][M-D+I] = AI;
-		}
-	}
-	for (I = N-J-1; I >= 0 && I-(N-J-1)+J >= 0; I--) {
-		S[I][L-1] = coef(F, I-(N-J-1)+J, X);
-	}
-
-	for (D = N; D >= 0; D--) {
-		BI = coef(G,D,X);
-		for (I = 0; I < M - J && N-D+I < L-1; I++) {
-			S[I+N-J][N-D+I] = BI;
-		}
-	}
-	for (I= M-J-1; I >= 0; I--) {
-		S[I+N-J][L-1] = coef(G, I-(M-J-1)+J, X);
-	}
-	return det(S);
-}`
-		ox.ExecString(str)
-		ox.psc_defined = true
-	}
-
 	err := ox.ExecFunction("psc", p, q, NewPolyVar(lv), j)
 	if err != nil {
 		fmt.Printf("err: psc1 %s\n", err.Error())
@@ -112,46 +227,22 @@ func (ox *OpenXM) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 	return ox.toGObj(qq).(RObj)
 }
 
+func (ox *OpenXM) Sres(p *Poly, q *Poly, lv Level, cc int32) *List {
+	err := ox.ExecFunction("sres", p, q, NewPolyVar(lv), cc)
+	if err != nil {
+		fmt.Printf("err: sres1 %s\n", err.Error())
+	}
+	qq, err := ox.PopCMO()
+	if err != nil {
+		fmt.Printf("err: sres2 %s\n", err.Error())
+		return nil
+	} else if qq == nil {
+		return NewList()
+	}
+	return ox.toGObj(qq).(*List)
+}
+
 func (ox *OpenXM) Slope(p *Poly, q *Poly, lv Level, k int32) RObj {
-	if !ox.slope_defined {
-		str := `def comb(A,B) {
-	for (I=1, C=1; I<=B; I++) {
-		C *= (A-I+1)/I;
-	}
-	return C;
-}`
-		ox.ExecString(str)
-
-		str = `def slope(F, G, X, K) {
-    M = deg(F, X);
-    N = deg(G, X);
-
-	if (type(K) == 10) {
-		K = int32ton(K);
-	}
-	L = N - K;
-	S = newmat(L+1, L+1);
-	CMK = comb(M, K+1);
-
-	for (J = 0; J < L; J++) {
-		S[0][J] = coef(F, M-J, X);
-		for (I = 1; J+I < L; I++) {
-			S[I][I+J] = S[0][J];
-		}
-		if (0 <= L-J && L-J <= L) {
-			S[L-J][L] = (CMK - comb(M-J, K+1)) * S[0][J];
-		}
-		S[L][J] = coef(G, N-J, X);
-	}
-	J = L;
-	S[0][L] = (CMK - comb(M-J, K+1)) * coef(F, M-J, X);
-	S[L][L] = CMK * coef(G, K, X);
-	return det(S);
-}`
-		ox.ExecString(str)
-		ox.slope_defined = true
-	}
-
 	err := ox.ExecFunction("slope", p, q, NewPolyVar(lv), k)
 	if err != nil {
 		fmt.Printf("err: slope1 %s\n", err.Error())

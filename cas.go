@@ -33,6 +33,14 @@ type CAS interface {
 	 */
 	Slope(p *Poly, q *Poly, lv Level, k int32) RObj
 
+	// Subresultant seq.
+	// cc の値により, psc 等に変える
+	//   0: subresultant seq.
+	//   1: principal subresultant seq.
+	//   2: constant term
+	//   3: 1+2
+	Sres(p *Poly, q *Poly, lv Level, cc int32) *List
+
 	/* groebner basis */
 	GB(p *List, vars *List, n int) *List
 

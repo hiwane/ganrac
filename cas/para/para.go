@@ -50,6 +50,9 @@ func (para *ParaCAS) loop() {
 		case "slope":
 			r := para.cas.Slope(arg.gob[0].(*Poly), arg.gob[1].(*Poly), arg.lv, int32(arg.j))
 			arg.ch <- r
+		case "sres":
+			r := para.cas.Sres(arg.gob[0].(*Poly), arg.gob[1].(*Poly), arg.lv, int32(arg.j))
+			arg.ch <- r
 		case "gb":
 			r := para.cas.GB(arg.gob[0].(*List), arg.gob[1].(*List), arg.j)
 			arg.ch <- r
@@ -151,6 +154,18 @@ func (para *ParaCAS) Slope(p *Poly, q *Poly, lv Level, k int32) RObj {
 	para.ch <- arg
 	gob := <-arg.ch
 	return gob.(RObj)
+}
+
+func (para *ParaCAS) Sres(p *Poly, q *Poly, lv Level, cc int32) *List {
+	var arg paraCASarg
+	arg.ch = make(chan GObj)
+	arg.kind = "sres"
+	arg.gob = []GObj{p, q}
+	arg.lv = lv
+	arg.j = int(cc)
+	para.ch <- arg
+	gob := <-arg.ch
+	return gob.(*List)
 }
 
 func (para *ParaCAS) GB(p *List, vars *List, n int) *List {

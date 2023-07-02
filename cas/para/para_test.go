@@ -93,3 +93,18 @@ func TestSlope(t *testing.T) {
 	defer para.Close()
 	castest.SlopeTest(g, para, t)
 }
+
+func TestSres(t *testing.T) {
+	funcname := "TestSres"
+	g := ganrac.NewGANRAC()
+	sage, err := sage.NewSage(g, "/tmp/ganrac.log")
+	if err != nil {
+		t.Errorf("stop")
+		fmt.Printf("skip %s... init sage failed\n", funcname)
+		return
+	}
+
+	para := NewParaCAS(sage)
+	defer para.Close()
+	castest.SresTest(g, para, t)
+}
