@@ -121,7 +121,7 @@ func apply_neqQEatom(pp *Atom, lv Level) Fof {
 	ands := make([]Fof, 0, len(pp.p))
 	for _, p := range pp.p {
 		deg := p.Deg(lv)
-		ors := make([]Fof, deg+1, 0)
+		ors := make([]Fof, deg+1)
 		for d := 0; d <= deg; d++ {
 			ors[d] = NewAtom(p.Coef(lv, uint(d)), NE)
 		}
