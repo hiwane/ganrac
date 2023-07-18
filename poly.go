@@ -2073,3 +2073,30 @@ func (f *Poly) setZero(lv Level, deg int) RObj {
 		return z.normalize()
 	}
 }
+
+// return x^n f(1/x)
+// assume f(0) != 0, deg(f) <= n
+func (f *Poly) SubstXinvLv(lv Level, n int) RObj {
+	if f.lv == lv {
+		z := NewPoly(lv, n+1)
+		for i, cc := range f.c {
+			z.c[n-i] = cc
+		}
+		for i := len(f.c); i <= n; i++ {
+			z.c[n-i] = zero
+		}
+		return z.normalize()
+	} else if f.lv < lv {
+		return f
+	} else {
+		z := f.NewPoly()
+		for i, cc := range f.c {
+			if cp, ok := cc.(*Poly); ok && cp.lv >= lv {
+				z.c[i] = cp.SubstXinvLv(lv, n)
+			} else {
+				z.c[i] = Mul(cc, NewPolyVarn(lv, n))
+			}
+		}
+		return z
+	}
+}

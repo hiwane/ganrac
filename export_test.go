@@ -200,6 +200,9 @@ func HasVar(q Fof, lv Level) bool {
 func ValidFof(q Fof) error {
 	return q.valid()
 }
+func ValidRObj(q RObj) error {
+	return q.valid()
+}
 
 func (p *Poly) SetZero(lv Level, deg int) RObj {
 	return p.setZero(lv, deg)
