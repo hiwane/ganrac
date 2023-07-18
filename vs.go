@@ -62,6 +62,16 @@ func (sp *vs_sample_point) Format(s fmt.State, format rune) {
 	fmt.Fprintf(s, "]")
 }
 
+func makeDenAry(v RObj, deg int) []RObj {
+	ret := make([]RObj, deg+1)
+	ret[0] = one
+	ret[1] = v
+	for i := 2; i <= deg; i++ {
+		ret[i] = v.Mul(ret[i-1])
+	}
+	return ret
+}
+
 func newVslinSamplePoint(deg, maxd int, num, den RObj) *vs_sample_point {
 	sp := new(vs_sample_point)
 	sp.num = num
@@ -75,12 +85,7 @@ func newVslinSamplePoint(deg, maxd int, num, den RObj) *vs_sample_point {
 	sp.num = sp.num.Neg()
 
 	sp.idx = 1
-	sp.den = make([]RObj, maxd+1)
-	sp.den[0] = one
-	sp.den[1] = den
-	for i := 2; i <= maxd; i++ {
-		sp.den[i] = sp.den[i-1].Mul(den)
-	}
+	sp.den = makeDenAry(den, maxd)
 	sp.neccon = trueObj
 	return sp
 }
