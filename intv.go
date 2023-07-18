@@ -6,6 +6,7 @@ import (
 	"math/big"
 )
 
+// Interval is an NObj
 type Interval struct {
 	inf *big.Float // lower value
 	sup *big.Float // upper value
@@ -380,4 +381,8 @@ func (x *Interval) mid(p float64, prec uint) *big.Float {
 	r.Mul(r, x.sup)
 	r.Add(l, r)
 	return r
+}
+
+func (x *Interval) Deg(lv Level) int {
+	return 0
 }
