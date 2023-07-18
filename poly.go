@@ -2009,3 +2009,30 @@ func (f *Poly) isZZ() bool {
 	}
 	return true
 }
+
+// returns f(-x)
+func (f *Poly) NegX(lv Level) *Poly {
+	if f.lv == lv {
+		z := f.NewPoly()
+		for i, cc := range f.c {
+			if i%2 == 0 {
+				z.c[i] = cc
+			} else {
+				z.c[i] = cc.Neg()
+			}
+		}
+		return z
+	} else if f.lv < lv {
+		return f
+	} else {
+		z := f.NewPoly()
+		for i, cc := range f.c {
+			if cp, ok := cc.(*Poly); ok {
+				z.c[i] = cp.NegX(lv)
+			} else {
+				z.c[i] = cc
+			}
+		}
+		return z
+	}
+}
