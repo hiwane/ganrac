@@ -2036,3 +2036,40 @@ func (f *Poly) NegX(lv Level) *Poly {
 		return z
 	}
 }
+
+// f.coeff(lv, deg) = 0 になるように f を変形する
+func (f *Poly) setZero(lv Level, deg int) RObj {
+	if f.lv == lv {
+		if deg >= len(f.c) {
+			return f
+		} else if deg == len(f.c)-1 {
+			z := NewPoly(f.lv, deg)
+			copy(z.c, f.c)
+			return z.normalize()
+		} else {
+			z := f.Clone()
+			z.c[deg] = zero
+			return z
+		}
+	} else if f.lv < lv {
+		return f
+	} else {
+		z := f.NewPoly()
+		for i, cc := range f.c {
+			if cp, ok := cc.(*Poly); ok {
+				if cp.lv < lv {
+					z.c[i] = zero
+				} else {
+					z.c[i] = cp.setZero(lv, deg)
+				}
+			} else {
+				if deg == 0 {
+					z.c[i] = zero
+				} else {
+					z.c[i] = cc
+				}
+			}
+		}
+		return z.normalize()
+	}
+}
