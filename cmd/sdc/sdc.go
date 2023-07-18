@@ -60,6 +60,7 @@ type sgn_table struct {
 	val_equal val_t
 	val_not   val_t
 	pfalse    bool
+	atom      bool
 }
 
 func (st *sgn_table) delta(n int) sgn_t {
@@ -160,7 +161,56 @@ func (st *sgn_table) W(debug bool) int {
 	return n
 }
 
-func (st *sgn_table) eval() (val_t, string) {
+// atom 用
+func (st *sgn_table) evalAtom() (val_t, string) {
+	ks := 0
+	var ask sgn_t = 0 // 非ゼロの右端
+	var m int = 0
+	var p int = 0
+	var c int = 0
+	var e int = 0
+	for i := len(st.h) - 2; i >= 0; i-- {
+		a := st.h[i]
+		if a == 0 {
+			if ks == 0 {
+				ask = st.h[i+1]
+			}
+			ks++
+		} else if ks == 0 {
+			if a == st.h[i+1] {
+				m++
+				p++
+			} else if st.h[i+1] == 0 {
+				panic("why!")
+			} else {
+				m--
+				c++
+			}
+		} else {
+			if ks%2 == 0 {
+				var u int = 1
+				if (ks/2)%2 == 1 {
+					u = -1
+				}
+				u = u * int(ask*a)
+				m += u
+				e += u
+			}
+			ks = 0
+		}
+	}
+
+	mes := fmt.Sprintf(": m(%d) = p(%d) - c(%d) + e(%d)", m, p, c, e)
+	if m > 0 {
+		return st.val_not, mes
+	} else if m < 0 {
+		return 3, mes
+	} else {
+		return st.val_equal, mes
+	}
+}
+
+func (st *sgn_table) evalSdc() (val_t, string) {
 	n := st.deg
 	// 主係数版固有. h[0] != 0, h[1] = ... = h[m-1] = 0 h[m] != 0 ==> h[m] = c[m]
 	var ret val_t = 3
@@ -297,13 +347,15 @@ func (st *sgn_table) header() {
 		for i := n; i >= 0; i-- {
 			fmt.Fprintf(st.fp, "%d", i)
 		}
-		fmt.Fprintf(st.fp, " s")
-		for i := n; i >= 0; i-- {
-			fmt.Fprintf(st.fp, "%d", i)
-		}
-		fmt.Fprintf(st.fp, " c")
-		for i := n; i >= 0; i-- {
-			fmt.Fprintf(st.fp, "%d", i)
+		if !st.atom {
+			fmt.Fprintf(st.fp, " s")
+			for i := n; i >= 0; i-- {
+				fmt.Fprintf(st.fp, "%d", i)
+			}
+			fmt.Fprintf(st.fp, " c")
+			for i := n; i >= 0; i-- {
+				fmt.Fprintf(st.fp, "%d", i)
+			}
 		}
 		fmt.Fprintf(st.fp, " i")
 		for i := n - 2; i >= 0; i-- {
@@ -316,14 +368,20 @@ func (st *sgn_table) header() {
 		fmt.Fprintf(st.fp, "  t 0 +inf")
 		fmt.Fprintf(st.fp, "\n")
 	} else {
-		fmt.Fprintf(st.fp, ".i %d\n", 4*(n-1))
+		if st.atom {
+			fmt.Fprintf(st.fp, ".i %d\n", 2*(n-1))
+		} else {
+			fmt.Fprintf(st.fp, ".i %d\n", 4*(n-1))
+		}
 		fmt.Fprintf(st.fp, ".o 1\n")
 		fmt.Fprintf(st.fp, ".lib")
 		for i := n - 2; i >= 0; i-- {
 			fmt.Fprintf(st.fp, " h%d i%d", i, i)
 		}
-		for i := n - 1; i > 0; i-- {
-			fmt.Fprintf(st.fp, " c%d d%d", i, i)
+		if !st.atom {
+			for i := n - 1; i > 0; i-- {
+				fmt.Fprintf(st.fp, " c%d d%d", i, i)
+			}
 		}
 		fmt.Fprintf(st.fp, "\n.ob f0\n")
 	}
@@ -341,13 +399,15 @@ func (st *sgn_table) print(t val_t, mes string) {
 		for i := n; i >= 0; i-- {
 			fmt.Fprintf(st.fp, "%c", str[st.h[i]+1])
 		}
-		fmt.Fprintf(st.fp, "  ")
-		for i := n; i >= 0; i-- {
-			fmt.Fprintf(st.fp, "%c", str[st.s[i]+1])
-		}
-		fmt.Fprintf(st.fp, "  ")
-		for i := n; i >= 0; i-- {
-			fmt.Fprintf(st.fp, "%c", str[st.c[i]+1])
+		if !st.atom {
+			fmt.Fprintf(st.fp, "  ")
+			for i := n; i >= 0; i-- {
+				fmt.Fprintf(st.fp, "%c", str[st.s[i]+1])
+			}
+			fmt.Fprintf(st.fp, "  ")
+			for i := n; i >= 0; i-- {
+				fmt.Fprintf(st.fp, "%c", str[st.c[i]+1])
+			}
 		}
 		var tc string
 		switch t {
@@ -365,15 +425,21 @@ func (st *sgn_table) print(t val_t, mes string) {
 			tc = "?"
 		}
 
-		fmt.Fprintf(st.fp, " %s %d %d  %s\n", tc, st.W(true), st.V(st.s), mes)
+		if !st.atom {
+			fmt.Fprintf(st.fp, " %s %d %d  %s\n", tc, st.W(true), st.V(st.s), mes)
+		} else {
+			fmt.Fprintf(st.fp, " %s %s\n", tc, mes)
+		}
 	} else {
 		ss := []string{"01", "00", "10", "--", "11"}
 
 		for i := n - 2; i >= 0; i-- {
 			fmt.Fprintf(st.fp, "%s", ss[1+st.h[i]])
 		}
-		for i := n - 1; i > 0; i-- {
-			fmt.Fprintf(st.fp, "%s", ss[1+st.c[i]])
+		if !st.atom {
+			for i := n - 1; i > 0; i-- {
+				fmt.Fprintf(st.fp, "%s", ss[1+st.c[i]])
+			}
 		}
 		if t > 2 {
 			t = 2
@@ -384,7 +450,7 @@ func (st *sgn_table) print(t val_t, mes string) {
 
 func (st *sgn_table) loopc(n int) {
 	if n == st.deg {
-		t, mes := st.eval()
+		t, mes := st.evalSdc()
 		if t == 0 || t == 1 {
 			st.count[t]++
 		}
@@ -431,7 +497,18 @@ func (st *sgn_table) looph(n int) {
 		}
 	} else if n == st.deg-1 {
 		// head term
-		st.loops()
+		if st.atom {
+			t, mes := st.evalAtom()
+			if t == 0 || t == 1 {
+				st.count[t]++
+			}
+			if 0 < t || st.pfalse {
+				st.print(t, mes)
+			}
+			return
+		} else {
+			st.loops()
+		}
 	} else {
 		for _, i := range sgns { // 符号
 			st.h[n] = i
@@ -450,6 +527,23 @@ func (st *sgn_table) set_dc() {
 }
 
 func (st *sgn_table) print_dc() {
+	st.set_dc()
+	for i := 0; i < st.deg-1; i++ {
+		st.h[i] = 3
+		st.print(DC, "DC 11h")
+		st.h[i] = DC
+	}
+	if st.atom {
+		return
+	}
+
+	st.set_dc()
+	for i := 0; i < st.deg-1; i++ {
+		st.c[i+1] = 3
+		st.print(DC, "DC 11c")
+		st.c[i+1] = DC
+	}
+
 	// @DC1
 	st.set_dc()
 	st.h[0] = 0
@@ -476,16 +570,6 @@ func (st *sgn_table) print_dc() {
 		st.h[i] = DC
 	}
 
-	st.set_dc()
-	for i := 0; i < st.deg-1; i++ {
-		st.h[i] = 3
-		st.print(DC, "DC 11h")
-		st.h[i] = DC
-
-		st.c[i+1] = 3
-		st.print(DC, "DC 11c")
-		st.c[i+1] = DC
-	}
 }
 
 func (st *sgn_table) gen() {
@@ -509,13 +593,19 @@ func main() {
 		debug       = flag.Bool("debug", false, "debug print mode")
 		false_print = flag.Bool("false", false, "print false")
 		all         = flag.Bool("all", false, "all([x], x >= 0 impl f(x) > 0)")
+		atom        = flag.Bool("atom", false, "ex([x], x^n + ai x^i + ... + a1 x + a0 <= 0)")
 	)
 	flag.Parse()
+	if flag.NArg() > 0 {
+		fmt.Fprintf(os.Stderr, "invalid argument\n")
+		os.Exit(1)
+	}
 
 	var s sgn_table
 	s.s = make([]sgn_t, *deg+1)
 	s.h = make([]sgn_t, *deg+1)
 	s.c = make([]sgn_t, *deg+1)
+	s.atom = *atom
 	s.count = make([]int, 2)
 	s.deg = *deg
 	s.debug = *debug
