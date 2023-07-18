@@ -292,6 +292,7 @@ func (ox *OpenXM) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 		err = ox.ExecFunction("p_true_nf", p, gb, vars, NewInt(0))
 	} else {
 		// block order
+		// https://www.asir.org/manuals/html-jp/man_172.html#SEC172
 		vn := NewList(
 			NewList(NewInt(0), NewInt(int64(vars.Len()-n))),
 			NewList(NewInt(0), NewInt(int64(n))))
