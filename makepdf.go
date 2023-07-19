@@ -61,6 +61,7 @@ func (sfc *CADSfc) construct_lab(lv Level) []int {
 
 func (sfc *CADSfc) make_pdf() (Fof, error) {
 	// S4.4.2 Removing all conflicting pairs
+	sfc.cad.log(1, "go make_pdf()\n")
 
 	proj_num := make([]int, sfc.freen)
 	for i := Level(sfc.freen - 1); i >= 0; i-- {
@@ -128,7 +129,6 @@ func (sfc *CADSfc) make_pdf() (Fof, error) {
 func (sfc *CADSfc) lift_conlicts(cad *CAD) error {
 	for i := 0; i < sfc.freen-1; i++ {
 		for _, cpair := range sfc.cpair[i] {
-			fmt.Printf("go cpair!")
 			for j := 2; j < 4; j++ {
 				c := cpair[j]
 				if int(c.lv) < sfc.freen-1 && c.children == nil {
