@@ -1,5 +1,7 @@
 package ganrac
 
+import "fmt"
+
 type reduce_info struct {
 	depth int
 	q     []Level
@@ -25,14 +27,16 @@ func logSimplFof(c Fof, g *Ganrac, eyec string) {
 	if false {
 		return
 	}
-	// f, err := funcCAD(g, "fnCAD", []any{c})
-	// if err != nil {
-	// 	fmt.Printf("errrrr %v\n", err)
-	// 	panic("stop")
-	// }
-	// c = f.(Fof)
-	// @5->@6
-	g.log(10, 1, "simplFof() step%s: %v\n", eyec, c)
+	if false {
+		f, err := funcCAD(g, "fnCAD", []any{c})
+		if err != nil {
+			fmt.Printf("errrrr %v\n", err)
+			panic("stop")
+		}
+		fmt.Printf("simplFof(!) step%s: %v: %v\n", eyec, f, c)
+	} else {
+		g.log(1, 1, "simplFof() step%s: %v\n", eyec, c)
+	}
 }
 
 func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {

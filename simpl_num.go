@@ -565,11 +565,12 @@ _LT:
  *  simplNumPolyFctr() から呼び出す場合には復帰を利用しない
  *  それ以外の場合には，simplFctr() により重複は取り除かれていることを期待する
  */
-func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]RObj, OP, *NumRegion, *NumRegion) {
+func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]RObj, int, OP, *NumRegion, *NumRegion) {
 
 	// start > 0 の場合は，0番目の要素の符号を見る必要があるが，
 	// 呼び出し元にまかせる
 	ret_op := GT
+	ret_sgn := 1 // 因子の一部を削ったときの，削った部分の符号
 
 	var pret *NumRegion
 	var nret *NumRegion
@@ -591,12 +592,13 @@ func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]RObj, 
 		var op OP
 		op, pos, neg = p.simplNumPoly(g, t, f, p.lv)
 		if op == GT {
-			continue
+			continue // 因子を削れた
 		} else if op == LT {
 			if e%2 != 0 {
 				ret_op = ret_op.neg()
+				ret_sgn *= -1
 			}
-			continue
+			continue // 因子を削れた
 		} else if op == GE {
 			ret_op |= EQ
 		} else if op == LE {
@@ -623,7 +625,8 @@ func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]RObj, 
 	}
 
 	if n <= start || len(ps) == 0 {
-		return ps, ret_op, pos, neg
+		// 因子が全部なくなった
+		return ps, ret_sgn, ret_op, pos, neg
 	}
 
 	// 一変数の場合，実根の分離を行うので，平方因子があると困る
@@ -632,11 +635,11 @@ func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]RObj, 
 			_, pos, neg = mul.simplNumPoly(g, t, f, mul.lv)
 			pret = pret.intersect(pos)
 			nret = nret.intersect(nret)
-			return ps, ret_op, pos, neg
+			return ps, ret_sgn, ret_op, pos, neg
 		}
 	}
 	// fmt.Printf("p^%d=%v, t=%v, f=%v => op=%v, pos=%v, neg=%v\n", p, e, t, f, op, pos, neg)
-	return ps, ret_op, pret, nret
+	return ps, ret_sgn, ret_op, pret, nret
 }
 
 /*
@@ -648,7 +651,7 @@ func (poly *Poly) simplNumPolyFctr(g *Ganrac, t, f *NumRegion) (OP, *NumRegion, 
 	fctr := g.ox.Factor(poly)
 	cont, _ := fctr.Geti(0, 0)
 
-	_, ret_op, pret, nret := fctr.simplNumPolys(g, 1, t, f)
+	_, _, ret_op, pret, nret := fctr.simplNumPolys(g, 1, t, f)
 	if cont.(RObj).Sign() > 0 {
 		return ret_op, pret, nret
 	} else {
@@ -795,7 +798,7 @@ func (atom *Atom) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumReg
 		fctr.Append(NewList(p, one))
 	}
 
-	rs, s, pp, nn := fctr.simplNumPolys(g, 0, t, f)
+	rs, rsgn, s, pp, nn := fctr.simplNumPolys(g, 0, t, f)
 	if len(rs) < len(atom.p) { // 因子が減ったということ
 		var atom2 Fof
 		if len(rs) == 0 {
@@ -807,7 +810,11 @@ func (atom *Atom) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumReg
 				atom2 = NewAtoms(rs, atom.op&s)
 			}
 		} else {
-			atom2 = NewAtoms(rs, atom.op)
+			if rsgn > 0 {
+				atom2 = NewAtoms(rs, atom.op)
+			} else {
+				atom2 = NewAtoms(rs, atom.op.neg())
+			}
 		}
 		if err := atom2.valid(); err != nil {
 			fmt.Printf("simplNum(%v) => %v\n", atom, rs)
