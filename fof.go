@@ -598,10 +598,14 @@ func validFmlAndOr(name string, fml []Fof) error {
 		return fmt.Errorf("len(%s) should be greater than 1.", name)
 	}
 	for _, f := range fml {
+		if f == nil {
+			return fmt.Errorf("%s: invalid element. %v", name, f)
+		}
 		switch f.(type) { // 容易に簡単化できるので許さない
 		case *AtomT, *AtomF:
 			return fmt.Errorf("%s: invalid element. %v", name, f)
 		}
+
 		err := f.valid()
 		if err != nil {
 			return err
