@@ -1232,20 +1232,7 @@ func (cell *Cell) make_cells_i(cad *CAD, pf ProjFactor, porg *Poly) ([]*Cell, si
 		}
 	}
 
-	// even polynomial.
-	even := 1
-	for pp.isEven(pp.lv) {
-		even *= 2
-		qq := NewPoly(pp.lv, pp.deg()/2+1)
-		q := NewPoly(p.lv, len(qq.c))
-		for i := 0; i < len(qq.c); i++ {
-			qq.c[i] = pp.c[2*i]
-			q.c[i] = p.c[2*i]
-		}
-
-		pp = qq
-		p = q
-	}
+	// even polynomial. @TODO
 
 	c, err := cell.root_iso_i(cad, pf, p, pp, prec, 1)
 	if err == nil {
@@ -1299,23 +1286,6 @@ func (cell *Cell) make_cells_i(cad *CAD, pf ProjFactor, porg *Poly) ([]*Cell, si
 	}
 
 	ccc := cad.cellmerge(cells, false)
-	for even > 1 {
-		cx := make([]*Cell, 0, len(ccc))
-		for i := len(ccc) - 1; i >= 0; i-- {
-			c := ccc[i]
-			if c.Sign() > 0 {
-				c.Square(even) // 2乗する
-				cx = append(cx, c.Neg())
-			}
-		}
-		for _, c := range ccc {
-			if c.Sign() >= 0 {
-				cx = append(cx, c)
-			}
-		}
-		ccc = cx
-		break
-	}
 
 	return ccc, sgn
 }
