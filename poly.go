@@ -1468,6 +1468,7 @@ func (fx *Poly) prem(g *Poly) RObj {
 		case *Poly:
 			// f が gcc で割り切れることを保証しているため
 			// gc が Poly なら lc(f) も poly
+			// c は単項で，f-c*g が g よりも次数が落ちるとは限らない
 			c = sdivlt(f.Coef(g.lv, du).(*Poly), gcc)
 		case *Int:
 			c = f.Coef(g.lv, du).Div(gcc)
@@ -1490,9 +1491,14 @@ func (fx *Poly) prem(g *Poly) RObj {
 		if err := f.valid(); err != nil {
 			panic(err.Error())
 		}
-		if d >= int(du) {
-			fmt.Printf("f=%v\n", f)
-			fmt.Printf("d=%d, du=%d\n", d, du)
+		if d >= int(du) && false {
+			fmt.Printf("f[%d,%s]=%v\n", fx.Deg(g.lv), VarStr(g.lv), fx)
+			fmt.Printf("g[%d,%s]=%v\n", g.Deg(g.lv), VarStr(g.lv), g)
+			fmt.Printf("gc   =%v\n", gc)
+			fmt.Printf("fc   =%v\n", fx.Coef(g.lv, uint(fx.Deg(g.lv))))
+			fmt.Printf("F    =%v\n", f)
+			fmt.Printf("Fc   =%v\n", f.Coef(g.lv, uint(f.Deg(g.lv))))
+			fmt.Printf("d=%d, du=%d, deg(fx)=%d\n", d, du, fx.Deg(g.lv))
 			panic("nande?")
 		}
 	}
