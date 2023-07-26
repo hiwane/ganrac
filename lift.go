@@ -447,7 +447,7 @@ func (cell *Cell) lift(cad *CAD, stack *cellStack) error {
 		if signs[i] == 0 {
 			// vanish!
 			if !pf.vanishChk(cad, cell) {
-				return CAD_NO_WO
+				return NewCadErrorWO(cell)
 			}
 		}
 

@@ -580,7 +580,7 @@ func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
 	cad.Projection(PROJ_McCallum)
 	err = cad.Lift()
 	for err != nil {
-		if err != CAD_NO_WO {
+		if _, ok := err.(*CAD_error_wo); !ok {
 			panic(fmt.Sprintf("cad.lift() input=%v\nerr=%v", fof, err))
 		}
 		qeopt.log(cond, 1, "cad", "not well-oriented %v\n", fof2)

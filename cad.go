@@ -4,7 +4,6 @@ package ganrac
 // Quantifier elimination for real closed fields by cylindrical algebraic decomposition
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -16,8 +15,6 @@ type ProjectionAlgo int
 
 type sign_t int8
 type mult_t int8
-
-var CAD_NO_WO = errors.New("NOT well-oriented")
 
 const (
 	t_undef  = -1 // まだ評価していない
@@ -108,6 +105,22 @@ type CAD struct {
 	stage    int8
 	palgo    ProjectionAlgo
 }
+
+type CAD_error_wo struct {
+	cell *Cell
+}
+
+func (e *CAD_error_wo) Error() string {
+	return fmt.Sprintf("NOT well-oriented: %v", e.cell.Index())
+}
+
+func NewCadErrorWO(cell *Cell) error {
+	e := new(CAD_error_wo)
+	e.cell = cell
+	return e
+}
+
+//var CAD_NO_WO = errors.New("NOT well-oriented")
 
 func qeCAD(fml Fof) Fof {
 	return fml
