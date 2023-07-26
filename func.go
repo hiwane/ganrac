@@ -657,9 +657,9 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 }
 
 func funcCADinit(g *Ganrac, name string, args []interface{}) (interface{}, error) {
-	c, ok := args[0].(Fof)
-	if !ok {
-		return nil, fmt.Errorf("%s() expected FOF", name)
+	c, err := funcGetFormula(name, args[0])
+	if err != nil {
+		return nil, err
 	}
 
 	return NewCAD(c, g)
