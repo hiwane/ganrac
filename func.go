@@ -199,7 +199,7 @@ Examples
   3
 `},
 		{"save", 2, 3, funcSave, false, "(obj, fname)@\t\tsave object...", ""},
-		{"simpl", 1, 2, funcSimplify, true, "(Fof)\t\t\tsimplify formula FoF", ""},
+		{"simpl", 1, 3, funcSimplify, true, "(Fof [, neccon [, sufcon]])\t\t\tsimplify formula FoF", ""},
 		{"sleep", 1, 1, funcSleep, false, "(milisecond)\t\tzzz", ""},
 		// {"sqfr", 1, 1, funcSqfr, false, "(poly)* square-free factorization", ""},
 		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)*\tslope resultant.", ""},
@@ -557,10 +557,25 @@ func funcExample(g *Ganrac, name string, args []interface{}) (interface{}, error
 func funcSimplify(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	c, ok := args[0].(Fof)
 	if !ok {
-		return nil, fmt.Errorf("%s() expected FOF", name)
+		return nil, fmt.Errorf("%s(1st arg) expected FOF", name)
+	}
+	var neccon Fof = trueObj
+	var sufcon Fof = falseObj
+
+	if len(args) > 1 {
+		neccon, ok = args[1].(Fof)
+		if !ok {
+			return nil, fmt.Errorf("%s(2nd arg) expected FOF", name)
+		}
+	}
+	if len(args) > 2 {
+		sufcon, ok = args[2].(Fof)
+		if !ok {
+			return nil, fmt.Errorf("%s(3rd arg) expected FOF", name)
+		}
 	}
 
-	return g.simplFof(c, trueObj, falseObj), nil
+	return g.simplFof(c, neccon, sufcon), nil
 }
 
 func funcGetFormula(name string, arg interface{}) (Fof, error) {
