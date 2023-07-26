@@ -20,9 +20,9 @@ func (g *Ganrac) setBuiltinFuncTable() {
 	// 関数テーブル
 	g.builtin_func_table = []func_table{
 		// sorted by name
-		{"all", 2, 2, funcForAll, false, "([x], FOF):\t\tuniversal quantifier.", ""},
+		{"all", 2, 2, funcForAll, false, "([x], FOF)", "universal quantifier.", ""},
 		//		{"and", 2, 2, funcAnd, false, "(FOF, ...):\t\tconjunction (&&)", ""},
-		{"cad", 1, 2, funcCAD, true, "(fof [, option])*", fmt.Sprintf(`
+		{"cad", 1, 2, funcCAD, true, "(fof [, option])", "", fmt.Sprintf(`
 Args
 ========
 fof: first-order formula
@@ -30,13 +30,13 @@ opt: dictionary.
 	proj: (m|h) projection operator.  (default: m)
 	var : (0|1) 1 if auto             (default: 0)
 `)},
-		{"cadinit", 1, 1, funcCADinit, true, "(FOF)*", ""},
-		{"cadlift", 1, 10, funcCADlift, true, "(CAD)*", ""},
-		{"cadproj", 1, 2, funcCADproj, true, "(CAD [, proj])*", ""},
-		{"cadsfc", 1, 1, funcCADsfc, true, "(CAD)*", ""},
-		{"coef", 3, 3, funcCoef, false, "(poly, var, deg)", ""}, // coef(F, x, 2)
-		{"counter", 0, 0, funcCounter, false, "()", ""},
-		{"deg", 2, 2, funcDeg, false, "(poly|FOF, var)\t\tdegree of a polynomial with respect to var", `
+		{"cadinit", 1, 1, funcCADinit, true, "(FOF)", "", ""},
+		{"cadlift", 1, 10, funcCADlift, true, "(CAD)", "", ""},
+		{"cadproj", 1, 2, funcCADproj, true, "(CAD [, proj])", "", ""},
+		{"cadsfc", 1, 1, funcCADsfc, true, "(CAD)", "", ""},
+		{"coef", 3, 3, funcCoef, false, "(poly, var, deg)", "", ""}, // coef(F, x, 2)
+		{"counter", 0, 0, funcCounter, false, "()", "", ""},
+		{"deg", 2, 2, funcDeg, false, "(poly|FOF, var)", "degree of a polynomial with respect to var", `
 Args
 ========
   poly: a polynomial
@@ -58,8 +58,8 @@ Examples
   > deg(0, y);
   -1
 `}, // deg(F, x)
-		{"diff", 2, 101, funcDiff, false, "(poly, var, ...)*\t\tdifferential.", ""},
-		{"discrim", 2, 2, funcOXDiscrim, true, "(poly)*\t\tdiscriminant.", `
+		{"diff", 2, 101, funcDiff, false, "(poly, var, ...)", "differential.", ""},
+		{"discrim", 2, 2, funcOXDiscrim, true, "(poly)", "discriminant.", `
 Args
 ========
   poly: polynomial
@@ -74,8 +74,8 @@ Examples
   > discrim(a*x^2+b*x+c, y);
   0
 `},
-		{"equiv", 2, 2, funcEquiv, false, "(fof1, fof2)\t\tfof1 is equivalent to fof2", ""},
-		{"evalcas", 1, 1, funcOXStr, true, "(str)*\t\t\tevaluate str by CAD", `
+		{"equiv", 2, 2, funcEquiv, false, "(fof1, fof2)", "fof1 is equivalent to fof2", ""},
+		{"evalcas", 1, 1, funcOXStr, true, "(str)", "evaluate str by CAD", `
 Args
 ========
 str : string
@@ -85,7 +85,7 @@ Examples
   > evalcas("fctr(x^2-4);");
   [[1,1],[x-2,1],[x+2,1]]
 `},
-		{"ex", 2, 2, funcExists, false, "(vars, FOF):\t\texistential quantifier.", `
+		{"ex", 2, 2, funcExists, false, "(vars, FOF)", "existential quantifier.", `
 Args
 ========
   vars: list of variables
@@ -95,18 +95,18 @@ Examples
 ========
   > ex([x], a*x^2+b*x+c == 0);
 `},
-		{"example", 0, 1, funcExample, false, "([name])\t\texample.", ""},
-		{"fctr", 1, 1, funcOXFctr, true, "(poly)*\t\t\tfactorize polynomial over the rationals.", ""},
-		{"fctrp", 1, 1, funcOXFctrp, true, "(poly)*\t\t\tfactorize polynomial over the rationals. para", ""},
-		{"gb", 2, 3, funcOXGB, true, "(polys, vars)*\t\tGroebner basis", ""},
-		{"help", 0, 1, nil, false, "()\t\t\tshow help", ""},
-		//		{"igcd", 2, 2, funcIGCD, false, "(int1, int2)\t\tThe integer greatest common divisor", ""},
-		{"impl", 2, 2, funcImpl, false, "(fof1, fof2)\t\tfof1 impies fof2", ""},
-		{"indets", 1, 1, funcIndets, false, "(mobj)\t\t\tfind indeterminates of an expression", ""},
-		{"intv", 1, 3, funcIntv, false, "(lb, ub [, prec])\t\tmake an interval", ""},
-		{"len", 1, 1, funcLen, false, "(mobj)\t\t\tlength of an object", ""},
-		{"load", 2, 2, funcLoad, false, "(fname)@\t\t\tload file", ""},
-		{"not", 1, 1, funcNot, false, "(FOF)", `
+		{"example", 0, 1, funcExample, false, "([name])", "example.", ""},
+		{"fctr", 1, 1, funcOXFctr, true, "(poly)", "factorize polynomial over the rationals.", ""},
+		{"fctrp", 1, 1, funcOXFctrp, true, "(poly)", "factorize polynomial over the rationals. para", ""},
+		{"gb", 2, 3, funcOXGB, true, "(polys, vars)", "Groebner basis", ""},
+		{"help", 0, 1, nil, false, "()", "show help", ""},
+		//		{"igcd", 2, 2, funcIGCD, false, "(int1, int2)", "The integer greatest common divisor", ""},
+		{"impl", 2, 2, funcImpl, false, "(fof1, fof2)", "fof1 impies fof2", ""},
+		{"indets", 1, 1, funcIndets, false, "(mobj)", "find indeterminates of an expression", ""},
+		{"intv", 1, 3, funcIntv, false, "(lb, ub [, prec])", "make an interval", ""},
+		{"len", 1, 1, funcLen, false, "(mobj)", "length of an object", ""},
+		{"load", 2, 2, funcLoad, false, "(fname)@", "load file", ""},
+		{"not", 1, 1, funcNot, false, "(FOF)", "", `
 Args
 ========
   FOF : a first-order formula
@@ -133,7 +133,7 @@ Examples
 		     4
 		   `},
 		*/
-		{"print", 1, 10, funcPrint, false, "(obj [, kind, ...])\tprint object", `
+		{"print", 1, 10, funcPrint, false, "(obj [, kind, ...])", "print object", `
 
 Examples*
 ========
@@ -155,8 +155,8 @@ Examples*
   > print(C, "cell", 1, 1);
   > print(C, "stat");
 `},
-		{"psc", 4, 4, funcOXPsc, true, "(poly, poly, var, int)*\tprincipal subresultant coefficient.", ""},
-		{"qe", 1, 2, funcQE, true, "(fof [, opt])\t\treal quantifier elimination", fmt.Sprintf(`
+		{"psc", 4, 4, funcOXPsc, true, "(poly, poly, var, int)", "principal subresultant coefficient.", ""},
+		{"qe", 1, 2, funcQE, true, "(fof [, opt])", "real quantifier elimination", fmt.Sprintf(`
 Args
 ========
 fof: first-order formula
@@ -185,10 +185,10 @@ Example
 			getQEoptStr(QEALGO_SMPL_TRAN),
 			getQEoptStr(QEALGO_VSQUAD),
 		)},
-		{"quit", 0, 1, funcQuit, false, "([code])\t\tbye.", ""},
-		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)\t\treal root isolation", ""},
-		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)*\tresultant.", ""},
-		{"rootbound", 1, 1, funcRootBound, false, "(uni-poly in Z[x])\troot bound", `
+		{"quit", 0, 1, funcQuit, false, "([code])", "bye.", ""},
+		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)", "real root isolation", ""},
+		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)", "resultant.", ""},
+		{"rootbound", 1, 1, funcRootBound, false, "(uni-poly in Z[x])", "root bound", `
 Args
 ========
   poly: univariate polynomial
@@ -198,15 +198,15 @@ Examples
   > rootbound(x^2-2);
   3
 `},
-		{"save", 2, 3, funcSave, false, "(obj, fname)@\t\tsave object...", ""},
-		{"simpl", 1, 3, funcSimplify, true, "(Fof [, neccon [, sufcon]])\t\t\tsimplify formula FoF", ""},
-		{"sleep", 1, 1, funcSleep, false, "(milisecond)\t\tzzz", ""},
+		{"save", 2, 3, funcSave, false, "(obj, fname)@", "save object...", ""},
+		{"simpl", 1, 3, funcSimplify, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF", ""},
+		{"sleep", 1, 1, funcSleep, false, "(milisecond)", "zzz", ""},
 		// {"sqfr", 1, 1, funcSqfr, false, "(poly)* square-free factorization", ""},
-		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)*\tslope resultant.", ""},
-		{"sres", 3, 4, funcOXSres, true, "(poly, poly, var[, int])*\tsubresultant seq.", ""},
-		{"subst", 1, 101, funcSubst, false, "(poly|FOF|List,x,vx,y,vy,...)", ""},
-		{"time", 1, 1, funcTime, false, "(expr)\t\t\trun command and system resource usage", ""},
-		{init_var_funcname, 0, 0, nil, false, "(var, ...)\t\tinit variable order", `
+		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)", "slope resultant.", ""},
+		{"sres", 3, 4, funcOXSres, true, "(poly, poly, var[, int])", "subresultant seq.", ""},
+		{"subst", 1, 101, funcSubst, false, "(poly|FOF|List,x,vx,y,vy,...)", "", ""},
+		{"time", 1, 1, funcTime, false, "(expr)", "run command and system resource usage", ""},
+		{init_var_funcname, 0, 0, nil, false, "(var, ...)", "init variable order", `
 Args
 ========
   var
@@ -221,8 +221,8 @@ Examples*
   a^2+2
   > x;
   error: undefined variable ` + "`x`\n"},
-		{"verbose", 1, 2, funcVerbose, false, "(int [, int])\t\tset verbose level", ""},
-		{"vs", 1, 2, funcVS, true, "(FOF, int)* ", "virtual substitution"},
+		{"verbose", 1, 2, funcVerbose, false, "(int [, int])", "set verbose level", ""},
+		{"vs", 1, 2, funcVS, true, "(FOF, int) ", "virtual substitution", ""},
 	}
 }
 
@@ -1189,8 +1189,23 @@ func funcHelps(builtin_func_table []func_table, name string) (interface{}, error
 		fmt.Printf("  && ||\n")
 		fmt.Printf("\n")
 		fmt.Printf("FUNCTIONS:\n")
+
+		maxlen := 15
 		for _, fv := range builtin_func_table {
-			fmt.Printf("  %s%s\n", fv.name, fv.descript)
+			if s := len(fv.name) + len(fv.args); maxlen < s {
+				maxlen = s
+			}
+		}
+		for _, fv := range builtin_func_table {
+			mark := " "
+			label := fv.name + fv.args
+			if fv.ox {
+				mark = "*"
+			} else if fv.args[len(fv.args)-1] == '@' {
+				mark = "@"
+				label = label[:len(label)-1]
+			}
+			fmt.Printf("%s %-*s\t%s\n", mark, maxlen, label, fv.descript)
 		}
 		fmt.Printf("\n")
 		fmt.Printf(" * ... required OX-server\n")
