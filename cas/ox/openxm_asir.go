@@ -7,6 +7,9 @@ import (
 
 // j次 subresultant の DEG 次の係数を返す.
 // DEG < 0 の場合は, subresultant を返す
+// F = an x^n + ... + a1 x + a0
+// =>
+// Fs = [a0, a1, a2, ..., an, F]
 const asir_init_str_sresj = `
 def sresj(Fs, Gs, X, J, DEG) {
 	local M, N, L, S, D, AI, BI, I;
@@ -14,6 +17,9 @@ def sresj(Fs, Gs, X, J, DEG) {
     N = length(Gs) - 2;
 	if (type(J) == 10) {
 		J = int32ton(J);
+	}
+	if (type(DEG) == 10) {
+		DEG = int32ton(DEG);
 	}
 	L = M+N-2*J;
 	S = newmat(L, L);
