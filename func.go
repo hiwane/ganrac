@@ -58,6 +58,7 @@ Examples
   > deg(0, y);
   -1
 `}, // deg(F, x)
+		{"diff", 2, 101, funcDiff, false, "(poly, var, ...)*\t\tdifferential.", ""},
 		{"discrim", 2, 2, funcOXDiscrim, true, "(poly)*\t\tdiscriminant.", `
 Args
 ========
@@ -350,6 +351,37 @@ func funcOXFunc(g *Ganrac, name string, args []interface{}) (interface{}, error)
 }
 */
 
+func funcDiff(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+
+	for i := 1; i < len(args); i++ {
+		c, ok := args[i].(*Poly)
+		if !ok || !c.isVar() {
+			return nil, fmt.Errorf("%s(%dth arg): expected var: %v", name, i, args[i])
+		}
+	}
+
+	_, ok := args[0].(NObj)
+	if ok {
+		return zero, nil
+	}
+	p, ok := args[0].(*Poly)
+	if !ok {
+		return nil, fmt.Errorf("%s(1st arg): expected polynomial: %v", name, args[0])
+	}
+
+	var ret RObj = p
+	for i := 1; i < len(args); i++ {
+		c := args[i].(*Poly)
+		switch r := ret.(type) {
+		case *Poly:
+			ret = r.Diff(c.lv)
+		default:
+			return zero, nil
+		}
+	}
+	return ret, nil
+}
+
 func funcOXDiscrim(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	c, ok := args[1].(*Poly)
 	if !ok || !c.isVar() {
@@ -607,10 +639,12 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	g.log(1, 1, "go lift\n")
 	err = cad.Lift()
 	if err != nil {
 		return nil, err
 	}
+	g.log(1, 1, "go sfc\n")
 	fml, err := cad.Sfc()
 	if err != nil {
 		return nil, err
