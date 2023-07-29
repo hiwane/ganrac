@@ -79,24 +79,30 @@ func (cad *CAD) constcoord_test(cell *Cell, pf ProjFactor) bool {
 	return true
 }
 
+// 射影因子追加不要なら true を返す
 func (cad *CAD) need_delineating_poly(cell *Cell, pf ProjFactor) bool {
 	// t-order partials の GCD を計算して，それが定数かすでに射影因子に含まれているなら ok
 	if err := cell.valid(cad); err != nil {
 		fmt.Printf("err: %v\n", err)
 		panic("stop")
 	}
+	plv := pf.P().lv
 	a := []*Poly{pf.P()}
-	for t := Level(0); t <= cell.lv; t++ { // t-order
-		b := make([]*Poly, 0)
+	for t := Level(0); ; t++ { // t-order
+		b := make([]*Poly, 0, len(a))
+		diff := make([]*Poly, 0, len(a))
+		// fmt.Printf("need_delineating_poly() a[%d]=%v\n", t, a)
 		for _, p := range a {
-			for j := Level(0); j <= cell.lv; j++ { // 微分対象
+			for j := Level(0); j <= plv; j++ { // 微分対象
 				switch q := p.Diff(j).(type) {
 				case *Poly:
+					diff = append(diff, q)
 					switch qc := cell.reduce(q).(type) {
 					case *Poly:
-						if pf.P().lv != qc.lv {
+						// 0次元なので，主変数以外は消えるはず.
+						if plv != qc.lv {
 							// fmt.Printf("[%d,%d/%d] pf=%v, q=%v, qc=%v\n", t, j, pf.P().lv, pf.P(), q, qc)
-							return true
+							return false
 						}
 						if !qc.isUnivariate() {
 							// 代入できんかったし
@@ -123,9 +129,14 @@ func (cad *CAD) need_delineating_poly(cell *Cell, pf ProjFactor) bool {
 				// fmt.Printf("ndp.p=%v\n", cell.reduce(p.Diff(j)))
 			}
 		}
-		// fmt.Printf("b=%v\n", b)
-		if len(b) == 0 {
-			a = b
+
+		if len(b) == 0 { // 代入後全部 0 になった
+			// 次のレベルへ
+			a = diff
+			// fmt.Printf("need_delineating_poly() diff=%v\n", diff)
+			if len(diff) == 0 {
+				return true
+			}
 			continue
 		}
 
