@@ -23,12 +23,14 @@ type simpler interface {
 	homo_reconstruct(lv Level, lvs Levels, sgn int) Fof
 }
 
-func logSimplFof(c Fof, g *Ganrac, eyec string) {
-	if false {
+func logSimplFof(c, neccon, sufcon Fof, g *Ganrac, eyec string) {
+	if true {
 		return
 	}
-	if false {
-		f, err := funcCAD(g, "fnCAD", []any{c})
+	if true {
+		dic := NewDict()
+		dic.Set("var", NewInt(1))
+		f, err := funcCAD(g, "fnCAD", []any{c, dic})
 		if err != nil {
 			fmt.Printf("errrrr %v\n", err)
 			panic("stop")
@@ -42,21 +44,21 @@ func logSimplFof(c Fof, g *Ganrac, eyec string) {
 func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {
 	g.log(3, 1, "simpli %v, nec=%v, suf=%v\n", c, neccon, sufcon)
 	c = c.simplFctr(g)
-	logSimplFof(c, g, "@1")
+	logSimplFof(c, neccon, sufcon, g, "@1")
 	c.normalize()
-	logSimplFof(c, g, "@2")
+	logSimplFof(c, neccon, sufcon, g, "@2")
 	inf := NewReduceInfo()
 	c = c.simplReduce(g, inf)
-	logSimplFof(c, g, "@3")
+	logSimplFof(c, neccon, sufcon, g, "@3")
 
 	for {
 		cold := c
 		c = c.simplComm()
-		logSimplFof(c, g, "@4")
+		logSimplFof(c, neccon, sufcon, g, "@4")
 		c = c.simplBasic(neccon, sufcon)
-		logSimplFof(c, g, "@5")
+		logSimplFof(c, neccon, sufcon, g, "@5")
 		c, _, _ = c.simplNum(g, nil, nil)
-		logSimplFof(c, g, "@6")
+		logSimplFof(c, neccon, sufcon, g, "@6")
 		if c.Equals(cold) {
 			break
 		}
