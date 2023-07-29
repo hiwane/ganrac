@@ -200,6 +200,7 @@ Examples
 `},
 		{"save", 2, 3, funcSave, false, "(obj, fname)@", "save object...", ""},
 		{"simpl", 1, 3, funcSimplify, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF", ""},
+		{"simplnum", 1, 1, funcSimplNum, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF for DEBUG", ""},
 		{"sleep", 1, 1, funcSleep, false, "(milisecond)", "zzz", ""},
 		// {"sqfr", 1, 1, funcSqfr, false, "(poly)* square-free factorization", ""},
 		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)", "slope resultant.", ""},
@@ -578,6 +579,16 @@ func funcSimplify(g *Ganrac, name string, args []interface{}) (interface{}, erro
 	return g.simplFof(c, neccon, sufcon), nil
 }
 
+func funcSimplNum(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+	c, ok := args[0].(Fof)
+	if !ok {
+		return nil, fmt.Errorf("%s(1st arg) expected FOF", name)
+	}
+
+	r, _, _ := c.simplNum(g, nil, nil)
+	return r, nil
+}
+
 func funcGetFormula(name string, arg interface{}) (Fof, error) {
 	fof, ok := arg.(Fof)
 	if !ok {
@@ -780,7 +791,7 @@ func funcPrint(g *Ganrac, name string, args []interface{}) (interface{}, error) 
 		case "qepcad":
 			fmt.Printf("%Q\n", cc)
 		default:
-			fmt.Printf(t, cc)
+			fmt.Printf(t+"\n", cc)
 		}
 		return nil, nil
 	default:
