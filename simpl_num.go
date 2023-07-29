@@ -591,6 +591,9 @@ func (fctr *List) simplNumPolys(g *Ganrac, start int, t, f *NumRegion) ([]RObj, 
 
 		var op OP
 		op, pos, neg = p.simplNumPoly(g, t, f, p.lv)
+		if op != OP_TRUE && false {
+			fmt.Printf("   simplNumPolys(%v) :: %s\n", p, op)
+		}
 		if op == GT {
 			continue // 因子を削れた
 		} else if op == LT {
@@ -800,6 +803,9 @@ func (atom *Atom) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumReg
 
 	rs, rsgn, s, pp, nn := fctr.simplNumPolys(g, 0, t, f)
 	if len(rs) < len(atom.p) { // 因子が減ったということ
+		// fmt.Printf("          rs=%v\n", rs)
+		// fmt.Printf("           t=%v\n", t)
+		// fmt.Printf("           f=%v\n", f)
 		var atom2 Fof
 		if len(rs) == 0 {
 			if atom.op&s == 0 {
@@ -856,14 +862,32 @@ func (atom *Atom) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumReg
 	}
 }
 
+func sliceIn[T int](ary []T, val T) bool {
+	for _, v := range ary {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegion) {
 	ts := make([]*NumRegion, 0, len(p.fml))
 	fs := make([]*NumRegion, 0, len(p.fml))
 	fmls := make([]Fof, 0, len(p.fml))
-	// fmt.Printf("   And.simplNum And=%v\n", p)
+	print_log := false
+	if print_log {
+		fmt.Printf("   And.simplNum input And=%v, t=%v, f=%v\n", p, t, f)
+	}
 	for i := range p.fml {
+		if print_log {
+			fmt.Printf("   And.simplNum case1>%d: f=%v, t=%v, f=%v\n", i, p.fml[i], t, f)
+		}
 		fml, tt, ff := p.fml[i].simplNum(g, t, f)
-		if false && !p.fml[i].Equals(fml) {
+		if print_log {
+			fmt.Printf("   And.simplNum case1<%d: f=%v, t=%v, f=%v\n", i, p.fml[i], t, f)
+		}
+		if print_log && !p.fml[i].Equals(fml) {
 			fmt.Printf("@@ And.simplNum @AND@ %v\n", p)
 			fmt.Printf("@@ And.simplNum[1st,%d/%d] %v -> %v, false=%v\n", i+1, len(p.fml), p.fml[i], fml, ff)
 			fmt.Printf("@@ t=%v\n", t)
@@ -879,7 +903,9 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 		ts = append(ts, tt)
 		fs = append(fs, ff)
 	}
-	// fmt.Printf("   And.simplNum fmls=%v\n", fmls)
+	if print_log {
+		fmt.Printf("   And.simplNum case2 fmls=%v, t=%v\n", fmls, t)
+	}
 	if len(fmls) <= 1 {
 		if len(fmls) == 0 {
 			return trueObj, nil, nil
@@ -889,28 +915,38 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 
 	var tret *NumRegion
 	fret := f
+	except := make([]int, 0, len(fmls))
 	for i, fml := range fmls {
 		ff := f
 		// i 番以外の情報から white/black region を構築する
 		var tt *NumRegion
 		for j := 0; j < len(fmls); j++ {
-			if j != i {
+			if j != i && !sliceIn(except, j) {
 				ff = ff.union(fs[j])
 				//		tt = tt.intersect(ts[j])	// intersect とってもほぼ偽になるからやらない
 			}
 		}
 
+		if print_log {
+			fmt.Printf("   And.simplNum case3>%d: f=%v, t=%v, f=%v\n", i, p.fml[i], t, f)
+		}
 		fmls[i], tt, ff = fml.simplNum(g, t, ff)
+		if print_log {
+			fmt.Printf("   And.simplNum case3<%d: f=%v, t=%v, f=%v\n", i, p.fml[i], t, f)
+		}
 		if err := fmls[i].valid(); err != nil {
 			fmt.Printf("simplNum(%v) => %v; %V\n", fml, fmls[i], fmls[i])
 			panic("stop, bug")
 		}
-		if false && !fml.Equals(fmls[i]) {
-			fmt.Printf("@@ And.simplNum @AND@ %v\n", p)
-			fmt.Printf("@@ And.simplNum[2nd,%d/%d] %v -> %v, ff=%v\n", i+1, len(p.fml), fml, p.fml[i], ff)
-			fmt.Printf("@@ And.simplNum[2nd,%d/%d] %V -> %V\n", i+1, len(p.fml), fml, p.fml[i])
-			fmt.Printf("@@ t=%v\n", t)
-			fmt.Printf("@@ f=%v\n", f)
+		if !fml.Equals(fmls[i]) {
+			except = append(except, i)
+			if print_log {
+				fmt.Printf("@@ And.simplNum @AND@ %v, t=%v\n", p, t)
+				fmt.Printf("   And.simplNum[2nd,%d/%d] %v => %v, ff=%v\n", i+1, len(p.fml), fml, p.fml[i], ff)
+				// fmt.Printf("@@ And.simplNum[2ND,%d/%d] %V -> %V\n", i+1, len(p.fml), fml, p.fml[i])
+				fmt.Printf("               [2nd,%d/%d] t=%v\n", i+1, len(p.fml), t)
+				fmt.Printf("               [2nd,%d/%d] f=%v\n", i+1, len(p.fml), f)
+			}
 		}
 		if _, ok := fmls[i].(*AtomF); ok {
 			return falseObj, nil, NewNumRegion()
@@ -921,7 +957,10 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 	}
 	tret = tret.union(t)
 	fml := NewFmlAnds(fmls...)
-	// fmt.Printf("## And.simplNum[end,%d] %v\n", len(fmls), fret)
+	if print_log {
+		fmt.Printf("## And.simplNum[%v,end,#=%d] %v T=%v, F=%v\n", p, len(fmls), fml, tret, fret)
+		fmt.Printf("               [%v,end,#=%d] %v t=%v, f=%v\n", p, len(fmls), fml, t, f)
+	}
 	return fml, tret, fret
 }
 
