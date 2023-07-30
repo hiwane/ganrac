@@ -106,8 +106,9 @@ func TestSdcQEmain(t *testing.T) {
 
 			c0 := p.Coef(lv, 0)
 
-			v := NewForAll(lvs, NewFmlEquiv(NewFmlOr(ret, NewAtom(c0, LE)), expect))
-			qeopt.SetAlgo(QEALGO_SDC, false)
+			ret_c0le := NewFmlOr(ret, NewAtom(c0, LE))
+			v := NewForAll(lvs, NewFmlEquiv(ret_c0le, expect))
+			qeopt.SetAlgo(QEALGO_SDC|QEALGO_ATOM, false)
 			v = g.QE(v, qeopt)
 			if err := ValidFof(v); err != nil {
 				t.Errorf("[%d,%d] v invalid\ninput=%s\nerr=%v", ii, jj, ss.input, err)
@@ -117,12 +118,12 @@ func TestSdcQEmain(t *testing.T) {
 				dict := NewDict()
 				dict.Set("var", NewInt(1))
 				impl, _ := FuncCAD(g, "CAD", []interface{}{
-					NewFmlImpl(ret, expect), dict,
+					NewFmlImpl(ret_c0le, expect), dict,
 				})
 				repl, _ := FuncCAD(g, "CAD", []interface{}{
-					NewFmlImpl(expect, ret), dict,
+					NewFmlImpl(expect, ret_c0le), dict,
 				})
-				t.Errorf("[%d,%d] failed\ninput =%v\nexpect=%v\nactual=%v\nimpl=%v\nrepl=%v", ii, jj, ss.input, expect, ret, impl, repl)
+				t.Errorf("[%d,%d] failed\ninput =%v\nexpect=%v\nactual=%v OR %v <= 0\nimpl=%v\nrepl=%v", ii, jj, ss.input, expect, ret, c0, impl, repl)
 				return
 			}
 		}
@@ -297,7 +298,7 @@ func TestSdcQEcont(t *testing.T) {
 				{LE, ss.expect_le},
 				{EQ, ss.expect_eq},
 			} {
-				qeopt.SetAlgo(QEALGO_SDC, true)
+				qeopt.SetAlgo(QEALGO_SDC|QEALGO_ATOM, true)
 
 				expect, err := str2fof(g, vv.expect)
 				if err != nil {
@@ -549,7 +550,7 @@ func TestSdcQEpoly(t *testing.T) {
 				{LE, GE, ss.expect_lg},
 				{LE, LE, ss.expect_ll},
 			} {
-				qeopt.SetAlgo(QEALGO_SDC, true)
+				qeopt.SetAlgo(QEALGO_SDC|QEALGO_ATOM, true)
 
 				expect, err := str2fof(g, vv.expect)
 				if err != nil {
@@ -572,7 +573,7 @@ func TestSdcQEpoly(t *testing.T) {
 				}
 
 				v := NewForAll(lvs, NewFmlEquiv(ret, expect))
-				qeopt.SetAlgo(QEALGO_SDC, false)
+				qeopt.SetAlgo(QEALGO_SDC|QEALGO_ATOM, false)
 				v = g.QE(v, qeopt)
 				if v != TrueObj {
 					dict := NewDict()

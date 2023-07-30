@@ -15,7 +15,7 @@ func atomQEconstruct(ret []Fof, sres *List, atom_formulas [][]OP, neccon Fof) []
 	if _, ok := neccon.(*AtomF); ok {
 		return ret
 	}
-	fmt.Printf("atomQEconstruct(%v) %v\n", sres, neccon)
+	// fmt.Printf("atomQEconstruct(%v) %v\n", sres, neccon)
 
 	ps := make([]RObj, sres.Len())
 	for i := 0; i < len(ps); i++ {
@@ -32,7 +32,7 @@ func atomQEconstruct(ret []Fof, sres *List, atom_formulas [][]OP, neccon Fof) []
 		}
 		ret = append(ret, NewFmlAnds(r...))
 	}
-	fmt.Printf("atomQEconstruct() returns %v\n", ret)
+	// fmt.Printf("atomQEconstruct() returns %v\n", ret)
 	return ret
 }
 
@@ -42,7 +42,7 @@ func atomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 		return falseObj
 	}
 
-	fmt.Printf("atomQE(%v) %v\n", atom, neccon)
+	// fmt.Printf("atomQE(%v, %v, nec=%v)\n", atom, VarStr(lv), neccon)
 
 	p := atom.getPoly()
 	deg := p.Deg(lv)
@@ -69,7 +69,7 @@ func atomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 			return neccon
 		}
 	case NE: // neqQE におまかせしたいところですが.
-		return apply_neqQEatom(atom, lv)
+		return NewFmlAnd(neccon, apply_neqQEatom(atom, lv))
 	}
 
 	if deg%2 != 0 {
@@ -102,7 +102,7 @@ func atomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 			}
 			return NewFmlOr(NewFmlAnd(NewAtom(lc, NE), neccon), rr)
 		default:
-			return NewFmlOr(NewAtom(lc, NE), qa)
+			return NewFmlOr(NewFmlAnd(NewAtom(lc, NE), neccon), NewFmlAnd(qa, neccon))
 		}
 	} else if deg > ATOMQE_MAX_DEG || atom.op&EQ == 0 {
 		return nil
@@ -111,31 +111,25 @@ func atomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 		afml := atomqe_formula[deg/2]
 		ret := make([]Fof, 0, 4+len(afml)*2)
 
-		// 次数落ち
-		switch atom2 := NewAtom(p.setZero(lv, deg), atom.op).(type) {
-		case *Atom:
-			ret = append(ret, atomQE(atom2, lv, NewFmlAnd(NewAtom(lc, EQ), neccon), qeopt))
-		default:
-			ret = append(ret, NewFmlAnd(NewAtom(lc, EQ), atom2))
-		}
-
+		aop := atom.op
 		if atom.op == GE {
 			p = p.Neg().(*Poly)
+			aop = LE
 		}
 
+
 		nec2 := NewFmlAnd(NewAtom(lc, EQ), neccon)
-		var fml2 Fof
-		atom2 := NewAtom(p.setZero(lv, deg), atom.op)
-		if _atom2, ok := atom2.(*Atom); ok {
-			fml2 = atomQE(_atom2, lv, nec2, qeopt)
-		} else {
-			fml2 = NewFmlAnd(nec2, atom2)
+		// 次数落ち
+		switch atom2 := NewAtom(p.setZero(lv, deg), aop).(type) {
+		case *Atom:
+			ret = append(ret, atomQE(atom2, lv, nec2, qeopt))
+		default:
+			ret = append(ret, NewFmlAnds(nec2, atom2))
 		}
-		ret = append(ret, fml2)
 
 		pd := p.Diff(lv).(*Poly)
 		sres := qeopt.g.ox.Sres(p, pd, lv, 1)
-		fmt.Printf("sres=%v\n", sres)
+		// fmt.Printf("sres=%v\n", sres)
 
 		if atom.op == EQ {
 			// 主係数と定数項の符号が異なれば ok
@@ -297,6 +291,7 @@ func sdcPolyFormat(f *Poly, lv Level) string {
 // ex([x], f(x) <= 0 && x >= 0) && neccon
 // f.Coef(lv, 0) <= 0 の場合は考慮しない
 func sdcQEmain(f *Poly, lv Level, neccon Fof, qeopt QEopt) Fof {
+	print_log := false
 	deg := f.Deg(lv)
 	if deg > SDCQE_MAX_DEG {
 		return nil
@@ -308,14 +303,16 @@ func sdcQEmain(f *Poly, lv Level, neccon Fof, qeopt QEopt) Fof {
 		return NewFmlAnd(neccon, NewAtom(lc, LT))
 	}
 
-	if true {
+	if false {
 		fmt.Printf("sdcQEmain(neccon = %v)\n", neccon)
 		fmt.Printf("FF = %s\n", sdcPolyFormat(f, lv))
 	}
 
 	fd := f.Diff(lv).(*Poly)
 	sres := qeopt.g.ox.Sres(f, fd, lv, 3)
-	fmt.Printf("sres=%v\n", sres)
+	if print_log {
+		fmt.Printf("sres=%v\n", sres)
+	}
 	hc := make([]RObj, 2*deg-2)
 
 	// hc... h[n-2], h[n-3], ..., h[0], c[n-1], c[n-2], ..., c[1]
@@ -342,14 +339,16 @@ func sdcQEmain(f *Poly, lv Level, neccon Fof, qeopt QEopt) Fof {
 			hc[deg-1] = fd.Coef(lv, 0)
 		}
 	}
-	fmt.Printf("hc=%v\n", hc)
+	if print_log {
+		fmt.Printf("hc=%v\n", hc)
+	}
 
 	N := len(sdcqe_formula[deg])
 	ret := make([]Fof, N+1, N+2)
 	lc := f.Coef(lv, uint(deg))
 	lcpos := NewAtom(lc, GT)
 	for i, sdcfml := range sdcqe_formula[deg] {
-		fmt.Printf("fml[%d]=%v\n", i, sdcfml)
+		// fmt.Printf("fml[%d]=%v\n", i, sdcfml)
 		vv := make([]Fof, 2, len(hc)+2)
 		vv[0] = neccon
 		vv[1] = lcpos
@@ -360,14 +359,20 @@ func sdcQEmain(f *Poly, lv Level, neccon Fof, qeopt QEopt) Fof {
 		}
 
 		ret[i] = NewFmlAnds(vv...)
-		fmt.Printf("vv[%d/%d]=%v => %v\n", i, N, vv, ret[i])
+		if print_log {
+			fmt.Printf("vv[%d/%d]=%v => %v\n", i, N, vv, ret[i])
+		}
 	}
 	ret[N] = NewFmlAnds(neccon, NewAtom(lc, LT))
-	fmt.Printf("vv[%d/%d]=%v\n", N, N, ret[N])
+	if print_log {
+		fmt.Printf("vV[%d/%d]=%v\n", N, N, ret[N])
+	}
 
 	if f2, ok := f.setZero(lv, deg).(*Poly); ok {
 		ret = append(ret, sdcQEmain(f2, lv, NewFmlAnd(NewAtom(lc, EQ), neccon), qeopt))
-		fmt.Printf("vv[%d/%d]=%v\n", N+1, N, ret[N+1])
+		if print_log {
+			fmt.Printf("VV[%d/%d]=%v\n", N+1, N, ret[N+1])
+		}
 	} else {
 		// 定数は正であることが必要条件なので，ここは不要
 	}
@@ -393,7 +398,7 @@ func sdcQEpoly(f, rng *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 	deg := fp.Deg(lv)
 	den := makeDenAry(a, deg)
 	fp = fp.subst_frac(q, den, lv).(*Poly)
-	fmt.Printf("  fp=%v %s 0\n", sdcPolyFormat(fp, lv), f.op)
+	// fmt.Printf("  fp=%v %s 0\n", sdcPolyFormat(fp, lv), f.op)
 
 	ret := make([]Fof, 1, 6)
 
@@ -401,7 +406,7 @@ func sdcQEpoly(f, rng *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 	{
 		nec2 := NewFmlAnds(neccon, NewAtom(a, EQ), NewAtom(b, rng.op))
 		ret[0] = atomQE(f, lv, nec2, qeopt)
-		fmt.Printf("  ret[0]=%v; %v\n", ret[0], nec2)
+		// fmt.Printf("  ret[0]=%v; %v\n", ret[0], nec2)
 	}
 
 	c0 := fp.Coef(lv, 0)
@@ -412,12 +417,12 @@ func sdcQEpoly(f, rng *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 
 	// a > 0 の場合
 	{
-		fmt.Printf("@@@ case a+ := %v>0; %v\n", a, rng)
+		// fmt.Printf("@@@ case a+ := %v>0; %v\n", a, rng)
 		nec2 := neccon
 		nec2 = NewFmlAnds(neccon, NewAtom(a, GT))
 		cop := NewAtom(c0, f.op)
 		ret = append(ret, NewFmlAnd(cop, nec2))
-		fmt.Printf("  retA1[%d]=%v; %v %s 0\n", len(ret), ret[len(ret)-1], c0, f.op)
+		// fmt.Printf("  retA1[%d]=%v; %v %s 0\n", len(ret), ret[len(ret)-1], c0, f.op)
 
 		_, ok2 := cop.(*AtomT)
 		if _, ok := nec2.(*AtomF); !ok && !ok2 {
@@ -433,12 +438,12 @@ func sdcQEpoly(f, rng *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 
 			rr := sdcQEmain(fq, lv, nec2, qeopt)
 			ret = append(ret, rr)
-			fmt.Printf("  retA2[%d]=%v\n", len(ret), ret[len(ret)-1])
+			// fmt.Printf("  retA2[%d]=%v\n", len(ret), ret[len(ret)-1])
 		}
 	}
 
 	{ // a < 0 の場合
-		fmt.Printf("@@@ case a- := %v<0; %v\n", a, rng)
+		// fmt.Printf("@@@ case a- := %v<0; %v\n", a, rng)
 		nec2 := neccon
 		nec2 = NewFmlAnds(neccon, NewAtom(a, LT))
 		opf := f.op
@@ -448,7 +453,7 @@ func sdcQEpoly(f, rng *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 		}
 		cop := NewAtom(c0, opf)
 		ret = append(ret, NewFmlAnd(cop, nec2))
-		fmt.Printf("  retB1[%d]=%v\n", len(ret), ret[len(ret)-1])
+		// fmt.Printf("  retB1[%d]=%v\n", len(ret), ret[len(ret)-1])
 		_, ok2 := cop.(*AtomT)
 		if _, ok := nec2.(*AtomF); !ok && !ok2 {
 			fq := fp
@@ -462,7 +467,7 @@ func sdcQEpoly(f, rng *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 
 			rr := sdcQEmain(fq, lv, nec2, qeopt)
 			ret = append(ret, rr)
-			fmt.Printf("  retB2[%d]=%v\n", len(ret), ret[len(ret)-1])
+			// fmt.Printf("  retB2[%d]=%v\n", len(ret), ret[len(ret)-1])
 		}
 	}
 
@@ -488,21 +493,21 @@ func (f *Poly) sdcSubst(p *Poly, lv Level) RObj {
 	q := NewPolyVar(lv).Mul(c1).Sub(c0)
 	if c1.IsOne() {
 		g := f.Subst(q, lv).(*Poly)
-		fmt.Printf("sdcSubst(1) f=%v\np=%v\nq=%v\n", f, p, q)
-		fmt.Printf("g=%v\n", sdcPolyFormat(g, lv))
+		// fmt.Printf("sdcSubst(1) f=%v\np=%v\nq=%v\n", f, p, q)
+		// fmt.Printf("g=%v\n", sdcPolyFormat(g, lv))
 		return g
 	}
 
 	deg := f.Deg(lv)
 	den := makeDenAry(c1, deg)
 	g := f.subst_frac(q, den, lv)
-	fmt.Printf("sdcSubst(2) f=%v\np=%v\ng=%v\n", f, p, g)
+	// fmt.Printf("sdcSubst(2) f=%v\np=%v\ng=%v\n", f, p, g)
 	return g
 }
 
 // ex([lv], f && land_i x >= a_i && land_j x <= b_j)
 func sdcQEcont(f *Atom, rmin, rmax []*Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
-	fmt.Printf("\n\n@@@@@@@@\nsdcQEcont(f=%v, rmin=%v, rmax=%v, lv=%s, neccon=%v, qeopt=%v)\n", f, rmin, rmax, VarStr(lv), neccon, qeopt)
+	// fmt.Printf("\n\n@@@@@@@@\nsdcQEcont(f=%v, rmin=%v, rmax=%v, lv=%s, neccon=%v, qeopt=%v)\n", f, rmin, rmax, VarStr(lv), neccon, qeopt)
 	if len(rmin) > 1 {
 		// 下限を表すものが複数あったから，一つになるまで絞り込む
 		return sdcQEredRange(f, [][]*Atom{rmin, rmax}, 0, lv, neccon, qeopt)
@@ -594,12 +599,12 @@ func sdcQEcont(f *Atom, rmin, rmax []*Atom, lv Level, neccon Fof, qeopt QEopt) F
 	cap_ret := 7
 	ret := make([]Fof, 2, cap_ret)
 	nec2 := NewFmlAnd(neccon, NewAtom(dist_num, GE))
-	fmt.Printf("nec=%v, dist_num=%v\n", neccon, dist_num)
+	// fmt.Printf("nec=%v, dist_num=%v\n", neccon, dist_num)
 
 	dena := makeDenAry(a1, deg)
 	fpa := fp.subst_frac(a0.Neg(), dena, lv)
 	ret[0] = NewFmlAnd(nec2, NewAtom(fpa, opf)) // 左端点
-	fmt.Printf("ret[0]=%v\n", ret[0])
+	// fmt.Printf("ret[0]=%v\n", ret[0])
 
 	if dist_num.IsNumeric() && dist_num.Sign() <= 0 {
 		if !dist_num.IsZero() {
@@ -611,25 +616,25 @@ func sdcQEcont(f *Atom, rmin, rmax []*Atom, lv Level, neccon Fof, qeopt QEopt) F
 	denb := makeDenAry(b1, deg)
 	fpb := fp.subst_frac(b0.Neg(), denb, lv)
 	ret[1] = NewFmlAnd(nec2, NewAtom(fpb, opf)) // 右端点
-	fmt.Printf("ret[1]=%v\n", ret[1])
+	// fmt.Printf("ret[1]=%v\n", ret[1])
 
 	//////////////////////////////////////
 	// 区間を x >= 0 に変換
 	//////////////////////////////////////
-	fmt.Printf("fp[a..b  ] = %v\n", fp)
+	// fmt.Printf("fp[a..b  ] = %v\n", fp)
 	fp = fp.sdcSubst(ap, lv).(*Poly) // 0 <= x <= b-a
-	fmt.Printf("fp[0..b-a] = %v @ %v\n", fp, ap)
+	// fmt.Printf("fp[0..b-a] = %v @ %v\n", fp, ap)
 
 	dist_den := makeDenAry(Mul(a1, b1), deg)
 	fp = fp.subst_frac(Mul(NewPolyVar(lv), dist_num), dist_den, lv).(*Poly) // 0 <= x <= 1
-	fmt.Printf("fp[0..1  ] = %v @ %v\n", fp, dist_num)
+	// fmt.Printf("fp[0..1  ] = %v @ %v\n", fp, dist_num)
 	fp = fp.SubstXinvLv(lv, deg).(*Poly) // 1 <= x <= +inf
-	fmt.Printf("fp[1..inf] = %v\n", fp)
+	// fmt.Printf("fp[1..inf] = %v\n", fp)
 	x1 := NewPoly(lv, 2)
 	x1.c[0] = one
 	x1.c[1] = one
 	fp = fp.Subst(x1, lv).(*Poly) // 0 <= x <= +inf
-	fmt.Printf("fp[0..inf] = %v\n", fp)
+	// fmt.Printf("fp[0..inf] = %v\n", fp)
 
 	neccon = NewFmlAnds(neccon, NewAtom(dist_num, GT))
 
@@ -660,6 +665,7 @@ func sdcQEcont(f *Atom, rmin, rmax []*Atom, lv Level, neccon Fof, qeopt QEopt) F
 
 // fof: prenex first-order formula ex([x, y, z], p1 & p2 & ... & p2)
 func sdcAtomQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
+	// fmt.Printf("sdcAtomQE[%v] %v\n", VarStr(lv), fof)
 	switch fofx := fof.(type) {
 	case *Atom:
 		rr := atomQE(fofx, lv, trueObj, qeopt)
@@ -690,28 +696,28 @@ func sdcAtomQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 				}
 				f = atom
 			} else {
-				if len(rng) > CAPRNG {
+				if len(rng) > CAPRNG {	// 範囲条件がたくさんすぎた
 					return fof
 				}
 				rng = append(rng, atom)
 			}
-			if f == nil {
+		}
+		if f == nil {
+			return fof
+		} else if len(rng) == 0 {
+			rr := atomQE(f, lv, trueObj, qeopt)
+			if rr == nil {
 				return fof
-			} else if len(rng) == 0 {
-				rr := atomQE(f, lv, trueObj, qeopt)
-				if rr == nil {
-					return fof
-				}
-				other = append(other, rr)
-				return NewFmlAnds(other...)
-			} else {
-				rr := sdcQE(f, rng, lv, qeopt, cond)
-				if rr == nil {
-					return fof
-				}
-				other = append(other, rr)
-				return NewFmlAnds(other...)
 			}
+			other = append(other, rr)
+			return NewFmlAnds(other...)
+		} else {
+			rr := sdcQE(f, rng, lv, qeopt, cond)
+			if rr == nil {
+				return fof
+			}
+			other = append(other, rr)
+			return NewFmlAnds(other...)
 		}
 		return fof
 	default:
