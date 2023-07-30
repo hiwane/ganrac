@@ -107,16 +107,31 @@ func atomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 	} else if deg > ATOMQE_MAX_DEG || atom.op&EQ == 0 {
 		return nil
 	} else {
-		// 偶数次では公式を用いる
-		afml := atomqe_formula[deg/2]
-		ret := make([]Fof, 0, 4+len(afml)*2)
-
+		////////////////////////////////
+		// 偶数次
+		////////////////////////////////
 		aop := atom.op
 		if atom.op == GE {
 			p = p.Neg().(*Poly)
 			aop = LE
 		}
 
+		if p.isEven(lv) { // 偶関数なら次数を落として SDCにできる.
+			// ここの neccon は simplify 用ではなく，結果復帰用なので，
+			// 限量変数である lv が含まれないことは保証されているはず.
+			if neccon.hasVar(lv) {
+				panic(fmt.Sprintf("atomQE: neccon=%v, lv=%v", neccon, lv))
+			}
+
+			q := p.redEven(lv)
+			// f(x) = f(-x) = F(x^2)
+			// ex(x, F(x^2) <= 0) => ex(y, F(y) <= 0 and y >= 0)
+			return sdcQEcont2(q, aop, lv, neccon, qeopt)
+		}
+
+		// 公式を用いる
+		afml := atomqe_formula[deg/2]
+		ret := make([]Fof, 0, 4+len(afml)*2)
 
 		nec2 := NewFmlAnd(NewAtom(lc, EQ), neccon)
 		// 次数落ち
@@ -222,7 +237,7 @@ func sdcQE(f *Atom, rngs []*Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 
 	var rng_lcpol *Atom
 
-	if deg := f.Deg(lv); deg <= 0 || deg > SDCQE_MAX_DEG {
+	if deg := f.Deg(lv); deg <= 0 || deg > SDCQE_MAX_DEG || f.op&EQ == 0 {
 		return nil
 	}
 
@@ -297,6 +312,11 @@ func sdcQEmain(f *Poly, lv Level, neccon Fof, qeopt QEopt) Fof {
 		}
 		lc := f.Coef(lv, uint(deg))
 		return NewFmlAnd(neccon, NewAtom(lc, LT))
+	} else if deg%2 == 0 {
+		for f.isEven(lv) {
+			deg /= 2
+			f = f.redEven(lv)
+		}
 	}
 
 	if false {
@@ -542,29 +562,7 @@ func sdcQEcont(f *Atom, rmin, rmax []*Atom, lv Level, neccon Fof, qeopt QEopt) F
 			fp = fp.NegX(lv)
 		}
 
-		c0 := fp.Coef(lv, 0)
-		if f.op != EQ {
-			ret := sdcQEmain(fp, lv, neccon, qeopt)
-			return NewFmlOr(ret, NewFmlAnd(NewAtom(c0, LE), neccon))
-		} else {
-			deg := fp.Deg(lv)
-			ret := make([]Fof, 3, 3+2*deg)
-			c0gt := NewAtom(c0, GT)
-			c0lt := NewAtom(c0, LT)
-			ret[0] = sdcQEmain(fp, lv, c0gt, qeopt)
-			ret[1] = sdcQEmain(fp.Neg().(*Poly), lv, c0lt, qeopt)
-			ret[2] = NewFmlAnd(neccon, NewAtom(c0, EQ))
-
-			// 主係数と定数項が異符号
-			for i := uint(deg); i > 0; i-- {
-				ci := fp.Coef(lv, i)
-				ret = append(ret, NewFmlAnds(neccon, NewAtom(ci, GT), c0lt))
-				ret = append(ret, NewFmlAnds(neccon, NewAtom(ci, LT), c0gt))
-				neccon = NewFmlAnd(neccon, NewAtom(ci, EQ))
-			}
-
-			return NewFmlOrs(ret...)
-		}
+		return sdcQEcont2(fp, opf, lv, neccon, qeopt)
 	}
 
 	// 上下限ある場合
@@ -659,6 +657,36 @@ func sdcQEcont(f *Atom, rmin, rmax []*Atom, lv Level, neccon Fof, qeopt QEopt) F
 	return NewFmlOrs(ret...)
 }
 
+func sdcQEcont2(fp *Poly, opf OP, lv Level, neccon Fof, qeopt QEopt) Fof {
+	c0 := fp.Coef(lv, 0)
+	if opf != EQ {
+		if opf != LE {
+			panic(fmt.Sprintf("why? op=%s[%x]", opf, opf))
+		}
+		ret := sdcQEmain(fp, lv, neccon, qeopt)
+		return NewFmlOr(ret, NewFmlAnd(NewAtom(c0, LE), neccon))
+	} else {
+		deg := fp.Deg(lv)
+		ret := make([]Fof, 3, 3+2*deg)
+		c0gt := NewAtom(c0, GT)
+		c0lt := NewAtom(c0, LT)
+		ret[0] = sdcQEmain(fp, lv, c0gt, qeopt)
+		ret[1] = sdcQEmain(fp.Neg().(*Poly), lv, c0lt, qeopt)
+		ret[2] = NewFmlAnd(neccon, NewAtom(c0, EQ))
+
+		// 主係数と定数項が異符号
+		for i := uint(deg); i > 0; i-- {
+			// @TODO simplify
+			ci := fp.Coef(lv, i)
+			ret = append(ret, NewFmlAnds(neccon, NewAtom(ci, GT), c0lt))
+			ret = append(ret, NewFmlAnds(neccon, NewAtom(ci, LT), c0gt))
+			neccon = NewFmlAnd(neccon, NewAtom(ci, EQ))
+		}
+
+		return NewFmlOrs(ret...)
+	}
+}
+
 // fof: prenex first-order formula ex([x, y, z], p1 & p2 & ... & p2)
 func sdcAtomQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 	// fmt.Printf("sdcAtomQE[%v] %v\n", VarStr(lv), fof)
@@ -692,7 +720,7 @@ func sdcAtomQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 				}
 				f = atom
 			} else {
-				if len(rng) > CAPRNG {	// 範囲条件がたくさんすぎた
+				if len(rng) > CAPRNG { // 範囲条件がたくさんすぎた
 					return fof
 				}
 				rng = append(rng, atom)
@@ -715,7 +743,6 @@ func sdcAtomQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 			other = append(other, rr)
 			return NewFmlAnds(other...)
 		}
-		return fof
 	default:
 		panic(fmt.Sprintf("unexpected %v", fof))
 	}

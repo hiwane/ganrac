@@ -224,6 +224,10 @@ func AtomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 	return atomQE(atom, lv, neccon, qeopt)
 }
 
+func SdcAtomQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
+	return sdcAtomQE(fof, lv, qeopt, cond)
+}
+
 func (qeopt *QEopt) SetG(g *Ganrac) {
 	qeopt.g = g
 }
