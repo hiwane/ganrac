@@ -239,10 +239,6 @@ func sdcQE(f *Atom, rngs []*Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 			rng_lcpol = rng
 			continue
 		}
-		if lc.Sign() < 0 {
-			// atom の仕様により，主係数正は保証されているはず
-			panic(fmt.Sprintf("why? %v", rng))
-		}
 
 		if rng.op == GE {
 			rmin = append(rmin, rng)
@@ -252,7 +248,7 @@ func sdcQE(f *Atom, rngs []*Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 	}
 	if rng_lcpol != nil {
 		if len(rmin)+len(rmax) > 0 {
-			return nil
+			return nil // unsupported
 		}
 
 		// ex([x], f(x) <= 0 && a*x+b >= 0)
@@ -260,7 +256,7 @@ func sdcQE(f *Atom, rngs []*Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 	}
 
 	// ex([x], f(x) <= 0 && land_i x >= ai && land_j x <= bj
-	return sdcQEcont(f, rmax, rmin, lv, trueObj, qeopt)
+	return sdcQEcont(f, rmin, rmax, lv, trueObj, qeopt)
 }
 
 // lv を主変数として，多項式を表示する
