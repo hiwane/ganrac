@@ -2063,8 +2063,10 @@ func (f *Poly) setZero(lv Level, deg int) RObj {
 		z := f.NewPoly()
 		for i, cc := range f.c {
 			if cp, ok := cc.(*Poly); ok {
-				if cp.lv < lv {
+				if cp.lv < lv && deg == 0 {
 					z.c[i] = zero
+				} else if cp.lv < lv {
+					z.c[i] = cp
 				} else {
 					z.c[i] = cp.setZero(lv, deg)
 				}

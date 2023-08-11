@@ -645,6 +645,12 @@ func TestSdcAtomQE(t *testing.T) {
 			expect_eq string // ex([x], input == 0 && rng)
 		}{
 			{
+				"8*a*x-7*b",
+				"true",
+				"a != 0 || b <= 0",
+				"a != 0 || b >= 0",
+				"a != 0 || b == 0",
+			}, {
 				"a*x^11-b*x^8-c*x^4+1",
 				"true",
 				"true",
@@ -732,6 +738,111 @@ func TestSdcAtomQE(t *testing.T) {
 						expect, ret, smpl, impl, repl)
 					return
 				}
+			}
+		}
+	}
+}
+
+func TestSdcAtomQE2(t *testing.T) {
+	funcname := "TestSdcAtomQE2"
+
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip %s... (no cas)\n", funcname)
+		return
+	}
+	defer g.Close()
+
+	qeopt := NewQEopt()
+	qeopt.SetG(g)
+
+	qecond := NewQeCond()
+
+	lvs := []Level{0, 1, 2, 3, 4, 5}
+
+	for ii, tt := range []struct {
+		varstr string
+		lv     Level // x のレベル
+	}{
+		{"x,a,b,c", 0},
+		{"x,b,a,c", 0},
+		{"a,x,b,c", 1},
+		{"b,x,a,c", 1},
+		{"a,b,c,x", 3},
+		{"b,a,c,x", 3},
+	} {
+		vstr := fmt.Sprintf("vars(%s);", tt.varstr)
+		_, err := evalstr(g, vstr)
+		if err != nil {
+			t.Errorf("[%d] `%s` failed: %s", ii, vstr, err)
+			return
+		}
+
+		lv := tt.lv
+
+		for jj, ss := range []struct {
+			input  string
+			expect string
+		}{
+			{
+				"8*a*x-7*b > 0",
+				"a != 0 || b < 0",
+			},
+		} {
+			// fmt.Printf("[%d,%d] %s, input=%v\n", ii, jj, vstr, ss.input)
+			input, err := str2fof(g, ss.input)
+			if err != nil {
+				t.Errorf("[%d,%d] parse error: `%s`\nerr=%s\ninput=%s.", ii, jj, vstr, err, ss.input)
+				return
+			}
+
+			qeopt.SetAlgo(QEALGO_SDC|QEALGO_ATOM, true)
+
+			var expect Fof
+			expect, err = str2fof(g, ss.expect)
+			if err != nil {
+				t.Errorf("[%d,%d] parse error: %s\nerr=%s\nexpect=%s", ii, jj, vstr, err, ss.expect)
+				return
+			}
+
+			ret := SdcAtomQE(input, lv, *qeopt, *qecond)
+			if ret == nil {
+				if expect == nil {
+					continue
+				}
+
+				t.Errorf("[%d,%d] SdcAtomQE returns nil %s\n\nexpect=%s", ii, jj, vstr, ss.expect)
+				return
+			}
+			if expect == nil {
+				t.Errorf("[%d,%d] SdcAtomQE returns NON-nil %s\n\nexpect=%s\nactual=%v", ii, jj, vstr, ss.expect, ret)
+				return
+			}
+			if err := ValidFof(ret); err != nil {
+				t.Errorf("[%d,%d] poly returns nil %s\n\nexpect=%s\nret=%V", ii, jj, vstr, ss.expect, ret)
+				return
+			}
+
+			v := NewForAll(lvs, NewFmlEquiv(ret, expect))
+			qeopt.SetAlgo(QEALGO_SDC|QEALGO_ATOM, false)
+			v = g.QE(v, qeopt)
+			if v != TrueObj {
+				dict := NewDict()
+				dict.Set("var", NewInt(1))
+				impl, _ := FuncCAD(g, "CAD", []interface{}{
+					NewFmlImpl(ret, expect), dict,
+				})
+				repl, _ := FuncCAD(g, "CAD", []interface{}{
+					NewFmlImpl(expect, ret), dict,
+				})
+
+				smpl, _ := FuncCAD(g, "CAD", []interface{}{
+					ret, dict,
+				})
+
+				t.Errorf("[%d,%d] failed\ninput =%v\nexpect=%v\nactual=%v\n      =%v\nimpl=%v\nrepl=%v", ii, jj,
+					input, expect, ret, smpl, impl, repl)
+				return
 			}
 		}
 	}

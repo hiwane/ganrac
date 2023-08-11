@@ -42,10 +42,10 @@ func atomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 		return falseObj
 	}
 
-	// fmt.Printf("atomQE(%v, %v, nec=%v)\n", atom, VarStr(lv), neccon)
-
 	p := atom.getPoly()
 	deg := p.Deg(lv)
+
+	// fmt.Printf("atomQE(%v, %v, nec=%v), deg=%v\n", atom, VarStr(lv), neccon, deg)
 	if deg <= 0 {
 		return NewFmlAnd(atom, neccon)
 	}
