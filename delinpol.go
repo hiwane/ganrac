@@ -171,8 +171,6 @@ func (cad *CAD) need_delineating_poly(cell *Cell, pf ProjFactor) bool {
 		}
 		return true
 	}
-
-	return false
 }
 
 // 処理を継続できない場合 false を返す
