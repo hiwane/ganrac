@@ -1,0 +1,36 @@
+name: reviewdog
+on: [pull_request]
+jobs:
+  # Use golint via golangci-lint binary with "warning" level.
+  golint:
+    name: runner / revive
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: revive
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          golangci_lint_flags: "--disable-all -E revive"
+          go_version: "1.18"
+          tool_name: revive # Change reporter name.
+          # level: warning # GitHub Status Check won't become failure with this level.
+
+  errcheck:
+    name: runner / errcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: errcheck
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          golangci_lint_flags: "--disable-all -E errcheck"
+          go_version: "1.18"
+          tool_name: errcheck
+          level: info
+
