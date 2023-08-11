@@ -13,9 +13,9 @@ jobs:
       - name: golint
         uses: reviewdog/action-golangci-lint@v2
         with:
-          golangci_lint_flags: "--disable-all -E golint"
+          golangci_lint_flags: "--disable-all -E revive"
           go_version: "1.18"
-          tool_name: golint # Change reporter name.
+          tool_name: revive # Change reporter name.
           # level: warning # GitHub Status Check won't become failure with this level.
 
   errcheck:
