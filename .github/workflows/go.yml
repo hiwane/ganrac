@@ -37,7 +37,7 @@ jobs:
         while :; do ox -ox ox_asir -control 1234 -data 4321; done &
 
     - name: Test
-      run: go test -v .
+      run: go test .
 
     - name: Lint
       run: go vet -v .
