@@ -90,6 +90,7 @@ func NewDict() *Dict {
 	return d
 }
 
+// setser
 func (z *Dict) Set(k string, v GObj) error {
 	z.v[k] = v
 	return nil

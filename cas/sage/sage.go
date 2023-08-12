@@ -362,11 +362,11 @@ def gan_eval(varn: int, s):
 		{"gan_factor", &sage.pFactor},
 		{"varinit", &sage.pVarInit},
 	} {
-		if p, err := loadFunction(sage.pModule, tbl.fname); err != nil {
+		p, err := loadFunction(sage.pModule, tbl.fname)
+		if err != nil {
 			return nil, err
-		} else {
-			*tbl.pos = p
 		}
+		*tbl.pos = p
 	}
 
 	if sage.is_gc {
@@ -440,10 +440,9 @@ func (sage *Sage) EvalList(s string) *List {
 	}
 	if uu, ok := u.(*List); ok {
 		return uu
-	} else {
-		fmt.Fprintf(os.Stderr, "sage.EvalList(%s) invalid.", s)
-		return nil
 	}
+	fmt.Fprintf(os.Stderr, "sage.EvalList(%s) invalid.", s)
+	return nil
 }
 
 func (sage *Sage) Gcd(p, q *Poly) RObj {
@@ -704,5 +703,5 @@ func (sage *Sage) Eval(p string) (GObj, error) {
 	}
 }
 
-func (sage *Sage) SetLogger(logger *log.Logger) {
+func (sage *Sage) SetLogger(_ *log.Logger) {
 }

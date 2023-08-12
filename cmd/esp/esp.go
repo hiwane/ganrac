@@ -6,22 +6,21 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	. "github.com/hiwane/ganrac"
+	"github.com/hiwane/ganrac"
 	"os"
 )
 
 // sgn_table.delta() のコピー
-func sh_delta(n int) int {
+func shDelta(n int) int {
 	return -1 + ((n - 1) & 2)
 }
 
 // fof OP.neg() のコピー
-func op_neg(op OP) OP {
-	if op == EQ || op == NE || op == OP_TRUE || op == OP_FALSE {
+func opNeg(op ganrac.OP) ganrac.OP {
+	if op == ganrac.EQ || op == ganrac.NE || op == ganrac.OP_TRUE || op == ganrac.OP_FALSE {
 		return op
-	} else {
-		return op ^ (LT | GT)
 	}
+	return op ^ (ganrac.LT | ganrac.GT)
 }
 
 type Esp struct {
@@ -29,8 +28,8 @@ type Esp struct {
 	src     int
 	prefix  string
 	cost    int
-	onset   [][]OP
-	offset  [][]OP
+	onset   [][]ganrac.OP
+	offset  [][]ganrac.OP
 }
 
 func (esp *Esp) dprint(format string, a ...any) {
@@ -39,7 +38,7 @@ func (esp *Esp) dprint(format string, a ...any) {
 	}
 }
 
-func (esp *Esp) Cost(opp [][]OP) int {
+func (esp *Esp) Cost(opp [][]ganrac.OP) int {
 	if len(opp) <= 0 || esp.cost <= 0 {
 		return -1
 	}
@@ -71,10 +70,10 @@ func (esp *Esp) Cost(opp [][]OP) int {
 	ret := 0
 	for _, ops := range opp {
 		for i, o := range ops {
-			if o == OP_TRUE {
+			if o == ganrac.OP_TRUE {
 				continue
-			} else if o == EQ {
-				ret += 1
+			} else if o == ganrac.EQ {
+				ret++
 			} else {
 				ret += w[i]
 			}
@@ -83,7 +82,7 @@ func (esp *Esp) Cost(opp [][]OP) int {
 	return ret
 }
 
-func (esp *Esp) PrintSrc(opp [][]OP, tab string) {
+func (esp *Esp) PrintSrc(opp [][]ganrac.OP, tab string) {
 	fmt.Printf("%s{	// ", tab)
 	n := len(opp[0])
 	if esp.src == 1 { // sdc
@@ -100,7 +99,7 @@ func (esp *Esp) PrintSrc(opp [][]OP, tab string) {
 		fmt.Printf("%s\t", tab)
 		sep := "{"
 		for i, o := range ops {
-			var j int = -1
+			var j = -1
 			if esp.src == 1 { // sdc
 				if i < n {
 					j = i + 1
@@ -110,11 +109,11 @@ func (esp *Esp) PrintSrc(opp [][]OP, tab string) {
 			} else if esp.src == 2 { // atom
 				j = i + 1
 			}
-			if j >= 0 && sh_delta(j) < 0 {
+			if j >= 0 && shDelta(j) < 0 {
 				// SH列は，部分集結式列の符号を変えたものだが，
 				// 呼び出し元は部分集結式列を計算し，そのまま使えるようにするため，
 				// ここで符号をいじる
-				o = op_neg(o)
+				o = opNeg(o)
 			}
 
 			fmt.Printf("%s%s%S", sep, esp.prefix, o)
@@ -128,30 +127,30 @@ func (esp *Esp) PrintSrc(opp [][]OP, tab string) {
 // PLA 形式のファイルを読み込み.
 // true 行のみを読み込む
 // returns (ONset, OFFset)
-func parse(fp *os.File) ([][]OP, [][]OP) {
+func parse(fp *os.File) ([][]ganrac.OP, [][]ganrac.OP) {
 	scanner := bufio.NewScanner(fp)
-	onset := make([][]OP, 0)
-	offset := make([][]OP, 0)
+	onset := make([][]ganrac.OP, 0)
+	offset := make([][]ganrac.OP, 0)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line[0] == '.' || line[0] == 's' || (line[len(line)-1] != '1' && line[len(line)-1] != '0') {
 			continue
 		}
-		rr := make([]OP, 0, 20)
+		rr := make([]ganrac.OP, 0, 20)
 		for i := 0; i < len(line)-2; i += 2 {
-			var op OP
+			var op ganrac.OP
 			if line[i] == '-' && line[i+1] == '-' {
-				op = OP_TRUE
+				op = ganrac.OP_TRUE
 			} else if line[i] == '1' && (line[i+1] == '-' || line[i+1] == '0') {
-				op = GT
+				op = ganrac.GT
 			} else if line[i+1] == '1' && (line[i] == '-' || line[i] == '0') {
-				op = LT
+				op = ganrac.LT
 			} else if line[i] == '0' && line[i+1] == '-' { // 00 01
-				op = LE
+				op = ganrac.LE
 			} else if line[i] == '-' && line[i+1] == '0' { // 00 10
-				op = GE
+				op = ganrac.GE
 			} else if line[i] == '0' && line[i+1] == '0' { // 00
-				op = EQ
+				op = ganrac.EQ
 			} else {
 				panic("i dont know: `" + line[i:i+2] + "` :" + line)
 			}
@@ -166,7 +165,7 @@ func parse(fp *os.File) ([][]OP, [][]OP) {
 	return onset, offset
 }
 
-func (esp *Esp) capture(opp, input [][]OP) bool {
+func (esp *Esp) capture(opp, input [][]ganrac.OP) bool {
 	for _, in := range input {
 		capt := false
 		for _, ops := range opp {
@@ -191,7 +190,7 @@ func (esp *Esp) capture(opp, input [][]OP) bool {
 	return true
 }
 
-func (esp *Esp) simplify(opp [][]OP) [][]OP {
+func (esp *Esp) simplify(opp [][]ganrac.OP) [][]ganrac.OP {
 	if !esp.capture(opp, esp.onset) {
 		panic("nandeyo")
 	}
@@ -199,9 +198,9 @@ func (esp *Esp) simplify(opp [][]OP) [][]OP {
 	fmt.Fprintf(os.Stderr, "simplify()\n")
 	for i := 0; i < len(opp); i++ {
 		for j := 0; j < len(opp[i]); j++ {
-			if opp[i][j] != OP_TRUE && opp[i][j]&EQ != 0 && opp[i][j] != EQ {
+			if opp[i][j] != ganrac.OP_TRUE && opp[i][j]&ganrac.EQ != 0 && opp[i][j] != ganrac.EQ {
 				bk := opp[i][j]
-				opp[i][j] = EQ
+				opp[i][j] = ganrac.EQ
 				if bk == opp[i][j] || (bk&opp[i][j]) != opp[i][j] || (bk|opp[i][j]) != bk {
 					panic("nazo1")
 				}
@@ -219,9 +218,9 @@ func (esp *Esp) simplify(opp [][]OP) [][]OP {
 	for i := 0; i < len(opp); i++ {
 		for j := 0; j < len(opp[i]); j++ {
 
-			if opp[i][j] != OP_TRUE && opp[i][j]&EQ != 0 && opp[i][j] != EQ {
+			if opp[i][j] != ganrac.OP_TRUE && opp[i][j]&ganrac.EQ != 0 && opp[i][j] != ganrac.EQ {
 				bk := opp[i][j]
-				opp[i][j] &= ^EQ
+				opp[i][j] &= ^ganrac.EQ
 				// fmt.Fprintf(os.Stderr, "opp[%d][%d] = %v\n", i, j, opp[i][j])
 				if bk == opp[i][j] || (bk&opp[i][j]) != opp[i][j] || (bk|opp[i][j]) != bk {
 					panic("nazo2")
@@ -242,12 +241,12 @@ func (esp *Esp) simplify(opp [][]OP) [][]OP {
 		// espresso がまともなら, ここが有効になるわけがない
 		for i := 0; i < len(opp); i++ {
 			for j := 0; j < len(opp[i]); j++ {
-				if opp[i][j] != OP_TRUE {
+				if opp[i][j] != ganrac.OP_TRUE {
 					bk := opp[i][j]
-					opp[i][j] = OP_TRUE
+					opp[i][j] = ganrac.OP_TRUE
 					fmt.Fprintf(os.Stderr, "opp[%d][%d] = %d => ltop\n", i, j, bk)
 					for _, off := range esp.offset {
-						if esp.capture(opp, [][]OP{off}) {
+						if esp.capture(opp, [][]ganrac.OP{off}) {
 							opp[i][j] = bk
 							break
 							//	esp.dprint("simplified[%d][%d] %v => %v\n", i, j, bk, opp[i][j])
@@ -258,12 +257,12 @@ func (esp *Esp) simplify(opp [][]OP) [][]OP {
 						ntr++
 					}
 				}
-				if opp[i][j] == LT || opp[i][j] == GT {
+				if opp[i][j] == ganrac.LT || opp[i][j] == ganrac.GT {
 					bk := opp[i][j]
-					opp[i][j] = NE
+					opp[i][j] = ganrac.NE
 					fmt.Fprintf(os.Stderr, "opp[%d][%d] = NE\n", i, j)
 					for _, off := range esp.offset {
-						if esp.capture(opp, [][]OP{off}) {
+						if esp.capture(opp, [][]ganrac.OP{off}) {
 							opp[i][j] = bk
 							break
 							//	esp.dprint("simplified[%d][%d] %v => %v\n", i, j, bk, opp[i][j])

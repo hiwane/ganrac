@@ -50,17 +50,17 @@ func init() {
 }
 
 type sgn_table struct {
-	deg       int
-	s         []sgn_t // sign(f(+inf))
-	h         []sgn_t // sign(coeff(f, j)): principal coefficient
-	c         []sgn_t // sign(coeff(f, 0)): constant term
-	count     []int
-	fp        *bufio.Writer
-	debug     bool
-	val_equal val_t
-	val_not   val_t
-	pfalse    bool
-	atom      bool
+	deg      int
+	s        []sgn_t // sign(f(+inf))
+	h        []sgn_t // sign(coeff(f, j)): principal coefficient
+	c        []sgn_t // sign(coeff(f, 0)): constant term
+	count    []int
+	fp       *bufio.Writer
+	debug    bool
+	valEqual val_t
+	valNot   val_t
+	pfalse   bool
+	atom     bool
 }
 
 func (st *sgn_table) delta(n int) sgn_t {
@@ -70,7 +70,7 @@ func (st *sgn_table) delta(n int) sgn_t {
 func (st *sgn_table) VV() int {
 	s := make([]sgn_t, 0, len(st.s))
 
-	var last int = -1
+	var last = -1
 	for i := 0; i < len(st.h); i++ {
 		var d int
 		var c sgn_t
@@ -164,11 +164,11 @@ func (st *sgn_table) W(debug bool) int {
 // atom 用
 func (st *sgn_table) evalAtom() (val_t, string) {
 	ks := 0
-	var ask sgn_t = 0 // 非ゼロの右端
-	var m int = 0
-	var p int = 0
-	var c int = 0
-	var e int = 0
+	var ask sgn_t // 非ゼロの右端
+	var m int
+	var p int
+	var c int
+	var e int
 	for i := len(st.h) - 2; i >= 0; i-- {
 		a := st.h[i]
 		if a == 0 {
@@ -188,7 +188,7 @@ func (st *sgn_table) evalAtom() (val_t, string) {
 			}
 		} else {
 			if ks%2 == 0 {
-				var u int = 1
+				var u = 1
 				if (ks/2)%2 == 1 {
 					u = -1
 				}
@@ -202,11 +202,11 @@ func (st *sgn_table) evalAtom() (val_t, string) {
 
 	mes := fmt.Sprintf(": m(%d) = p(%d) - c(%d) + e(%d)", m, p, c, e)
 	if m > 0 {
-		return st.val_not, mes
+		return st.valNot, mes
 	} else if m < 0 {
 		return 3, mes
 	} else {
-		return st.val_equal, mes
+		return st.valEqual, mes
 	}
 }
 
@@ -268,7 +268,7 @@ func (st *sgn_table) evalSdc() (val_t, string) {
 		}
 	}
 
-	st.set_s()
+	st.setS()
 
 	w0 := st.W(false)
 	wn := st.VV()
@@ -283,19 +283,19 @@ func (st *sgn_table) evalSdc() (val_t, string) {
 
 	wp := st.V(st.s)
 	if mm := w0 - wp; mm > 0 {
-		return st.val_not, ""
+		return st.valNot, ""
 	} else if mm == 0 {
-		return st.val_equal, ""
+		return st.valEqual, ""
 	} else {
 		return ret, "W-V < 0"
 	}
 }
 
-func (st *sgn_table) set_s() {
+func (st *sgn_table) setS() {
 	// h/c の符号から s の符号が確定する
 	var j int
 	j = st.deg
-	var u int = 0
+	var u int
 	for st.h[u] == 0 {
 		st.s[u] = 0
 		u++
@@ -506,9 +506,8 @@ func (st *sgn_table) looph(n int) {
 				st.print(t, mes)
 			}
 			return
-		} else {
-			st.loops()
 		}
+		st.loops()
 	} else {
 		for _, i := range sgns { // 符号
 			st.h[n] = i
@@ -517,7 +516,7 @@ func (st *sgn_table) looph(n int) {
 	}
 }
 
-func (st *sgn_table) set_dc() {
+func (st *sgn_table) setDC() {
 	for i := 0; i < st.deg-1; i++ {
 		st.s[i] = DC
 		st.h[i] = DC
@@ -526,8 +525,8 @@ func (st *sgn_table) set_dc() {
 	st.c[0] = DC
 }
 
-func (st *sgn_table) print_dc() {
-	st.set_dc()
+func (st *sgn_table) printDC() {
+	st.setDC()
 	for i := 0; i < st.deg-1; i++ {
 		st.h[i] = 3
 		st.print(DC, "DC 11h")
@@ -537,7 +536,7 @@ func (st *sgn_table) print_dc() {
 		return
 	}
 
-	st.set_dc()
+	st.setDC()
 	for i := 0; i < st.deg-1; i++ {
 		st.c[i+1] = 3
 		st.print(DC, "DC 11c")
@@ -545,7 +544,7 @@ func (st *sgn_table) print_dc() {
 	}
 
 	// @DC1
-	st.set_dc()
+	st.setDC()
 	st.h[0] = 0
 	st.c[0] = 0
 	for i := 1; i < st.deg-1; i++ {
@@ -558,7 +557,7 @@ func (st *sgn_table) print_dc() {
 	}
 
 	// @DC2
-	st.set_dc()
+	st.setDC()
 	for i := 1; i < st.deg-2; i++ {
 		st.h[i] = 0
 		st.h[i+1] = 0
@@ -583,17 +582,17 @@ func (st *sgn_table) gen() {
 
 	st.header()
 	st.looph(0)
-	st.print_dc()
+	st.printDC()
 	st.footer()
 }
 
 func main() {
 	var (
-		deg         = flag.Int("d", 2, "degree")
-		debug       = flag.Bool("debug", false, "debug print mode")
-		false_print = flag.Bool("false", false, "print false")
-		all         = flag.Bool("all", false, "all([x], x >= 0 impl f(x) > 0)")
-		atom        = flag.Bool("atom", false, "ex([x], x^n + ai x^i + ... + a1 x + a0 <= 0)")
+		deg        = flag.Int("d", 2, "degree")
+		debug      = flag.Bool("debug", false, "debug print mode")
+		falsePrint = flag.Bool("false", false, "print false")
+		all        = flag.Bool("all", false, "all([x], x >= 0 impl f(x) > 0)")
+		atom       = flag.Bool("atom", false, "ex([x], x^n + ai x^i + ... + a1 x + a0 <= 0)")
 	)
 	flag.Parse()
 	if flag.NArg() > 0 {
@@ -610,13 +609,13 @@ func main() {
 	s.deg = *deg
 	s.debug = *debug
 	if *all {
-		s.val_equal = 1
-		s.val_not = 0
+		s.valEqual = 1
+		s.valNot = 0
 	} else {
-		s.val_equal = 0
-		s.val_not = 1
+		s.valEqual = 0
+		s.valNot = 1
 	}
-	s.pfalse = *false_print
+	s.pfalse = *falsePrint
 	s.fp = bufio.NewWriter(os.Stdout)
 	(&s).gen()
 	if s.debug {
