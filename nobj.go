@@ -10,7 +10,7 @@ const (
 )
 
 // numeric
-// *Int, *Rat, *BinInt, *Interval
+// *Int, *Rat, *BinInt, *Interval, Uint
 type NObj interface {
 	RObj
 	numTag() uint

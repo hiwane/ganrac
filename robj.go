@@ -6,7 +6,7 @@ import (
 
 // ring ring
 // in R[x], in R
-// *Poly, *Int, *Rat, *BinInt, *Interval
+// *Poly, *Int, *Rat, *BinInt, *Interval, Uint
 type RObj interface {
 	GObj
 	equaler
@@ -17,6 +17,7 @@ type RObj interface {
 	Pow(x *Int) RObj
 	Subst(x RObj, lv Level) RObj
 	Neg() RObj
+	Deg(lv Level) int // 次数を返す. zero の場合も 0 になる
 	//	Set(x RObj) RObj
 	Sign() int
 	IsZero() bool
@@ -110,4 +111,8 @@ func (z *RObjSample) toIntv(prec uint) RObj {
 }
 
 func (z *RObjSample) Format(s fmt.State, format rune) {
+}
+
+func (z *RObjSample) Deg(lv Level) int {
+	return 0
 }

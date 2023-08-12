@@ -3,6 +3,10 @@ package ganrac
 // Applying Linear Quantifier Elimination
 // R. Loos, V. Weispfenning 1993
 
+// [Weispfenning94]
+// Quantifier Elimination for Real Algebra -- the Quadratic Case and Beyond
+// V. Weispfenning 1994
+
 // A Generalized Framework for Virtual Substitution
 // M. Kosta, T. Sturm 2015
 
@@ -62,6 +66,16 @@ func (sp *vs_sample_point) Format(s fmt.State, format rune) {
 	fmt.Fprintf(s, "]")
 }
 
+func makeDenAry(v RObj, deg int) []RObj {
+	ret := make([]RObj, deg+1)
+	ret[0] = one
+	ret[1] = v
+	for i := 2; i <= deg; i++ {
+		ret[i] = v.Mul(ret[i-1])
+	}
+	return ret
+}
+
 func newVslinSamplePoint(deg, maxd int, num, den RObj) *vs_sample_point {
 	sp := new(vs_sample_point)
 	sp.num = num
@@ -75,12 +89,7 @@ func newVslinSamplePoint(deg, maxd int, num, den RObj) *vs_sample_point {
 	sp.num = sp.num.Neg()
 
 	sp.idx = 1
-	sp.den = make([]RObj, maxd+1)
-	sp.den[0] = one
-	sp.den[1] = den
-	for i := 2; i <= maxd; i++ {
-		sp.den[i] = sp.den[i-1].Mul(den)
-	}
+	sp.den = makeDenAry(den, maxd)
 	sp.neccon = trueObj
 	return sp
 }
@@ -334,6 +343,8 @@ func (pt *vs_sample_point) virtual_subst(atom *Atom, lv Level) Fof {
 	return NewAtoms(pp, op)
 }
 
+// [Weispfenning94] p.89
+// (f < 0)[e + epsilon / x] = nu(f) [e / x]
 func vs_nu(polys []*Poly, op OP, pt *vs_sample_point, lv Level) Fof {
 	// pt + epsilon を代入する
 	d := 0
@@ -443,6 +454,8 @@ func (pt *vs_sample_point) virtual_subst_e(atom *Atom, lv Level) Fof {
 	}
 }
 
+// [Weispfenning94] p.90
+// (f < 0)[-inf / x] = mu(f)
 func vs_mu(atom *Atom, lv Level) Fof {
 	// polys < 0 の atom に対して -infty を代入する
 

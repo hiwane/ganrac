@@ -21,6 +21,35 @@ func TestSimplNum(t *testing.T) {
 		expect Fof
 	}{
 		{
+			// x^2-12<0 || (x+4!=0 && (x+4<0 || x+2>=0 || (x^2-12<=0 && x+2>=0))) || (x^2-12<=0 && x+4==0) || (x+2<=0 && x+4>=0)
+			NewFmlOrs(
+				NewAtom(NewPolyCoef(0, -12, 0, 1), LT),
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, 4, 1), NE),
+					NewFmlOrs(
+						NewAtom(NewPolyCoef(0, 4, 1), LT),
+						NewAtom(NewPolyCoef(0, 2, 1), GE),
+						NewFmlAnds(
+							NewAtom(NewPolyCoef(0, -12, 0, 1), LE),
+							NewAtom(NewPolyCoef(0, 2, 1), GE)))),
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, -12, 0, 1), LE),
+					NewAtom(NewPolyCoef(0, 4, 1), EQ)),
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, 2, 1), LE),
+					NewAtom(NewPolyCoef(0, 4, 1), GE))),
+			// x^2-12<0 || (x+4!=0 && (x+4<0 || x+2>=0)) || (x+2<=0 && x+4>=0)
+			NewFmlOrs(
+				NewAtom(NewPolyCoef(0, -12, 0, 1), LT),
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, 4, 1), NE),
+					NewFmlOrs(
+						NewAtom(NewPolyCoef(0, 4, 1), LT),
+						NewAtom(NewPolyCoef(0, 2, 1), GE))),
+				NewFmlAnds(
+					NewAtom(NewPolyCoef(0, 2, 1), LE),
+					NewAtom(NewPolyCoef(0, 4, 1), GE))),
+		}, {
 			// 20*z+y^2>=0
 			NewAtom(NewPolyCoef(2, NewPolyVarn(1, 2), 20), GE),
 			NewAtom(NewPolyCoef(2, NewPolyVarn(1, 2), 20), GE),

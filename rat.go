@@ -8,6 +8,7 @@ import (
 var brat_one = big.NewRat(1, 1)
 var brat_mone = big.NewRat(-1, 1)
 
+// Rat is an NObj
 type Rat struct {
 	Number
 	n *big.Rat
@@ -317,4 +318,8 @@ func (x *Rat) toIntv(prec uint) RObj {
 	z.inf.SetRat(x.n)
 	z.sup.SetRat(x.n)
 	return z
+}
+
+func (x *Rat) Deg(lv Level) int {
+	return 0
 }

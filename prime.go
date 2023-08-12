@@ -1,5 +1,6 @@
 package ganrac
 
+// Uint is an NObj
 type Uint uint32
 
 var lprime_table []Uint

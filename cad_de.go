@@ -169,7 +169,7 @@ func (cad *CAD) sym_equal(ci, cj *Cell) bool {
 
 func (cad *CAD) sym_zero_chk(p *Poly, c *Cell) bool {
 	if !c.parent.isDE() {
-		if c.defpoly.deg() == 1 {
+		if c.defpoly == nil || c.defpoly.deg() == 1 {
 			return cad.symsex_zero_chk(p, c)
 		}
 	}

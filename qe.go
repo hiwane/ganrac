@@ -20,6 +20,9 @@ const (
 
 	QEALGO_NEQ = 0x0100 // 非等式制約QE
 
+	QEALGO_ATOM = 0x0200 // ex([x], f(x) <= 0)
+	QEALGO_SDC  = 0x0400 // ex([x], x>=0 && f(x) <= 0)
+
 	QEALGO_SMPL_EVEN = 0x100000000
 	QEALGO_SMPL_HOMO = 0x200000000
 	QEALGO_SMPL_TRAN = 0x400000000
@@ -64,6 +67,8 @@ var qeOptTable = []struct {
 	{QEALGO_VSQUAD, "vsquad"},
 	{QEALGO_VSLIN, "vslin"},
 	{QEALGO_NEQ, "neq"},
+	{QEALGO_ATOM, "atom"},
+	{QEALGO_SDC, "sdc"},
 	{QEALGO_SMPL_EVEN, "smpleven"},
 	{QEALGO_SMPL_HOMO, "smplhomo"},
 	{QEALGO_SMPL_TRAN, "smpltran"},
@@ -368,6 +373,17 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	// 分解後に All->DNF/Ex->CNF になるので,
 	// quantifier がひとつの場合のみに限定してみる
 	////////////////////////////////
+	if (qeopt.Algo & (QEALGO_SDC | QEALGO_ATOM)) != 0 {
+		qeopt.log(cond, 2, "sdcai", "%v\n", fof)
+		if ff := qeopt.qe_sdcatom(fof, cond); ff != nil {
+			qeopt.log(cond, 2, "sdcam", "%v\n", ff)
+			ff = qeopt.reconstruct(fqs, ff, cond)
+			ff = qeopt.simplify(ff, cond)
+			qeopt.log(cond, 2, "sdcao", "%v\n", ff)
+			return ff
+		}
+
+	}
 
 	////////////////////////////////
 	// Hong93
@@ -580,7 +596,7 @@ func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
 	cad.Projection(PROJ_McCallum)
 	err = cad.Lift()
 	for err != nil {
-		if err != CAD_NO_WO {
+		if _, ok := err.(*CAD_error_wo); !ok {
 			panic(fmt.Sprintf("cad.lift() input=%v\nerr=%v", fof, err))
 		}
 		qeopt.log(cond, 1, "cad", "not well-oriented %v\n", fof2)

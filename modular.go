@@ -43,6 +43,10 @@ func NewCellmod(cell *Cell) *Cellmod {
 	return c
 }
 
+func (x Uint) Deg(lv Level) int {
+	return 0
+}
+
 func (q Uint) deg() int {
 	if q == 0 {
 		return -1

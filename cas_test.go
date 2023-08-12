@@ -21,6 +21,19 @@ func evalstr(g *ganrac.Ganrac, s string) (interface{}, error) {
 	return g.Eval(strings.NewReader(s))
 }
 
+func str2poly(g *ganrac.Ganrac, s string) (*ganrac.Poly, error) {
+	x, err := evalstr(g, s)
+	if err != nil {
+		return nil, err
+	}
+
+	y, ok := x.(*ganrac.Poly)
+	if !ok {
+		return nil, fmt.Errorf("not a polynomial: %v", s)
+	}
+	return y, nil
+}
+
 func str2fofq(g *ganrac.Ganrac, s string) (ganrac.FofQ, error) {
 	x, err := evalstr(g, s)
 	if err != nil {
@@ -29,7 +42,20 @@ func str2fofq(g *ganrac.Ganrac, s string) (ganrac.FofQ, error) {
 
 	y, ok := x.(ganrac.FofQ)
 	if !ok {
-		return nil, fmt.Errorf("not a quantified formula")
+		return nil, fmt.Errorf("not a quantified formula: %v", s)
+	}
+	return y, nil
+}
+
+func str2atom(g *ganrac.Ganrac, s string) (*ganrac.Atom, error) {
+	x, err := evalstr(g, s)
+	if err != nil {
+		return nil, err
+	}
+
+	y, ok := x.(*ganrac.Atom)
+	if !ok {
+		return nil, fmt.Errorf("not an atomic formula: %v", s)
 	}
 	return y, nil
 }
@@ -42,7 +68,7 @@ func str2fof(g *ganrac.Ganrac, s string) (ganrac.Fof, error) {
 
 	y, ok := x.(ganrac.Fof)
 	if !ok {
-		return nil, fmt.Errorf("not a formula")
+		return nil, fmt.Errorf("not a formula: %v", s)
 	}
 	return y, nil
 }

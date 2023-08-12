@@ -111,10 +111,27 @@ func divide_neq(finput Fof, lv Level, qeopt QEopt) (Fof, Fof) {
 	return nil, nil
 }
 
+// atom に対する QE を行う; ex([lv], pp)
+//
+// 類似関数名 apply_neqQE_atom() と間違えないよう注意
+func apply_neqQEatom(pp *Atom, lv Level) Fof {
+	if pp.op != NE || !pp.hasVar(lv) {
+		return pp
+	}
+	ands := make([]Fof, 0, len(pp.p))
+	for _, p := range pp.p {
+		deg := p.Deg(lv)
+		ors := make([]Fof, deg+1)
+		for d := 0; d <= deg; d++ {
+			ors[d] = NewAtom(p.Coef(lv, uint(d)), NE)
+		}
+		ands = append(ands, NewFmlOrs(ors...))
+	}
+	return NewFmlAnds(ands...)
+}
+
 func apply_neqQE(fof Fof, lv Level) Fof {
 	switch pp := fof.(type) {
-	case FofQ:
-		return pp.gen(pp.Qs(), apply_neqQE(pp.Fml(), lv))
 	case FofAO:
 		fmls := pp.Fmls()
 		ret := make([]Fof, len(fmls))
@@ -123,19 +140,9 @@ func apply_neqQE(fof Fof, lv Level) Fof {
 		}
 		return pp.gen(ret)
 	case *Atom:
-		if pp.op != NE || !pp.hasVar(lv) {
-			return pp
-		}
-		var ret Fof = trueObj
-		for _, p := range pp.p {
-			var r Fof = falseObj
-			for d := p.Deg(lv); d >= 0; d-- {
-				r = NewFmlOr(r, NewAtom(p.Coef(lv, uint(d)), NE))
-			}
-			ret = NewFmlAnd(ret, r)
-		}
-		return ret
-
+		return apply_neqQEatom(pp, lv)
+	case FofQ:
+		return pp.gen(pp.Qs(), apply_neqQE(pp.Fml(), lv))
 	}
 	return nil
 }
@@ -243,13 +250,16 @@ func apply_neqQE_pstrict(fof, fne Fof, fot *FmlAnd, lv Level, qeopt QEopt, cond 
 	return qeopt.qe(newfml, cond)
 }
 
-/*
-* fof: inequational constraints
-* atom: f <= 0 or f >= 0
-*
-* Returns: qff which is equivalent to ex([x], f <= 0 && fof_neq)
-:        : nil if fails
-*/
+//	apply_neqQE_atom(*Atom, Level): 非等式でない部分が atom だった
+//
+// fof: inequational constraints
+// atom: f <= 0 or f >= 0
+//
+// Returns: qff which is equivalent to ex([x], f <= 0 && fof_neq)
+//
+//	: nil if fails
+//
+// see apply_neqQEatom(); similar function
 func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 	// fmt.Printf("atom: %s AND %s\n", fof, atom)
 	if qeopt.assert && (atom.op&EQ) == 0 {

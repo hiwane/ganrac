@@ -5,6 +5,7 @@ import (
 	"math/big"
 )
 
+// BinInt is an NObj
 type BinInt struct {
 	// express n * 2^m
 	n *big.Int
@@ -370,4 +371,8 @@ func (x *BinInt) toIntv(prec uint) RObj {
 	x.setToBigFloat(z.inf)
 	x.setToBigFloat(z.sup)
 	return z
+}
+
+func (x *BinInt) Deg(lv Level) int {
+	return 0
 }

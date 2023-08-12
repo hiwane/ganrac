@@ -11,6 +11,7 @@ var one *Int = NewInt(1)
 var two *Int = NewInt(2)
 var four *Int = NewInt(4)
 
+// Int is an NObj
 type Int struct {
 	Number
 	n *big.Int
@@ -418,4 +419,8 @@ func (x *Int) toIntv(prec uint) RObj {
 
 func (x *Int) Bit(i int) uint {
 	return x.n.Bit(i)
+}
+
+func (x *Int) Deg(lv Level) int {
+	return 0
 }

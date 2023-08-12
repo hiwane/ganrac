@@ -152,6 +152,25 @@ func (op OP) valid() error {
 	return nil
 }
 
+func (op OP) Format(b fmt.State, format rune) {
+	var strs []string
+	switch format {
+	case FORMAT_TEX:
+		strs = []string{"\\lfalse", "<", "=", "\\leq", ">", "\\neq", "\\geq", "\\ltrue"}
+	case FORMAT_DUMP:
+		fmt.Fprintf(b, "%d", op)
+		return
+	case FORMAT_SRC:
+		strs = []string{"OP_FALSE", "LT", "EQ", "LE", "GT", "NE", "GE", "OP_TRUE"}
+	case FORMAT_QEPCAD:
+		strs = []string{"FALSE", "<", "=", "<=", ">", "/=", ">=", "TRUE"}
+	default:
+		fmt.Fprintf(b, "%s", op.String())
+		return
+	}
+	fmt.Fprintf(b, "%s", strs[op])
+}
+
 ///////////////////////
 // FofQ
 ///////////////////////
@@ -579,10 +598,14 @@ func validFmlAndOr(name string, fml []Fof) error {
 		return fmt.Errorf("len(%s) should be greater than 1.", name)
 	}
 	for _, f := range fml {
+		if f == nil {
+			return fmt.Errorf("%s: invalid element. %v", name, f)
+		}
 		switch f.(type) { // 容易に簡単化できるので許さない
 		case *AtomT, *AtomF:
 			return fmt.Errorf("%s: invalid element. %v", name, f)
 		}
+
 		err := f.valid()
 		if err != nil {
 			return err
@@ -771,14 +794,8 @@ func (p *AtomT) String() string {
 
 func (p *AtomT) Format(s fmt.State, format rune) {
 	switch format {
-	case FORMAT_TEX:
-		fmt.Fprintf(s, "\\ltrue")
 	case FORMAT_DUMP, 'v', 's':
 		fmt.Fprintf(s, "%strue%s", esc_sgr(34), esc_sgr(0))
-	case FORMAT_SRC:
-		fmt.Fprintf(s, "trueObj")
-	case FORMAT_QEPCAD:
-		fmt.Fprintf(s, "TRUE")
 	default:
 		p.Format(s, format)
 	}
@@ -790,14 +807,8 @@ func (p *AtomF) String() string {
 
 func (p *AtomF) Format(s fmt.State, format rune) {
 	switch format {
-	case FORMAT_TEX:
-		fmt.Fprintf(s, "\\lfalse")
 	case FORMAT_DUMP, 'v', 's':
 		fmt.Fprintf(s, "%sfalse%s", esc_sgr(34), esc_sgr(0))
-	case FORMAT_SRC:
-		fmt.Fprintf(s, "falseObj")
-	case FORMAT_QEPCAD:
-		fmt.Fprintf(s, "FALSE")
 	default:
 		p.Format(s, format)
 	}
@@ -832,7 +843,9 @@ func (p *Atom) Format(b fmt.State, format rune) {
 				fmt.Fprintf(b, ")")
 			}
 		}
-		fmt.Fprintf(b, " %s 0", []string{"@false@", "<", "=", "\\leq", ">", "\\neq", "\\ge", "@true@"}[p.op])
+		fmt.Fprintf(b, " ")
+		p.op.Format(b, format)
+		fmt.Fprintf(b, " 0")
 	case FORMAT_QEPCAD:
 		if len(p.p) == 1 {
 			p.p[0].Format(b, format)
@@ -843,7 +856,9 @@ func (p *Atom) Format(b fmt.State, format rune) {
 				fmt.Fprintf(b, ")")
 			}
 		}
-		fmt.Fprintf(b, " %s 0", []string{"@false@", "<", "=", "<=", ">", "/=", ">=", "@true@"}[p.op])
+		fmt.Fprintf(b, " ")
+		p.op.Format(b, format)
+		fmt.Fprintf(b, " 0")
 	case FORMAT_DUMP: // dump
 		fmt.Fprintf(b, "(atom %d (", len(p.p))
 		for _, pp := range p.p {
@@ -866,20 +881,7 @@ func (p *Atom) Format(b fmt.State, format rune) {
 			fmt.Fprintf(b, "}")
 		}
 		fmt.Fprintf(b, ", ")
-		switch p.op {
-		case LT:
-			fmt.Fprintf(b, "LT")
-		case EQ:
-			fmt.Fprintf(b, "EQ")
-		case LE:
-			fmt.Fprintf(b, "LE")
-		case GT:
-			fmt.Fprintf(b, "GT")
-		case GE:
-			fmt.Fprintf(b, "GE")
-		case NE:
-			fmt.Fprintf(b, "NE")
-		}
+		p.op.Format(b, format)
 		fmt.Fprintf(b, ")")
 
 	default:

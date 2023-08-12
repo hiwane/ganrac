@@ -1468,6 +1468,7 @@ func (fx *Poly) prem(g *Poly) RObj {
 		case *Poly:
 			// f が gcc で割り切れることを保証しているため
 			// gc が Poly なら lc(f) も poly
+			// c は単項で，f-c*g が g よりも次数が落ちるとは限らない
 			c = sdivlt(f.Coef(g.lv, du).(*Poly), gcc)
 		case *Int:
 			c = f.Coef(g.lv, du).Div(gcc)
@@ -1490,9 +1491,14 @@ func (fx *Poly) prem(g *Poly) RObj {
 		if err := f.valid(); err != nil {
 			panic(err.Error())
 		}
-		if d >= int(du) {
-			fmt.Printf("f=%v\n", f)
-			fmt.Printf("d=%d, du=%d\n", d, du)
+		if d >= int(du) && false {
+			fmt.Printf("f[%d,%s]=%v\n", fx.Deg(g.lv), VarStr(g.lv), fx)
+			fmt.Printf("g[%d,%s]=%v\n", g.Deg(g.lv), VarStr(g.lv), g)
+			fmt.Printf("gc   =%v\n", gc)
+			fmt.Printf("fc   =%v\n", fx.Coef(g.lv, uint(fx.Deg(g.lv))))
+			fmt.Printf("F    =%v\n", f)
+			fmt.Printf("Fc   =%v\n", f.Coef(g.lv, uint(f.Deg(g.lv))))
+			fmt.Printf("d=%d, du=%d, deg(fx)=%d\n", d, du, fx.Deg(g.lv))
 			panic("nande?")
 		}
 	}
@@ -2008,4 +2014,97 @@ func (f *Poly) isZZ() bool {
 		}
 	}
 	return true
+}
+
+// returns f(-x)
+func (f *Poly) NegX(lv Level) *Poly {
+	if f.lv == lv {
+		z := f.NewPoly()
+		for i, cc := range f.c {
+			if i%2 == 0 {
+				z.c[i] = cc
+			} else {
+				z.c[i] = cc.Neg()
+			}
+		}
+		return z
+	} else if f.lv < lv {
+		return f
+	} else {
+		z := f.NewPoly()
+		for i, cc := range f.c {
+			if cp, ok := cc.(*Poly); ok {
+				z.c[i] = cp.NegX(lv)
+			} else {
+				z.c[i] = cc
+			}
+		}
+		return z
+	}
+}
+
+// f.coeff(lv, deg) = 0 になるように f を変形する
+func (f *Poly) setZero(lv Level, deg int) RObj {
+	if f.lv == lv {
+		if deg >= len(f.c) {
+			return f
+		} else if deg == len(f.c)-1 {
+			z := NewPoly(f.lv, deg)
+			copy(z.c, f.c)
+			return z.normalize()
+		} else {
+			z := f.Clone()
+			z.c[deg] = zero
+			return z
+		}
+	} else if f.lv < lv {
+		return f
+	} else {
+		z := f.NewPoly()
+		for i, cc := range f.c {
+			if cp, ok := cc.(*Poly); ok {
+				if cp.lv < lv && deg == 0 {
+					z.c[i] = zero
+				} else if cp.lv < lv {
+					z.c[i] = cp
+				} else {
+					z.c[i] = cp.setZero(lv, deg)
+				}
+			} else {
+				if deg == 0 {
+					z.c[i] = zero
+				} else {
+					z.c[i] = cc
+				}
+			}
+		}
+		return z.normalize()
+	}
+}
+
+// return x^n f(1/x)
+// assume f(0) != 0, deg(f) <= n
+func (f *Poly) SubstXinvLv(lv Level, n int) RObj {
+	if f.lv == lv {
+		z := NewPoly(lv, n+1)
+		for i, cc := range f.c {
+			z.c[n-i] = cc
+		}
+		for i := len(f.c); i <= n; i++ {
+			z.c[n-i] = zero
+		}
+		return z.normalize()
+	} else if f.lv < lv {
+		return f
+	} else {
+		z := f.NewPoly()
+		for i, cc := range f.c {
+			if cp, ok := cc.(*Poly); ok && cp.lv >= lv {
+				z.c[i] = cp.SubstXinvLv(lv, n)
+			} else {
+				z.c[i] = Mul(cc, NewPolyVarn(lv, n))
+			}
+		}
+		return z
+	}
 }

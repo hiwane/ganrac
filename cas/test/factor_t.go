@@ -88,7 +88,7 @@ func factorTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T, ii int, input, e
 	sign := 1
 	found := make([]bool, exp.Len())
 	for i := 0; i < act.Len(); i++ {
-		var aineg ganrac.RObj = nil
+		var aineg ganrac.RObj
 		ook := false
 		_aix, _ := act.Geti(i, 1)
 		aix := _aix.(*ganrac.Int)

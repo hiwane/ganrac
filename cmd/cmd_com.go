@@ -151,7 +151,7 @@ type ganCompleter struct {
 func NewGanCompleter(g *ganrac.Ganrac) *ganCompleter {
 	gc := new(ganCompleter)
 	gc.re_var = regexp.MustCompile(`[a-z][a-z_]*$`)
-	gc.re_func = regexp.MustCompile(`(cad|qe|example|help)\s*\(\s*"([a-z_]*)$`)
+	gc.re_func = regexp.MustCompile(`(cad|cadinit|qe|example|help)\s*\(\s*"([a-z_]*)$`)
 	gc.re_dict = regexp.MustCompile(`[,{]\s*(")?([a-z_]*)$`)
 	gc.funcs = g.FunctionNames()
 	gc.examples = ganrac.ExampleNames()

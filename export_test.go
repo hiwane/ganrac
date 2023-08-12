@@ -200,3 +200,34 @@ func HasVar(q Fof, lv Level) bool {
 func ValidFof(q Fof) error {
 	return q.valid()
 }
+func ValidRObj(q RObj) error {
+	return q.valid()
+}
+
+func (p *Poly) SetZero(lv Level, deg int) RObj {
+	return p.setZero(lv, deg)
+}
+
+func SdcQEmain(f *Poly, lv Level, neccon Fof, qeopt QEopt) Fof {
+	return sdcQEmain(f, lv, neccon, qeopt)
+}
+
+func SdcQEcont(f *Atom, rmin, rmax []*Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
+	return sdcQEcont(f, rmin, rmax, lv, neccon, qeopt)
+}
+
+func SdcQEpoly(f, rng *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
+	return sdcQEpoly(f, rng, lv, neccon, qeopt)
+}
+
+func AtomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
+	return atomQE(atom, lv, neccon, qeopt)
+}
+
+func SdcAtomQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
+	return sdcAtomQE(fof, lv, qeopt, cond)
+}
+
+func (qeopt *QEopt) SetG(g *Ganrac) {
+	qeopt.g = g
+}

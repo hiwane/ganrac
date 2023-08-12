@@ -27,8 +27,9 @@ type func_table struct {
 	min, max int
 	f        func(g *Ganrac, name string, args []interface{}) (interface{}, error)
 	ox       bool
-	descript string
-	help     string
+	args     string // 引数情報
+	descript string // 1行説明
+	help     string // 詳細説明
 }
 
 type Ganrac struct {
