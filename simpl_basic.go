@@ -258,7 +258,61 @@ func (p *FmlOr) simplBasic(neccon, sufcon Fof) Fof {
 	return NewFmlOrs(ret...)
 }
 
+func simplRreduceHasQvar(f Fof, qs []Level) bool {
+	for _, q := range qs {
+		if f.hasVar(q) {
+			return true
+		}
+	}
+	return false
+}
+
+// f から不要な条件を取り除く.
+// 不要とは，束縛変数により，実際には違う変数であり，条件として扱ってはいけないもの
+//
+// 例:   a == 0 && ex([a], a != 0)
+// <==>  a == 0 && ex([b], b != 0)
+// であり，a != 0 部分は a == 0 では簡単化できない.
+//
+// Args:
+//
+//	q: quantified variables
+//	isnec: 必要条件なら, true.
+func simplRreduceRemoveQvar(f Fof, qs []Level, isnec bool) Fof {
+	if !f.IsQff() {
+		panic("simplRreduceRemoveQvar: not qff")
+	}
+	if fao, ok := f.(FofAO); ok {
+		if _, ok := f.(*FmlAnd); ok == isnec {
+			// And/Or の要素を個別に見る
+			ret := make([]Fof, 0, len(fao.Fmls()))
+			up := false
+			for _, h := range fao.Fmls() {
+				if simplRreduceHasQvar(h, qs) {
+					up = true
+				} else {
+					ret = append(ret, h)
+				}
+			}
+			if up {
+				return fao.gen(ret)
+			}
+			return f
+		}
+	}
+
+	if simplRreduceHasQvar(f, qs) {
+		return NewBool(isnec)
+	} else {
+		return f
+	}
+}
+
 func (p *ForAll) simplBasic(neccon, sufcon Fof) Fof {
+
+	neccon = simplRreduceRemoveQvar(neccon, p.q, true)
+	sufcon = simplRreduceRemoveQvar(sufcon, p.q, false)
+
 	fml := p.fml.simplBasic(neccon, sufcon)
 	if fml == p.fml {
 		return p
@@ -267,6 +321,10 @@ func (p *ForAll) simplBasic(neccon, sufcon Fof) Fof {
 }
 
 func (p *Exists) simplBasic(neccon, sufcon Fof) Fof {
+
+	neccon = simplRreduceRemoveQvar(neccon, p.q, true)
+	sufcon = simplRreduceRemoveQvar(sufcon, p.q, false)
+
 	fml := p.fml.simplBasic(neccon, sufcon)
 	if fml == p.fml {
 		return p
