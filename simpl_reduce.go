@@ -10,9 +10,98 @@ import (
 // 等式制約を利用して，atom を簡単化する
 /////////////////////////////////////
 
-func NewReduceInfo() *reduce_info {
+func (inf *reduce_info) updateGB(g *Ganrac, p Fof) bool {
+	maxvar := p.maxVar()
+	for _, eq := range inf.eqns.Iter() {
+		mv := eq.(*Poly).maxVar()
+		if mv > maxvar {
+			maxvar = mv
+		}
+	}
+
+	eqns := inf.eqns
+	inf.eqns = inf.GB(g, maxvar)
+	num := inf.eqns.Len()
+	if eqns.Len() != num {
+		return true
+	}
+	for i := 0; i < num; i++ {
+		p := inf.eqns.getiPoly(i)
+		has_same_poly := false
+		for j := i + 1; j < num; j++ {
+			q := eqns.getiPoly(j)
+			if p.Equals(q) {
+				has_same_poly = true
+				break
+			}
+		}
+		if !has_same_poly {
+			return true
+		}
+	}
+	return false
+}
+
+func (ri *reduce_info) Append(p *Poly) {
+	ri.eqns.Append(p)
+}
+
+// neccon: 必要条件
+// sufcon: 十分条件
+func NewReduceInfo(g *Ganrac, c, neccon, sufcon Fof) *reduce_info {
 	inf := new(reduce_info)
 	inf.eqns = NewList()
+	if neccon == trueObj && sufcon == falseObj {
+		return inf
+	}
+
+	eqns := make([]*Poly, 0)
+	switch n := neccon.(type) {
+	case *FmlOr:
+		for _, f := range n.Fmls() {
+			if eq, ok := f.(*Atom); ok && eq.op == EQ {
+				eqns = append(eqns, eq.getPoly())
+			}
+		}
+	case *Atom:
+		if n.op == EQ {
+			eqns = append(eqns, n.getPoly())
+		}
+	}
+
+	switch n := sufcon.(type) {
+	case *Atom:
+		if n.op == NE {
+			eqns = append(eqns, n.getPoly())
+		}
+	}
+	if len(eqns) == 0 {
+		return inf
+	}
+
+	// 不要な変数が入っていると困る
+	maxv := c.maxVar()
+	m := len(eqns)
+	for lv := Level(0); lv <= maxv; lv++ {
+		if !c.hasVar(lv) {
+			for i, eq := range eqns {
+				if eq != nil && eq.hasVar(lv) {
+					eqns[i] = nil
+					m--
+				}
+			}
+		}
+	}
+	if m == 0 {
+		return inf
+	}
+	for _, eq := range eqns {
+		if eq != nil {
+			inf.eqns.Append(eq)
+		}
+	}
+	inf.updateGB(g, c)
+
 	return inf
 }
 
@@ -184,15 +273,7 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 			}
 		}
 
-		maxvar := p.maxVar()
-		for _, eq := range inf.eqns.Iter() {
-			mv := eq.(*Poly).maxVar()
-			if mv > maxvar {
-				maxvar = mv
-			}
-		}
-
-		inf.eqns = inf.GB(g, maxvar)
+		upgb := inf.updateGB(g, p)
 		if v, ok := inf.eqns.geti(0).(NObj); ok {
 			if v.Sign() == 0 {
 				panic("????")
@@ -208,6 +289,20 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 			if fmls[i] != fml {
 				update = true
 			}
+		}
+		if upgb && n >= inf.eqns.Len() {
+			fmls2 := make([]Fof, 0, len(fmls))
+			for i, fml := range fmls {
+				if b[i] == 0 {
+					fmls2 = append(fmls2, fml)
+				}
+			}
+			for _, eq := range inf.eqns.Iter() {
+				fmls2 = append(fmls2, NewAtom(eq.(*Poly), op))
+			}
+
+			fmls = fmls2
+			update = true
 		}
 	}
 	if update {

@@ -7,8 +7,8 @@ type reduce_info struct {
 	q     []Level
 	qn    int
 	vars  *List
-	varb  []bool
-	eqns  *List
+	varb  []bool // quantified variable?
+	eqns  *List  // list of *Poly
 }
 
 type simpler interface {
@@ -47,11 +47,11 @@ func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {
 	logSimplFof(c, neccon, sufcon, g, "@1")
 	c.normalize()
 	logSimplFof(c, neccon, sufcon, g, "@2")
-	inf := NewReduceInfo()
+	inf := NewReduceInfo(g, c, neccon, sufcon)
 	c = c.simplReduce(g, inf)
 	logSimplFof(c, neccon, sufcon, g, "@3")
 
-	for {
+	for i := 0; i < 10; i++ {
 		cold := c
 		c = c.simplComm()
 		logSimplFof(c, neccon, sufcon, g, "@4")
