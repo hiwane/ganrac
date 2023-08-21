@@ -117,6 +117,10 @@ func QeQuadEq(a Fof, tbl *fof_quad_eq) Fof {
 	return a.qe_quadeq(qe_quadeq, tbl)
 }
 
+func QeOptQuadEq(a FofQ, qeopt *QEopt, cond *qeCond) Fof {
+	return qeopt.qe_quadeq(a, *cond)
+}
+
 func QeLinEq(a Fof, tbl *fof_quad_eq) Fof {
 	return a.qe_quadeq(qe_lineq, tbl)
 }

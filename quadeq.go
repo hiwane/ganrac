@@ -15,7 +15,7 @@ type fof_quad_eqer interface {
 type fof_quad_eq struct {
 	p       *Poly
 	sgn_lcp int // sign of lc(p)
-	sgn_s   int // for quadratic case
+	sgn_s   int // for quadratic case: 2つの根のうち大きいほうなら +1, 小さいなら -1
 	lv      Level
 	g       *Ganrac
 }
@@ -73,24 +73,21 @@ func qe_lineq(a *Atom, param interface{}) Fof {
 	return NewAtoms(res, op)
 }
 
+func quadeq_getrst(gan *Ganrac, f, g *Poly, lv Level) (RObj, RObj, RObj) {
+	r := gan.ox.Resultant(f, g, lv)
+	t := gan.ox.Slope(f, g, lv, 0)
+	s := gan.ox.Slope(f, g, lv, 1)
+	return r, t, s
+}
+
 func qe_quadeq(a *Atom, param interface{}) Fof {
 	u := param.(*fof_quad_eq)
 	if !a.hasVar(u.lv) {
 		return a
 	}
 	f := u.p
-	r := make([]RObj, len(a.p))
-	for i, p := range a.p {
-		r[i] = u.g.ox.Resultant(f, p, u.lv)
-	}
 	g := a.getPoly()
 	aop := a.op
-	if a.op == GE || a.op == LT {
-		aop = aop.neg()
-		g = g.Neg().(*Poly)
-	}
-	t := u.g.ox.Slope(f, g, u.lv, 0)
-	s := u.g.ox.Slope(f, g, u.lv, 1)
 	switch aop {
 	case EQ, NE:
 		opt := LE
@@ -98,7 +95,8 @@ func qe_quadeq(a *Atom, param interface{}) Fof {
 		if u.sgn_s < 0 {
 			ops = GE
 		}
-		ret := NewFmlAnd(NewAtoms(r, EQ),
+		r, t, s := quadeq_getrst(u.g, f, g, u.lv)
+		ret := NewFmlAnd(NewAtom(r, EQ),
 			NewFmlOr(
 				NewFmlAnd(NewAtom(s, ops), NewAtom(t, opt.neg())),
 				NewFmlAnd(NewAtom(t, opt), NewAtom(s, ops.neg()))))
@@ -106,23 +104,36 @@ func qe_quadeq(a *Atom, param interface{}) Fof {
 			ret = ret.Not()
 		}
 		return ret
-	case GT, LE:
-		op := aop
-		if u.sgn_lcp < 0 && a.Deg(u.lv)%2 != 0 {
-			op = op.neg()
+	case GT, LE, GE, LT:
+		if aop == GE || aop == LT {
+			aop = aop.neg()
+			g = g.Neg().(*Poly)
+		}
+		if aop != GT && aop != LE {
+			panic(fmt.Sprintf("invalid aop=%v", aop))
 		}
 		if a.op&EQ != 0 {
-			op = op.not()
+			aop = aop.not()
+		}
+		if aop != GT {
+			panic(fmt.Sprintf("invalid op=%v", aop))
+		}
+		op := aop
+		//fmt.Printf("u.sgn_lcp=%+d, u.sgn_s=%+d, a.Deg(u.lv)=%d, aop=%v: [%v %v 0]\n", u.sgn_lcp, u.sgn_s, a.Deg(u.lv), a, g, aop)
+		if u.sgn_lcp < 0 && a.Deg(u.lv)%2 != 0 {
+			// a2 の符号の影響を受けるパターン
+			op = op.neg()
 		}
 		ops := op
 		if u.sgn_s < 0 {
 			ops = ops.neg()
 		}
+		r, t, s := quadeq_getrst(u.g, f, g, u.lv)
 		sa := NewAtom(s, ops)
 		ta := NewAtom(t, op)
 		ret := NewFmlOrs(
-			NewFmlAnd(NewAtoms(r, op), ta),
-			NewFmlAnd(NewAtoms(r, op.neg()), sa),
+			NewFmlAnd(NewAtom(r, op), ta),
+			NewFmlAnd(NewAtom(r, op.neg()), sa),
 			NewFmlAnd(ta, sa))
 		if a.op&EQ != 0 {
 			ret = ret.Not()
@@ -279,6 +290,10 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 				aop = sgns.op
 			}
 			opp := NewFmlAnds(fff.qe_quadeq(qe_quadeq, tbl), NewAtom(minatom.z, aop), discrim)
+			if false {
+				cad, _ := funcCAD(qeopt.g, "CAD", []interface{}{opp})
+				fmt.Printf("  opp=%v ==> %v\n", opp, cad)
+			}
 			o = NewFmlOr(o, opp)
 		}
 
