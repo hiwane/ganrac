@@ -37,18 +37,20 @@ func logSimplFof(c, neccon, sufcon Fof, g *Ganrac, eyec string) {
 		}
 		fmt.Printf("simplFof(!) step%s: %v: %v\n", eyec, f, c)
 	} else {
+		//fmt.Printf("simplFof() step%s: %v\n", eyec, c)
 		g.log(1, 1, "simplFof() step%s: %v\n", eyec, c)
 	}
 }
 
 func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {
 	g.log(3, 1, "simpli %v, nec=%v, suf=%v\n", c, neccon, sufcon)
-	c = c.simplFctr(g)
-	logSimplFof(c, neccon, sufcon, g, "@1")
-	c.normalize()
-	logSimplFof(c, neccon, sufcon, g, "@2")
 	inf := NewReduceInfo(g, c, neccon, sufcon)
-	c = c.simplReduce(g, inf)
+	c = c.simplReduce(g, inf) // GB の結果により重複因子が生まれる可能性がある
+	logSimplFof(c, neccon, sufcon, g, "@1")
+
+	c = c.simplFctr(g)
+	logSimplFof(c, neccon, sufcon, g, "@2")
+	c.normalize()
 	logSimplFof(c, neccon, sufcon, g, "@3")
 
 	for i := 0; i < 10; i++ {
@@ -57,7 +59,7 @@ func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {
 		logSimplFof(c, neccon, sufcon, g, "@4")
 		c = c.simplBasic(neccon, sufcon)
 		logSimplFof(c, neccon, sufcon, g, "@5")
-		c, _, _ = c.simplNum(g, nil, nil)
+		c, _, _ = c.simplNum(g, nil, nil) // fctr 済みで重複因子がないことを仮定
 		logSimplFof(c, neccon, sufcon, g, "@6")
 		if c.Equals(cold) {
 			break
