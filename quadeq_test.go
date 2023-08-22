@@ -3,6 +3,7 @@ package ganrac_test
 import (
 	"fmt"
 	. "github.com/hiwane/ganrac"
+	"strings"
 	"testing"
 )
 
@@ -245,6 +246,173 @@ func TestQuadEq2(t *testing.T) {
 			fff := g.SimplFof(NewFmlAnd(o, dge))
 			t.Errorf("ii=%d, op=%d\ninput =(%v == 0) && %v\nexpect= %v.\nactual= (%v) AND %v.\n      =%v\ncmp=%v", ii, ss.op, p1, a, ss.expect, o, dge, fff, cmp)
 			return
+		}
+	}
+}
+
+func TestQuadEq3(t *testing.T) {
+	funcname := "TestQuadEq3"
+	print_log := false
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip %s... (no cas)\n", funcname)
+		return
+	}
+	defer g.Close()
+
+	qeopt := NewQEopt()
+	qeopt.SetG(g)
+
+	qecond := NewQeCond()
+	optbl := []OP{LE, GE, EQ, NE, GT, LT}
+
+	for i, ss := range []struct {
+		// ex([x], eq = 0 && cond op 0 && fof)
+		eq   string
+		cond string
+		fof  string
+	}{
+		{
+			"x^2-x-5",
+			"b*x + 3",
+			"true",
+		}, {
+			"x^2-10*x+1",
+			"b*x + 3",
+			"true",
+		}, {
+			"a*x^2-5*x-2",
+			"b*x + 1",
+			"true",
+		}, {
+			"x^2-a*x-5",
+			"b*x^2 -5*x-3",
+			"true",
+		}, {
+			"x^2-a*x-b",
+			"b*x + 1",
+			"true",
+		},
+	} {
+		for j, vars := range []struct {
+			v  string // 変数順序
+			lv Level  // 消去する変数のレベル
+		}{
+			{"x,a,b,c", 0},
+			{"a,c,x,b", 2},
+			{"a,b,x,c", 2},
+			{"a,b,c,x", 3},
+			{"c,b,a,x", 3},
+		} {
+			vstr := fmt.Sprintf("vars(%s);", vars.v)
+			_, err := g.Eval(strings.NewReader(vstr))
+			if err != nil {
+				t.Errorf("[%d] %s failed: %s", i, vstr, err)
+				return
+			}
+
+			eqp, err := str2poly(g, ss.eq)
+			if err != nil {
+				t.Errorf("[%d,%d,%s] eval(eq) failed: %s, %s", i, j, vstr, err, ss.eq)
+				return
+			}
+			condp, err := str2poly(g, ss.cond)
+			if err != nil {
+				t.Errorf("[%d,%d,%s] eval(cond) failed: %s, %s", i, j, vstr, err, ss.cond)
+				return
+			}
+			fof, err := str2fof(g, ss.fof)
+			if err != nil {
+				t.Errorf("[%d,%d,%s] eval(fof) failed: %s, %s", i, j, vstr, err, ss.fof)
+				return
+			}
+
+			fofeq := NewFmlAnd(NewAtom(eqp, EQ), fof)
+			for ops := 0; ops < 6; ops++ {
+				var cond Fof
+
+				var op OP
+				if ops < 0 {
+					cond = TrueObj
+					op = OP_TRUE
+				} else {
+					op = optbl[ops%6]
+					cond = NewAtom(condp, op)
+				}
+
+				input := NewExists([]Level{vars.lv}, NewFmlAnd(cond, fofeq)).(FofQ)
+				if print_log {
+					fmt.Printf(" == [%d,%d,%s] ==== [%s== 0 && %s %v 0 && %s]======================\n", i, j, vstr, ss.eq, ss.cond, op, ss.fof)
+				}
+
+				qeopt.SetAlgo(QEALGO_EQLIN|QEALGO_EQQUAD, true)
+				fquadeq := QeOptQuadEq(input, qeopt, qecond)
+				if print_log {
+					fmt.Printf(">>>>>>>>>>>> %v\n", fquadeq)
+				}
+				if fquadeq == nil {
+					t.Errorf("[%d,%d,%s,%v] invalid fvs\ninput=%s\nactual=%v", i, j, vstr, op, ss, fquadeq)
+					break
+				}
+				if err := ValidFof(fquadeq); err != nil {
+					t.Errorf("[%d,%d,%s,%v] invalid fvs\ninput=%s\nactual=%v\nactual=%V", i, j, vstr, op, ss, fquadeq, fquadeq)
+					return
+				}
+				if HasVar(fquadeq, vars.lv) {
+					if false {
+						t.Errorf("[%d,%d,%s,%v] invalid fquadeq. has `%s`\ninput=%s\nactual=%v\nactual=%V", i, j, vstr, op, VarStr(vars.lv), ss, fquadeq, fquadeq)
+						return
+					} else {
+						//						fmt.Printf("eqq=%v\n", fquadeq)
+						fquadeq = g.QE(NewExists([]Level{vars.lv}, fquadeq), qeopt)
+					}
+				}
+
+				qeopt.SetAlgo(QEALGO_EQLIN|QEALGO_EQQUAD, false)
+				fqe := g.QE(input, qeopt)
+				if print_log {
+					fmt.Printf(">>>>>>>>>>>>EQUIV\n")
+				}
+
+				eq := g.QE(NewForAll([]Level{0, 1, 2, 3}, NewFmlEquiv(fquadeq, fqe)), qeopt)
+				if eq != TrueObj {
+					t.Errorf("[%d,%d,%s,%v] invalid\ninput=%s\nexpect=%v\nactual=%v", i, j, vstr, op, input, fqe, fquadeq)
+
+					for _, lvs := range [][]Level{
+						{},
+						{0, 1},
+						{0, 2},
+						{0, 3},
+						{1, 2},
+						{1, 3},
+						{2, 3},
+					} {
+						if len(lvs) == 0 {
+							break
+						}
+						vv := g.QE(NewForAll(lvs, NewFmlEquiv(fquadeq, fqe)), qeopt)
+						im := g.QE(NewForAll(lvs, NewFmlImpl(fquadeq, fqe)), qeopt)
+						re := g.QE(NewForAll(lvs, NewFmlImpl(fqe, fquadeq)), qeopt)
+						t.Errorf("%v: %v, im=%v, re=%v", lvs, vv, im, re)
+					}
+
+					dict := NewDict()
+					dict.Set("var", NewInt(1))
+					impl, _ := FuncCAD(g, "CAD", []interface{}{
+						NewFmlImpl(fquadeq, fqe), dict,
+					})
+					repl, _ := FuncCAD(g, "CAD", []interface{}{
+						NewFmlImpl(fqe, fquadeq), dict,
+					})
+
+					smpl, _ := FuncCAD(g, "CAD", []interface{}{
+						fquadeq, dict,
+					})
+
+					t.Errorf("\nactual=%v\n  impl=%v\n  repl=%v", smpl, impl, repl)
+					return
+				}
+			}
 		}
 	}
 }

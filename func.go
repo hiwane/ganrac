@@ -1014,15 +1014,19 @@ func funcQE(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 				opt.SetAlgo(QEALGO_SMPL_TRAN, funcArgBoolVal(v))
 			case getQEoptStr(QEALGO_SMPL_ROTA):
 				opt.SetAlgo(QEALGO_SMPL_ROTA, funcArgBoolVal(v))
+			case getQEoptStr(QEALGO_ATOM):
+				opt.SetAlgo(QEALGO_ATOM, funcArgBoolVal(v))
+			case getQEoptStr(QEALGO_SDC):
+				opt.SetAlgo(QEALGO_SDC, funcArgBoolVal(v))
 			case "verbose":
 				if val, ok := v.(*Int); ok && val.IsInt64() {
 					g.verbose = int(val.Int64())
 					set_verbose = true
 				} else {
-					return nil, fmt.Errorf("%s(3rd arg): invalid option value: %s: %v.", name, k, v)
+					return nil, fmt.Errorf("%s(2nd arg): invalid option value: %s: %v.", name, k, v)
 				}
 			default:
-				return nil, fmt.Errorf("%s(3rd arg): unknown option: %s", name, k)
+				return nil, fmt.Errorf("%s(2nd arg): unknown option: %s", name, k)
 			}
 		}
 	}

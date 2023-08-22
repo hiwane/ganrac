@@ -1,6 +1,7 @@
 package ganrac
 
 import (
+	"fmt"
 	"sort"
 )
 
@@ -211,18 +212,26 @@ func (p *FmlAnd) simplBasic(neccon, sufcon Fof) Fof {
 	})
 
 	fmls := make([]Fof, len(p.fml))
-	copy(fmls, p.fml)
-	fmls[len(fmls)-1] = neccon
+	for i, f := range p.fml {
+		if f.IsQff() {
+			fmls[i] = f
+		} else {
+			fmls[i] = trueObj
+		}
+	}
 	ret := make([]Fof, len(p.fml))
 	update := false
 	for i := len(fmls) - 1; i >= 0; i-- {
+		fmls[i] = neccon
 		nc := NewFmlAnds(fmls...)
 		ret[i] = p.fml[i].simplBasic(nc, sufcon)
 		if ret[i] != p.fml[i] {
 			update = true
 		}
-		if i > 0 {
-			fmls[i-1] = ret[i]
+		if ret[i].IsQff() {
+			fmls[i] = ret[i]
+		} else {
+			fmls[i] = trueObj
 		}
 	}
 	if !update {
@@ -237,19 +246,26 @@ func (p *FmlOr) simplBasic(neccon, sufcon Fof) Fof {
 	})
 
 	fmls := make([]Fof, len(p.fml))
-	copy(fmls, p.fml)
-	fmls[len(fmls)-1] = sufcon
+	for i, f := range p.fml {
+		if f.IsQff() {
+			fmls[i] = f
+		} else {
+			fmls[i] = falseObj
+		}
+	}
 	ret := make([]Fof, len(p.fml))
 	update := false
 	for i := len(fmls) - 1; i >= 0; i-- {
+		fmls[i] = sufcon
 		sf := NewFmlOrs(fmls...)
 		ret[i] = p.fml[i].simplBasic(neccon, sf)
 		if ret[i] != p.fml[i] {
 			update = true
-		} else if p.fml[i].fofTag() == FTAG_AND {
 		}
-		if i > 0 {
-			fmls[i-1] = ret[i]
+		if ret[i].IsQff() {
+			fmls[i] = ret[i]
+		} else {
+			fmls[i] = falseObj
 		}
 	}
 	if !update {
@@ -258,7 +274,61 @@ func (p *FmlOr) simplBasic(neccon, sufcon Fof) Fof {
 	return NewFmlOrs(ret...)
 }
 
+func simplRreduceHasQvar(f Fof, qs []Level) bool {
+	for _, q := range qs {
+		if f.hasVar(q) {
+			return true
+		}
+	}
+	return false
+}
+
+// f から不要な条件を取り除く.
+// 不要とは，束縛変数により，実際には違う変数であり，条件として扱ってはいけないもの
+//
+// 例:   a == 0 && ex([a], a != 0)
+// <==>  a == 0 && ex([b], b != 0)
+// であり，a != 0 部分は a == 0 では簡単化できない.
+//
+// Args:
+//
+//	q: quantified variables
+//	isnec: 必要条件なら, true.
+func simplBasicRemoveQvar(f Fof, qs []Level, isnec bool) Fof {
+	if !f.IsQff() {
+		panic(fmt.Sprintf("simplBasicRemoveQvar: not qff: %v", f))
+	}
+	if fao, ok := f.(FofAO); ok {
+		if _, ok := f.(*FmlAnd); ok == isnec {
+			// And/Or の要素を個別に見る
+			ret := make([]Fof, 0, len(fao.Fmls()))
+			up := false
+			for _, h := range fao.Fmls() {
+				if simplRreduceHasQvar(h, qs) {
+					up = true
+				} else {
+					ret = append(ret, h)
+				}
+			}
+			if up {
+				return fao.gen(ret)
+			}
+			return f
+		}
+	}
+
+	if simplRreduceHasQvar(f, qs) {
+		return NewBool(isnec)
+	} else {
+		return f
+	}
+}
+
 func (p *ForAll) simplBasic(neccon, sufcon Fof) Fof {
+
+	neccon = simplBasicRemoveQvar(neccon, p.q, true)
+	sufcon = simplBasicRemoveQvar(sufcon, p.q, false)
+
 	fml := p.fml.simplBasic(neccon, sufcon)
 	if fml == p.fml {
 		return p
@@ -267,6 +337,10 @@ func (p *ForAll) simplBasic(neccon, sufcon Fof) Fof {
 }
 
 func (p *Exists) simplBasic(neccon, sufcon Fof) Fof {
+
+	neccon = simplBasicRemoveQvar(neccon, p.q, true)
+	sufcon = simplBasicRemoveQvar(sufcon, p.q, false)
+
 	fml := p.fml.simplBasic(neccon, sufcon)
 	if fml == p.fml {
 		return p

@@ -326,7 +326,7 @@ func TestVsLin3(t *testing.T) {
 
 func TestVsQuad(t *testing.T) {
 	funcname := "TestVsQuad"
-	print_log := true
+	print_log := false
 	g := makeCAS(t)
 	if g == nil {
 		fmt.Printf("skip %s... (no cas)\n", funcname)

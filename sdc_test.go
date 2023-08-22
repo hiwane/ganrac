@@ -354,6 +354,10 @@ func TestAtomQE(t *testing.T) {
 
 	qeopt := NewQEopt()
 	qeopt.SetG(g)
+	if (qeopt.Algo & QEALGO_ATOM) == 0 {
+		t.Errorf("no QEALGO_ATOM")
+		return
+	}
 
 	lvs := []Level{0, 1, 2, 3, 4, 5}
 
@@ -427,6 +431,7 @@ func TestAtomQE(t *testing.T) {
 
 				atom := NewAtom(p, vv.op).(*Atom)
 
+				qeopt.SetAlgo(QEALGO_SDC|QEALGO_ATOM, true)
 				ret := AtomQE(atom, lv, TrueObj, *qeopt)
 				if ret == nil {
 					t.Errorf("[%d,%d,%s] %s return nil.", ii, jj, vv.op, atom)
@@ -463,6 +468,7 @@ func TestAtomQE(t *testing.T) {
 
 func TestSdcQEpoly(t *testing.T) {
 	funcname := "TestSdcQEpoly"
+	print_log := false
 
 	g := makeCAS(t)
 	if g == nil {
@@ -561,7 +567,9 @@ func TestSdcQEpoly(t *testing.T) {
 				atm := NewAtom(p, vv.opi).(*Atom)
 				atr := NewAtom(rng, vv.opr).(*Atom)
 
-				fmt.Printf("\n#### [%d,%d,%s,%s] %s.\n", ii, jj, vv.opi, vv.opr, tt.varstr)
+				if print_log {
+					fmt.Printf("\n#### [%d,%d,%s,%s] %s.\n", ii, jj, vv.opi, vv.opr, tt.varstr)
+				}
 				ret := SdcQEpoly(atm, atr, lv, TrueObj, *qeopt)
 				if ret == nil {
 					t.Errorf("[%d,%d,%s,%s] poly returns nil %s\n\nexpect=%s", ii, jj, vv.opi, vv.opr, vstr, vv.expect)
