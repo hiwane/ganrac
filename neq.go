@@ -51,6 +51,7 @@ func is_strict_only(fof Fof, lv Level) bool {
 
 /*
  * strict でないものが少ししかない, かつ, 2次以下
+ * strict でないものが許されるのは depth=0 の atom な場合のみ
  */
 func is_strict_or_quad(fof Fof, lv Level, depth int) bool {
 	switch pp := fof.(type) {
@@ -60,7 +61,8 @@ func is_strict_or_quad(fof Fof, lv Level, depth int) bool {
 		for _, f := range pp.Fmls() {
 			if !is_strict_or_quad(f, lv, depth+1) {
 				if a, ok := f.(*Atom); ok && depth == 0 && a.Deg(lv) <= 2 && a.op != EQ {
-					// hong93 を適用済みのはずなので，EQ はなく，GE か LE は保証されているはず
+					// 通常は hong93 を適用済みのはずなので，
+					// EQ はなく，GE か LE は保証されているはず
 					continue
 				}
 				return false
@@ -205,31 +207,31 @@ func apply_neqQE_atom_univ(fof, qffneq Fof, atom *Atom, lv Level, qeopt QEopt, c
 	return ret
 }
 
-func apply_neqQE_pstrict(fof, fne Fof, fot *FmlAnd, lv Level, qeopt QEopt, cond qeCond) Fof {
+func apply_neqQE_pstrict(fof, fne Fof, fot_fmls []Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 	// GE, LE が一部含まれるが，それは２次以下なので，
 	// hong93 により高速に解ける.
 	// fne が大きければ，全体を解くよりも strict 部分のみの CAD になるのでお得
 
-	fot_fmls := fot.Fmls() // 壊してはだめ
+	// fot_fmls := fot.Fmls() // 壊してはだめ
 	n := 1
 	if p, ok := fne.(*FmlAnd); ok {
 		n = p.Len()
 	}
 	fmls := make([]Fof, len(fot_fmls)+n)
+	copy(fmls, fot_fmls)
 	if n == 1 {
 		fmls[len(fot_fmls)] = fne
 	} else {
 		p := fne.(*FmlAnd)
 		copy(fmls[len(fot_fmls):], p.Fmls())
 	}
-	copy(fmls, fot_fmls)
 
 	ors := make([]Fof, 0, len(fmls)+1)
 	for i, v := range fot_fmls {
 		if a, ok := v.(*Atom); ok && a.op&EQ != 0 {
 			// AND の要素のうちひとつの GE/LE を 等式制約に変えた論理式にする
 			fmls[i] = newAtoms(a.p, EQ)
-			f := NewExists([]Level{lv}, fot.gen(fmls))
+			f := NewExists([]Level{lv}, NewFmlAnds(fmls...))
 			ors = append(ors, f)
 			fmls[i] = v
 		}
@@ -242,7 +244,7 @@ func apply_neqQE_pstrict(fof, fne Fof, fot *FmlAnd, lv Level, qeopt QEopt, cond 
 		}
 	}
 	fmls = fmls[:len(fot_fmls)]
-	fstrict := NewExists([]Level{lv}, fot.gen(fmls))
+	fstrict := NewExists([]Level{lv}, NewFmlAnds(fmls...))
 	ff := NewFmlAnd(apply_neqQE(fne, lv), fstrict)
 	ors = append(ors, ff)
 	newfml := NewFmlOrs(ors...)
@@ -375,8 +377,14 @@ func neqQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 	}
 	if qeopt.Algo&(QEALGO_EQLIN|QEALGO_EQQUAD) != 0 && is_strict_or_quad(fot, lv, 0) {
 		// @TODO fne がそれなりに複雑である場合に限定したほうが良いかも
-		qeopt.log(cond, 3, "neq", "<%s> pstrict %v\n", VarStr(lv), fof)
-		return apply_neqQE_pstrict(fof, fne, fot.(*FmlAnd), lv, qeopt, cond)
+		if fotand, ok := fot.(*FmlAnd); ok {
+			qeopt.log(cond, 3, "neq", "<%s> pstrict and[%d] %v\n", VarStr(lv), len(fotand.fml), fof)
+			return apply_neqQE_pstrict(fof, fne, fotand.fml, lv, qeopt, cond)
+		}
+		if fotatom, ok := fot.(*Atom); ok {
+			qeopt.log(cond, 3, "neq", "<%s> pstrict atom %v\n", VarStr(lv), fof)
+			return apply_neqQE_pstrict(fof, fne, []Fof{fotatom}, lv, qeopt, cond)
+		}
 	}
 
 	return fof
