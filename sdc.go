@@ -255,6 +255,7 @@ func sdcQE(f *Atom, rngs []*Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 		rr := rng.getPoly()
 		lc := rr.Coef(lv, 1)
 		if !lc.IsNumeric() {
+			// 主係数が定数でないものは１つだけ許可
 			if rng_lcpol != nil {
 				return nil
 			}
@@ -262,7 +263,14 @@ func sdcQE(f *Atom, rngs []*Atom, lv Level, qeopt QEopt, cond qeCond) Fof {
 			continue
 		}
 
-		if rng.op == GE {
+		var aop OP
+		// 主係数の符号によって，下限条件か上限条件が変わる
+		if lc.Sign() >= 0 {
+			aop = GE
+		} else {
+			aop = LE
+		}
+		if rng.op == aop {
 			rmin = append(rmin, rng)
 		} else { // LE
 			rmax = append(rmax, rng)

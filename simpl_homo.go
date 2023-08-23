@@ -142,8 +142,8 @@ func (atom *Atom) get_homo_cond(conds [][]int, ret []int) [][]int {
 	for _, p := range atom.p {
 		c := p.constantTerm()
 		if !c.IsZero() { // 定数項が非ゼロ, 故，斉次になれない
-			bb := make([]bool, p.lv+1)
-			atom.Indets(bb)
+			bb := make([]bool, p.maxVar()+1)
+			p.Indets(bb)
 			for i, b := range bb {
 				if b {
 					ret[i] = 0
