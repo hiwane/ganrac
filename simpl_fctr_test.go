@@ -22,23 +22,23 @@ func testSameFormAndOrFctr(output, expect Fof) bool {
 	var oofmls, eefmls []Fof
 	switch oo := output.(type) {
 	case *FmlAnd:
-		oo.Normalize()
+		NormalizeFof(oo)
 		oofmls = oo.Fmls()
 		ee := expect.(*FmlAnd)
-		ee.Normalize()
+		NormalizeFof(ee)
 		eefmls = ee.Fmls()
 	case *FmlOr:
-		oo.Normalize()
+		NormalizeFof(oo)
 		oofmls = oo.Fmls()
 		ee := expect.(*FmlOr)
-		ee.Normalize()
+		NormalizeFof(ee)
 		eefmls = ee.Fmls()
 	case *Atom:
 		if oo.Equals(expect) {
 			return true
 		}
-		oo.Normalize()
-		expect.(*Atom).Normalize()
+		NormalizeFof(oo)
+		NormalizeFof(expect)
 		return oo.Equals(expect)
 	default:
 		return oo.Equals(expect)

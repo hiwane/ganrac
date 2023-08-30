@@ -56,6 +56,7 @@ type FofAO interface {
 	gen(fml []Fof) Fof
 	Fmls() []Fof
 	isAnd() bool
+	Len() int
 }
 
 type FofTFbase struct {
@@ -615,6 +616,9 @@ func validFmlAndOr(name string, fml []Fof) error {
 }
 
 func (p *FmlAnd) valid() error {
+	if len(p.fml) <= 1 {
+		return fmt.Errorf("len() should be greater than 1.")
+	}
 	for _, f := range p.fml {
 		// and の入れ子は許さない
 		switch f.(type) {
@@ -626,6 +630,9 @@ func (p *FmlAnd) valid() error {
 }
 
 func (p *FmlOr) valid() error {
+	if len(p.fml) <= 1 {
+		return fmt.Errorf("len() should be greater than 1.")
+	}
 	for i, f := range p.fml {
 		// or の入れ子は許さない
 		switch f.(type) {
@@ -2113,7 +2120,6 @@ func (p *Atom) normalize() Fof {
 	sort.Slice(p.p, func(i, j int) bool {
 		return p.p[i].Less(p.p[j])
 	})
-
 	return p
 }
 
