@@ -219,7 +219,7 @@ func (p *Atom) simplReduce(g *Ganrac, inf *reduce_info) Fof {
 //
 // p <==> G と簡単化できる
 func simplReduceAO2(g *Ganrac, infbase *reduce_info, p FofAO, fmls []Fof, op OP, bx []int) Fof {
-	if false {
+	if true { // とても遅かった. テスト時間が 7分→11分になった
 		return p
 	}
 	if op != EQ && op != NE {
