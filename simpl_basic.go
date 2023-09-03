@@ -2,7 +2,6 @@ package ganrac
 
 import (
 	"fmt"
-	"sort"
 )
 
 /////////////////////////////////////
@@ -207,10 +206,6 @@ func (p *Atom) simplBasic(neccon, sufcon Fof) Fof {
 }
 
 func (p *FmlAnd) simplBasic(neccon, sufcon Fof) Fof {
-	sort.Slice(p.fml, func(i, j int) bool {
-		return p.fml[i].FmlLess(p.fml[j])
-	})
-
 	fmls := make([]Fof, len(p.fml))
 	for i, f := range p.fml {
 		if f.IsQff() {
@@ -241,10 +236,6 @@ func (p *FmlAnd) simplBasic(neccon, sufcon Fof) Fof {
 }
 
 func (p *FmlOr) simplBasic(neccon, sufcon Fof) Fof {
-	sort.Slice(p.fml, func(i, j int) bool {
-		return p.fml[i].FmlLess(p.fml[j])
-	})
-
 	fmls := make([]Fof, len(p.fml))
 	for i, f := range p.fml {
 		if f.IsQff() {

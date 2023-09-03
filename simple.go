@@ -57,6 +57,7 @@ func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {
 		cold := c
 		c = c.simplComm()
 		logSimplFof(c, neccon, sufcon, g, "@4")
+		c = c.normalize()
 		c = c.simplBasic(neccon, sufcon)
 		logSimplFof(c, neccon, sufcon, g, "@5")
 		c, _, _ = c.simplNum(g, nil, nil) // fctr 済みで重複因子がないことを仮定

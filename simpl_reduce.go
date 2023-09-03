@@ -2,7 +2,6 @@ package ganrac
 
 import (
 	"fmt"
-	// "sort"
 )
 
 /////////////////////////////////////
@@ -10,8 +9,8 @@ import (
 // 等式制約を利用して，atom を簡単化する
 /////////////////////////////////////
 
-func (inf *reduce_info) updateGB(g *Ganrac, p Fof) bool {
-	maxvar := p.maxVar()
+func (inf *reduce_info) updateGB(g *Ganrac, maxvar Level) bool {
+	// maxvar := p.maxVar()
 	for _, eq := range inf.eqns.Iter() {
 		mv := eq.(*Poly).maxVar()
 		if mv > maxvar {
@@ -97,10 +96,10 @@ func NewReduceInfo(g *Ganrac, c, neccon, sufcon Fof) *reduce_info {
 	}
 	for _, eq := range eqns {
 		if eq != nil {
-			inf.eqns.Append(eq)
+			inf.Append(eq)
 		}
 	}
-	inf.updateGB(g, c)
+	inf.updateGB(g, c.maxVar())
 
 	return inf
 }
@@ -113,7 +112,7 @@ func (src *reduce_info) Clone() *reduce_info {
 	dest.varb = make([]bool, len(src.varb))
 	copy(dest.varb, src.varb)
 	dest.depth = src.depth + 1
-	dest.eqns = NewList()
+	dest.eqns = NewListN(src.eqns.Len() + 5)
 	for _, p := range src.eqns.Iter() {
 		dest.eqns.Append(p)
 	}
@@ -213,6 +212,96 @@ func (p *Atom) simplReduce(g *Ganrac, inf *reduce_info) Fof {
 	return p
 }
 
+// p の非等式制約を用いて簡単化する.
+// p = f != 0 && G として，
+//
+//	f == 0 && G <==> false ならば，
+//
+// p <==> G と簡単化できる
+func simplReduceAO2(g *Ganrac, infbase *reduce_info, p FofAO, fmls []Fof, op OP, bx []int) Fof {
+	if true { // とても遅かった. テスト時間が 7分→11分になった
+		return p
+	}
+	if op != EQ && op != NE {
+		panic(fmt.Sprintf("simplReduceAO2() invalid op=%v", op))
+	}
+	nop := op.not()
+	var update bool
+
+	b := make([]int, len(bx))
+	copy(b, bx)
+
+	for i, fml := range p.Fmls() {
+		if b[i] != 0 {
+			continue
+		}
+		qs := make([]*Atom, 0, len(b))
+		switch f := fml.(type) {
+		case *Atom:
+			if f.op == nop {
+				qs = append(qs, f)
+			}
+		case FofAO:
+			for _, g := range f.Fmls() {
+				if a, ok := g.(*Atom); ok && a.op == nop {
+					qs = append(qs, a)
+				}
+			}
+		}
+
+		if len(qs) == 0 {
+			continue
+		}
+		for _, qatom := range qs {
+			inf := infbase.Clone()
+			q := qatom.getPoly()
+			inf.Append(q)
+
+			upgb := inf.updateGB(g, p.maxVar())
+			if v, ok := inf.eqns.geti(0).(NObj); ok {
+				// （コメントの簡略化のため, op=EQ, つまり，p が AND な場合）
+				// not(fml[i]) を加えて GB 計算すると false になることがわかった
+				// つまり，fml[i] は条件として不要であることがわかった
+				if v.Sign() == 0 {
+					panic("????")
+				}
+				// この条件は不要です
+				update = true
+				fmls[i] = NewBool(nop == NE) // この条件は不要です
+				break
+			}
+			if upgb {
+				// （コメントの簡略化のため, op=EQ, つまり，p が AND な場合）
+				// not(fmls[i]) を加えて GB 計算し，他の AND 要素を簡単化すると false になった.
+				// つまり，fmls[i] は条件として不要であることがわかった
+				for j := 0; j < len(fmls); j++ {
+					if b[j] == 0 && j != i {
+						f := fmls[j].simplReduce(g, inf)
+						_, okt := f.(*AtomT)
+						_, okf := f.(*AtomF)
+						if okt && op == NE || okf && op == EQ {
+							update = true
+							fmls[i] = f.Not() // この条件は不要です
+							upgb = false
+							break
+						}
+					}
+				}
+				if !upgb {
+					break
+				}
+			}
+		}
+	}
+
+	if update {
+		return p.gen(fmls)
+	} else {
+		return p
+	}
+}
+
+// p から等式制約を見つけて，and/or の他要素を簡単化する
 func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 	update := false
 	fmls := make([]Fof, len(p.Fmls()))
@@ -258,7 +347,7 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 		inf = inf.Clone()
 		for i, fml := range fmls {
 			if b[i] > 0 {
-				inf.eqns.Append(fml.(*Atom).getPoly())
+				inf.Append(fml.(*Atom).getPoly())
 			} else if b[i] < 0 {
 				var mul RObj
 				for j, f := range fml.(FofAO).Fmls() {
@@ -269,11 +358,11 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 					}
 				}
 
-				inf.eqns.Append(mul.(*Poly))
+				inf.Append(mul.(*Poly))
 			}
 		}
 
-		upgb := inf.updateGB(g, p)
+		upgb := inf.updateGB(g, p.maxVar())
 		if v, ok := inf.eqns.geti(0).(NObj); ok {
 			if v.Sign() == 0 {
 				panic("????")
@@ -308,7 +397,7 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 	if update {
 		return p.gen(fmls)
 	} else {
-		return p
+		return simplReduceAO2(g, inf, p, fmls, op, b)
 	}
 }
 

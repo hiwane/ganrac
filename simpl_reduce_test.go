@@ -101,8 +101,8 @@ func TestSimplReduce1(t *testing.T) {
 	}
 }
 
-func TestSimplReduce2(t *testing.T) {
-	funcname := "TestSimplReduce2"
+func TestSimplReduceNecSufCon(t *testing.T) {
+	funcname := "TestSimplReduceNecSufCon"
 	//print_log := false
 	g := makeCAS(t)
 	if g == nil {
@@ -219,6 +219,110 @@ func TestSimplReduce2(t *testing.T) {
 				}
 				if c != TrueObj {
 					t.Errorf("[%d,%d] invalid simpl_reduce; cad\ninput=%s\nneccon=%v\nsufcon=%v\nactual=%v\na _ _ =%v\nexpect=%v", i, j, tt.input, tt.neccon, tt.sufcon, ret, ret2, expect)
+					return
+				}
+			}
+		}
+	}
+}
+
+func TestSimplReduceNeq(t *testing.T) {
+	if true {	// @TODO simplReduceAO2() が遅い
+		return
+	}
+	funcname := "TestSimplReduceNeq"
+	//print_log := false
+	g := makeCAS(t)
+	if g == nil {
+		fmt.Printf("skip %s... (no cas)\n", funcname)
+		return
+	}
+	defer g.Close()
+
+	lvs := []Level{0, 1, 2, 3, 4, 5, 6, 7}
+
+	qeopt := NewQEopt()
+	qeopt.SetG(g)
+
+	cadopt := NewDict()
+	cadopt.Set("var", NewInt(1))
+
+	for i, ss := range []struct {
+		input  string
+		expect string
+	}{
+		{
+			"b!=0 && 5*b^2-3*b-9>=0",
+			"5*b^2-3*b-9>=0",
+		}, {
+			"(a != 0 || b != 0) && a^2*x+b^2 +1 == 0",
+			"a^2*x+b^2 +1 == 0",
+		},
+	} {
+		for j, vars := range []struct {
+			v string // 変数順序
+		}{
+			{"x,a,b,c"},
+			{"a,c,x,b"},
+			{"a,b,x,c"},
+			{"c,b,a,x"},
+		} {
+			vstr := fmt.Sprintf("vars(%s);", vars.v)
+			_, err := g.Eval(strings.NewReader(vstr))
+			if err != nil {
+				t.Errorf("[%d] %s failed: %s", i, vstr, err)
+				return
+			}
+
+			input, err := str2fof(g, ss.input)
+			if err != nil {
+				t.Errorf("[%d,%d,%s] eval(input) failed: %s, %s", i, j, vstr, err, ss.input)
+				return
+
+			}
+			expect, err := str2fof(g, ss.expect)
+			if err != nil {
+				t.Errorf("[%d,%d,%s] eval(expect) failed: %s, %s", i, j, vstr, err, ss.expect)
+				return
+			}
+
+			for _, tt := range []struct {
+				input  Fof
+				expect Fof
+			}{
+				{input, expect},
+				{input.Not(), expect.Not()},
+			} {
+				inf := NewReduceInfo(g, tt.input, TrueObj, FalseObj)
+				ret := SimplReduce(tt.input, g, inf)
+				if err := ValidFof(ret); err != nil {
+					t.Errorf("[%d,%d] invalid simpl_reduce\ninput=%s\nactual=%v\nactual=%V", i, j, ss, ret, ret)
+					return
+				}
+
+				expect2 := NormalizeFof(tt.expect)
+				ret2 := NormalizeFof(ret)
+
+				if FofTag(expect2) != FofTag(ret2) {
+					t.Errorf("[%d,%d] invalid FofTag\ninput =%s\nactual=%v\nexpect=%v", i, j, tt.input, ret, tt.expect)
+					return
+				}
+
+				if e, ok := expect2.(FofAO); ok {
+					if e.Len() != ret2.(FofAO).Len() {
+						t.Errorf("[%d,%d] invalid Len\ninput =%s\nactual=%v\nexpect=%v", i, j, tt.input, ret, tt.expect)
+						return
+					}
+				}
+
+				c, err := FuncCAD(g, "CAD", []interface{}{
+					NewForAll(lvs, NewFmlEquiv(expect2, ret2)), cadopt})
+				if err != nil {
+					t.Errorf("[%d,%d] invalid simpl_reduce; cad\ninput =%s\nactual=%v\nexpect=%v\nerr=%v", i, j, ss, ret, expect, err)
+					return
+				}
+				if c != TrueObj {
+					t.Errorf("[%d,%d] invalid simpl_reduce; cad\ninput =%s\nactual=%v\na _ _ =%v\nexpect=%v", i, j, tt.input, ret, ret2, expect)
 					return
 				}
 			}
