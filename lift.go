@@ -145,7 +145,7 @@ func (cad *CAD) liftallpara() error {
 					return
 				}
 				//fmt.Fprintf(os.Stderr, "[%2d] LIFT   >> %v  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n", idx, cell.Index())
-				if cell.Index()[0] == 48 && true { ///// adam3 でのテストを想定
+				if cell.Index()[0] == 48 && false { ///// adam3 でのテストを想定
 					cherr <- fmt.Errorf("dummmy errrrrorrrrrrrrr")
 					return
 				}
