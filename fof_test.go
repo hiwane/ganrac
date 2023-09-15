@@ -18,6 +18,12 @@ func TestAtom(t *testing.T) {
 			t.Errorf("invalid atom %v", pp)
 			return
 		}
+
+		if _, ok = pp.(Fof); !ok {
+			t.Errorf("not Fof %v", pp)
+			return
+		}
+
 		qq := pp.Not()
 		q, ok := qq.(*Atom)
 		if !ok {

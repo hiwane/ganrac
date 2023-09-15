@@ -227,7 +227,7 @@ func TestSimplReduceNecSufCon(t *testing.T) {
 }
 
 func TestSimplReduceNeq(t *testing.T) {
-	if true {	// @TODO simplReduceAO2() が遅い
+	if true { // @TODO simplReduceAO2() が遅い
 		return
 	}
 	funcname := "TestSimplReduceNeq"

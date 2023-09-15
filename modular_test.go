@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+func TestUintNobj(t *testing.T) {
+	var v any
+	v = Uint(3)
+	if _, ok := v.(NObj); !ok {
+		t.Errorf("Uint should be NObj")
+	}
+}
+
 func TestModularInvUint(t *testing.T) {
 	for _, s := range []struct {
 		a Uint

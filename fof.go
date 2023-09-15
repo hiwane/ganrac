@@ -15,16 +15,17 @@ type Fof interface {
 	equaler // 等価まではやらない. 形として同じもの
 	simpler
 	fofTag() uint
-	IsQff() bool
-	IsQuantifier() bool
-	isPrenex() bool
-	isEven(lv Level) int // is だが bool 復帰ではない
+	IsQff() bool         // quantifier free formula
+	IsQuantifier() bool  // ForAll か Exists なら true
+	isPrenex() bool      // prenex normal formula ?
+	isEven(lv Level) int // P(lv) = P(-lv) ? @NOTE: is だが bool 復帰ではない
 	redEven(lv Level, v, sgn int) Fof
-	Not() Fof
-	hasFreeVar(lv Level) bool
-	hasVar(lv Level) bool
-	maxVar() Level
-	numAtom() int
+	Not() Fof                 // 否定
+	hasFreeVar(lv Level) bool // has free variable
+	hasVar(lv Level) bool     // has variable (free or quantified)
+	maxVar() Level            // max level in the formula
+
+	numAtom() int // the number of atomic formulas
 	normalize() Fof
 	sotd() int
 	vsDeg(lv Level) int // atom の因数分解された多項式の最大次数
@@ -32,9 +33,9 @@ type Fof interface {
 	replaceVar(xs []RObj, lvs []Level) Fof // xs は *Poly 次数1 主係数1 定数項0 な変数
 	valid() error                          // for DEBUG. 実装として適切な形式になっているか
 	Deg(lv Level) int
-	FmlLess(a Fof) bool
-	nonPrenex() Fof
-	varShift(lv Level) Fof
+	FmlLess(a Fof) bool    // normalize() でのソート用
+	nonPrenex() Fof        // ex([x], A || B) -> ex([x], A) || ex([x], B) とか，自由変数しか含まない部分を外にだすと とか，自由変数しか含まない部分を外にだすとかか
+	varShift(lv Level) Fof // 変数のインデックスを lv だけずらず.
 
 	// QE..
 	fof_vser      // Virtual Substitution
@@ -1986,6 +1987,8 @@ func (p *FmlOr) nonPrenex() Fof {
 	return NewFmlOrs(fml...)
 }
 
+// nonPrenexQ returns a quantifier-free formula equivalent to sfml.
+// 自由変数はなるべく外にだす
 func nonPrenexQ(forex bool, qq []Level, sfml Fof) Fof {
 	var ofmls []Fof
 	switch fml := sfml.(type) {

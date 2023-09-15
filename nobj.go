@@ -24,6 +24,7 @@ type NObj interface {
 }
 
 type Number struct {
+	NObj
 }
 
 func (x *Number) numTag() uint {
