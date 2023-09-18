@@ -126,7 +126,11 @@ func (p Uint) toIntv(prec uint) RObj {
 }
 
 func (p Uint) Sign() int {
-	return int(p)
+	if p == 0 {
+		return 0
+	} else {
+		return 1
+	}
 }
 
 func (u Uint) simpl_mod(cell *Cellmod, p Uint) Moder {

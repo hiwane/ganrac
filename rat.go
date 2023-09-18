@@ -51,6 +51,8 @@ func (x *Rat) N() *big.Rat {
 	return x.n
 }
 
+// RObjとしての正規化.
+// 分母1 の *Rat は *Int に変換する.
 func (z *Rat) normal() RObj {
 	if !z.n.IsInt() {
 		return z
@@ -318,8 +320,4 @@ func (x *Rat) toIntv(prec uint) RObj {
 	z.inf.SetRat(x.n)
 	z.sup.SetRat(x.n)
 	return z
-}
-
-func (x *Rat) Deg(lv Level) int {
-	return 0
 }

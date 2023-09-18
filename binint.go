@@ -372,7 +372,3 @@ func (x *BinInt) toIntv(prec uint) RObj {
 	x.setToBigFloat(z.sup)
 	return z
 }
-
-func (x *BinInt) Deg(lv Level) int {
-	return 0
-}

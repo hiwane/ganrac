@@ -10,6 +10,7 @@ import (
 type Interval struct {
 	inf *big.Float // lower value
 	sup *big.Float // upper value
+	Number
 }
 
 func (z *Interval) String() string {
@@ -107,10 +108,6 @@ func MaxPrec(x, y *Interval) uint {
 	} else {
 		return y.inf.Prec()
 	}
-}
-
-func (x *Interval) Tag() uint {
-	return TAG_NUM
 }
 
 func (x *Interval) Neg() RObj {
@@ -322,10 +319,6 @@ func (x *Interval) IsMinusOne() bool {
 	return false
 }
 
-func (x *Interval) IsNumeric() bool {
-	return true
-}
-
 func (x *Interval) valid() error {
 	if x.inf.Cmp(x.sup) > 0 {
 		return fmt.Errorf("lv > uv")
@@ -381,8 +374,4 @@ func (x *Interval) mid(p float64, prec uint) *big.Float {
 	r.Mul(r, x.sup)
 	r.Add(l, r)
 	return r
-}
-
-func (x *Interval) Deg(lv Level) int {
-	return 0
 }

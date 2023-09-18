@@ -18,6 +18,7 @@ type NObj interface {
 	Cmp(x NObj) int
 	CmpAbs(x NObj) int
 	Abs() NObj
+	Sign() int
 	subst_poly(p *Poly, lv Level) RObj
 
 	// ToInt(n int) *Int // 整数に丸める.
@@ -45,4 +46,8 @@ func (x *Number) IsNumeric() bool {
 
 func (x *Number) valid() error {
 	return nil
+}
+
+func (x *Number) Deg(lv Level) int {
+	return 0
 }
