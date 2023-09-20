@@ -85,6 +85,7 @@ type CADStat struct {
 	lift         []int
 	rlift        []int
 	tm           []time.Duration
+	sector       int
 }
 
 type CAD struct {
@@ -185,6 +186,7 @@ func (stat CADStat) Fprint(b io.Writer, cad *CAD) {
 	if cad.stage >= CAD_STAGE_LIFTED {
 		fmt.Fprintf(b, " - lift | real root in Z[x]    : %8d\n", stat.qrealroot)
 		fmt.Fprintf(b, " - lift | real root in intv[x] : %8d / %d\n", stat.irealroot_ok, stat.irealroot)
+		fmt.Fprintf(b, " - lift | sector sample point  : %8d\n", stat.sector)
 	}
 }
 

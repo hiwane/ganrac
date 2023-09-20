@@ -439,6 +439,9 @@ func (cell *Cell) rlift(cad *CAD, lv Level, proj_num []int) error {
 func (cell *Cell) lift(cad *CAD, stack *cellStack) error {
 	cad.log(2, "lift (%v)\n", cell.Index())
 	cad.stat.lift[cell.lv+1]++
+	if cell.index%2 == 0 && cell.parent != nil {
+		cad.setSamplePoint(cell.parent.children, int(cell.index))
+	}
 	ciso := make([][]*Cell, cad.proj[cell.lv+1].Len())
 	signs := make([]sign_t, len(ciso))
 	for i, pf := range cad.proj[cell.lv+1].gets() {
@@ -559,10 +562,9 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 	// sector をあとで．
 	for i := 0; i < len(cs); i += 2 {
 		if cs[i].truth < 0 && cs[i].children == nil {
-			cad.setSamplePoint(cs, i)
+			// cad.setSamplePoint(cs, i)
 			stack.push(cs[i])
 		}
-
 	}
 
 	return
@@ -747,6 +749,7 @@ func (cad *CAD) setSamplePoint(cells []*Cell, idx int) {
 	if c.intv.inf != nil {
 		return
 	}
+	cad.stat.sector++
 	if idx == 0 { // 左端点
 		c.intv.inf = cad.neighSamplePoint(cells[1], -1, true)
 	} else if idx < len(cells)-1 {
