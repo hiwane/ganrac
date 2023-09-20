@@ -654,7 +654,14 @@ func validQuantifier(name string, q []Level, fml Fof) error {
 			return fmt.Errorf("quantifier %s(lv=%d) in redundant", name, lv)
 		}
 	}
-	// 限量子の重複は許さない.. @TODO
+	// 限量子の重複は許さない..
+	for i := 0; i < len(q); i++ {
+		for j := 0; j < i; j++ {
+			if q[i] == q[j] {
+				return fmt.Errorf("quantifier %s(lv=%d) is duplicated", name, q[i])
+			}
+		}
+	}
 
 	switch fml.(type) {
 	case *AtomT, *AtomF:
@@ -973,7 +980,7 @@ func (p *FmlOr) Format(b fmt.State, format rune) {
 			if i != 0 {
 				fmt.Fprintf(b, " || ")
 			}
-			// @TODO () は不要だが，明確化のため
+			// () は不要だが，明確化のため
 			if _, ok := f.(*FmlAnd); ok {
 				if coloredFml {
 					fmt.Fprintf(b, "%s(%s", esc_sgr(35), esc_sgr(0))
