@@ -139,3 +139,57 @@ func TestBinIntSubst(t *testing.T) {
 
 	}
 }
+
+func TestBinIntToInt(t *testing.T) {
+	for i, s := range []struct {
+		num int64
+		den int
+	}{
+		{5, 4},
+		{3, 5},
+		{1, -1},
+		{7, -1},
+		{18, -1},
+		{18, -2},
+		{18, -3},
+		{18, -4},
+		{18, -5},
+		{19, -1},
+		{19, -2},
+		{19, -3},
+		{19, -4},
+		{19, -5},
+	} {
+		for sgn := int64(-1); sgn <= 1; sgn += 2 {
+			b := newBinIntInt64(s.num*sgn, s.den)
+			actual := b.ToInt(zero)
+
+			// should be actual <= b < actual+1
+			if b.Cmp(actual) < 0 {
+				t.Errorf("A:i=%d, b=%v, actual=%v", i, b, actual)
+				continue
+			}
+
+			actual_plus1 := actual.Add(one).(*Int)
+			if b.Cmp(actual_plus1) >= 0 {
+				t.Errorf("B:i=%d, b=%v, actual=%v", i, b, actual)
+				continue
+			}
+
+			c := newBinIntInt64(s.num*sgn+1, s.den)
+			actual = b.ToInt(one)
+
+			// should be act1 <= c < act1+1
+			if c.Cmp(actual) < 0 {
+				t.Errorf("C:i=%d, b=%v, actual=%v", i, c, actual)
+				continue
+			}
+
+			actual_plus1 = actual.Add(one).(*Int)
+			if c.Cmp(actual_plus1) >= 0 {
+				t.Errorf("D:i=%d, b=%v, actual=%v", i, b, actual)
+				continue
+			}
+		}
+	}
+}

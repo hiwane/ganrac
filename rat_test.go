@@ -107,3 +107,54 @@ func TestRatIntOp2(t *testing.T) {
 		}
 	}
 }
+
+func TestRatToInt(t *testing.T) {
+	for i, s := range []struct {
+		num int64
+		den int64
+	}{
+		{5, 4},
+		{3, 5},
+		{1, 1},
+		{7, 1},
+		{19, 2},
+		{19, 3},
+		{19, 4},
+		{19, 5},
+		{19, 11},
+		{19, 31},
+		{19, 51},
+		{19, 91},
+		{675, 2},
+		{675, 7},
+		{675, 8},
+		{675, 9},
+		{675, 11},
+		{675, 13},
+		{675, 14},
+		{675, 16},
+		{675, 17},
+		{675, 19},
+		{675, 23},
+		{675, 31},
+		{675, 53},
+		{675, 103},
+	} {
+		for sgn := int64(-1); sgn <= 1; sgn += 2 {
+			b := NewRatInt64(s.num*sgn, s.den)
+			actual := b.ToInt()
+
+			// should be actual <= b < actual+1
+			if b.Cmp(actual) < 0 {
+				t.Errorf("A:i=%d, b=%v, actual=%v", i, b, actual)
+				continue
+			}
+
+			actual_plus1 := actual.Add(one).(*Int)
+			if b.Cmp(actual_plus1) >= 0 {
+				t.Errorf("B:i=%d, b=%v, actual=%v", i, b, actual)
+				continue
+			}
+		}
+	}
+}

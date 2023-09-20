@@ -410,6 +410,12 @@ func (x *Int) mul_2exp(m uint) RObj {
 	return v
 }
 
+func (x *Int) rsh(m uint) *Int {
+	v := newInt()
+	v.n.Rsh(x.n, m)
+	return v
+}
+
 func (x *Int) toIntv(prec uint) RObj {
 	z := newInterval(prec)
 	z.inf.SetInt(x.n)

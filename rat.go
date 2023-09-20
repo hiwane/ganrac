@@ -271,11 +271,13 @@ func (z *Rat) valid() error {
 	return nil
 }
 
-// func (z *Rat) ToInt(n int) *Int {
-// 	v := newInt()
-// 	v.n.Div(z.n.Num(), z.n.Denom())
-// 	return v
-// }
+// ToInt returns the quotient x/y for y != 0.
+// If y == 0, a division-by-zero run-time panic occurs.
+func (z *Rat) ToInt() *Int {
+	v := newInt()
+	v.n.Div(z.n.Num(), z.n.Denom())
+	return v
+}
 
 func (z *Rat) Float() float64 {
 	f, _ := z.n.Float64()

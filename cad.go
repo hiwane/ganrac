@@ -593,15 +593,17 @@ func (cell *Cell) Fprint(b io.Writer, args ...interface{}) error {
 			fmt.Fprintf(b, "\n")
 		}
 		if cell.intv.inf != nil {
-			f := cell.intv.sup.Float() - cell.intv.inf.Float()
+			sup := cell.intv.sup.Float()
+			inf := cell.intv.inf.Float()
+			dist := sup - inf
 			fmt.Fprintf(b, "iso.intv     =[%v,%v]\n", cell.intv.inf, cell.intv.sup)
-			fmt.Fprintf(b, "             =[%e,%e] = %e\n", cell.intv.inf.Float(), cell.intv.sup.Float(), f)
+			fmt.Fprintf(b, "             =[%e,%e].  dist=%e\n", inf, sup, dist)
 		}
 		if cell.nintv != nil {
 			bb := new(big.Float)
 			bb.Sub(cell.nintv.sup, cell.nintv.inf)
 			fmt.Fprintf(b, "iso.nintv    =%f\n", cell.nintv)
-			fmt.Fprintf(b, "             =%e = %e\n", cell.nintv, bb)
+			fmt.Fprintf(b, "             =%e.  dist=%e\n", cell.nintv, bb)
 		}
 	case "cellp":
 		for cell.lv >= 0 {

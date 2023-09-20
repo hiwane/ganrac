@@ -245,6 +245,28 @@ func (z *BinInt) ToIntRat() NObj {
 	}
 }
 
+// 整数に丸める.
+// input z = (x+p) * 2^m
+// return integer y s.t. t <= z < t+1
+// Params: p = 0 or 1 is expected
+func (z *BinInt) ToInt(p *Int) *Int {
+	n := z.n
+	if !p.IsZero() {
+		m := big.NewInt(0)
+		n = m.Add(n, p.n)
+	}
+	if z.m < 0 {
+		num := big.NewInt(0)
+		num.Rsh(n, uint(-z.m))
+		x := NewIntZ(num)
+		return x
+	} else {
+		x := newInt()
+		x.n.Lsh(n, uint(z.m))
+		return x
+	}
+}
+
 func (z *BinInt) Float() float64 {
 	f := new(big.Float)
 	z.setToBigFloat(f)

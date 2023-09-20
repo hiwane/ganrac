@@ -562,6 +562,7 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 			cad.setSamplePoint(cs, i)
 			stack.push(cs[i])
 		}
+
 	}
 
 	return
@@ -619,33 +620,112 @@ func (cell *Cell) evalTruth(formula Fof, cad *CAD) Fof {
 	panic("stop")
 }
 
+// find a cell f such that c + s < f
+// s := 1 or -1
+// s > 0 if c is a largest cell
+// f_zero: false なら一番近い整数を返す. true なら 0 が採用できる場合は 0 を採用する
+func (cad *CAD) neighSamplePoint(c *Cell, s int, f_zero bool) *Int {
+	if s == 0 {
+		panic("invalid argument, `s` should not be zero")
+	}
+	// fmt.Printf("neighSamplePoint(%v, %d, %d, %T, [%v, %v], %v)\n", c.Index(), c.Sign(), s, c.intv.inf, c.intv.inf, c.intv.sup, c.nintv)
+	if sgn := c.Sign(); sgn*s < 0 && f_zero {
+		return zero
+	} else if sgn == 0 {
+		if s > 0 {
+			return one
+		} else {
+			return mone
+		}
+	} else if x := c.intv.inf; x == nil {
+		//  big.Float
+		// sgn * s > 0 である
+		src := new(big.Float)
+		if s > 0 {
+			src = c.nintv.sup
+		} else {
+			src = c.nintv.inf
+		}
+		ii := newInt()
+		src.Int(ii.n)
+		ii = ii.Add(NewInt(int64(s))).(*Int)
+		return ii
+	} else if sgn > 0 && s > 0 && c.intv.sup.Cmp(one) < 0 {
+		// s=0..1
+		return one
+	} else if sgn < 0 && s < 0 && c.intv.inf.Cmp(mone) > 0 {
+		return mone
+	} else if n, ok := x.(*Int); ok {
+		return n.Add(NewInt(int64(s))).(*Int)
+	} else if n, ok := x.(*Rat); ok {
+		v := n.ToInt()
+		if s > 0 {
+			return v.Add(one).(*Int)
+		}
+		return v
+	} else if n, ok := x.(*BinInt); ok {
+		var v *Int
+		if s > 0 {
+			return c.intv.sup.(*BinInt).ToInt(zero).Add(one).(*Int)
+		}
+		v = n.ToInt(zero)
+		if v.Cmp(n) == 0 {
+			return v.Sub(one).(*Int)
+		} else {
+			return v
+		}
+	} else {
+		panic(fmt.Sprintf("unsupported type %T; %v", x, x))
+	}
+}
+
+// find a cell f such that c < f < d
+// 代入後の計算が簡易になるサンプル点を生成すべき
 func (cad *CAD) midSamplePoint(c, d *Cell) NObj {
-	// @TODO 代入しやすいサンプル点を生成する.
+	if c.Sign() < 0 && d.Sign() > 0 {
+		return zero
+	}
+
+	// 整数が間にあるか.
+	ciz := cad.neighSamplePoint(c, 1, false)
+	diz := cad.neighSamplePoint(d, -1, false)
+	if ciz.Cmp(diz) <= 0 {
+		// なるべく section からはなれたほうが実根の分離がやりやすいはず
+		if ciz.Equals(diz) {
+			return ciz
+		}
+		mid := ciz.Add(diz).(*Int)
+		return mid.rsh(1)
+	}
+
 	if c.intv.inf != nil && d.intv.inf != nil {
 		return c.intv.sup.Add(d.intv.inf).Div(two).(NObj)
 	}
 
 	var di, ci *Interval
-	if c.nintv == nil {
-		ci = c.getNumIsoIntv(50)
-	} else {
-		ci = c.nintv
-	}
-	if d.nintv == nil {
-		di = d.getNumIsoIntv(50)
-	} else {
-		di = d.nintv
-	}
+	for m := uint(50); ; m += 50 {
+		if c.nintv == nil {
+			ci = c.getNumIsoIntv(m)
+		} else {
+			ci = c.nintv
+		}
+		if d.nintv == nil {
+			di = d.getNumIsoIntv(m)
+		} else {
+			di = d.nintv
+		}
+		if ci.sup.Cmp(di.inf) < 0 {
+			break
+		}
 
-	// ciz := new(big.Int)
-	// diz := new(big.Int)
-	// ci.sup.Int(ciz)
-	// di.inf.Int(diz)
-	// fmt.Printf("ci=%f, di=%f\n", ci, di)
-	// fmt.Printf("ciz=%v, diz=%v\n", ciz, diz)
-	// if ci.Cmp(di) <= 0 {
-	// 	return NewIntZ(ciz)
-	// }
+		if m > 1000 {
+			c.Print("cell")
+			d.Print("cell")
+			fmt.Printf("ci=%v\n", ci)
+			fmt.Printf("di=%v\n", di)
+			panic("!?")
+		}
+	}
 
 	f := new(big.Float)
 	f.Add(ci.sup, di.inf)
@@ -667,32 +747,13 @@ func (cad *CAD) setSamplePoint(cells []*Cell, idx int) {
 	if c.intv.inf != nil {
 		return
 	}
-	if idx == 0 {
-		if cells[1].intv.inf != nil {
-			c.intv.inf = cells[1].intv.inf.Sub(one).(NObj)
-		} else {
-			f_one := big.NewFloat(1)
-			f := new(big.Float)
-			f.Sub(cells[1].nintv.inf, f_one)
-			ii := newInt()
-			f.Int(ii.n)
-			c.intv.inf = ii
-		}
+	if idx == 0 { // 左端点
+		c.intv.inf = cad.neighSamplePoint(cells[1], -1, true)
 	} else if idx < len(cells)-1 {
-
 		m := cad.midSamplePoint(cells[idx-1], cells[idx+1])
 		c.intv.inf = m
-	} else {
-		if cells[idx-1].intv.inf != nil {
-			c.intv.inf = cells[idx-1].intv.sup.Add(one).(NObj)
-		} else {
-			f_one := big.NewFloat(1)
-			f := new(big.Float)
-			f.Add(cells[idx-1].nintv.sup, f_one)
-			ii := newInt()
-			f.Int(ii.n)
-			c.intv.inf = ii
-		}
+	} else { // 右端点
+		c.intv.inf = cad.neighSamplePoint(cells[idx-1], +1, true)
 	}
 	c.intv.sup = c.intv.inf
 }
@@ -1148,6 +1209,10 @@ func (cell *Cell) _subst_intv(p *Poly, prec uint) RObj {
 		return p
 	}
 	x := cell.getNumIsoIntv(prec)
+	if x.inf.Cmp(x.sup) > 0 {
+		fmt.Printf("_subst_intv(%v).Subst(%v, %v)\n", p, x, p.lv)
+		cell.Print("cell")
+	}
 	qq := p.Subst(x, p.lv)
 	return qq
 }
