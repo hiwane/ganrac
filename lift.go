@@ -506,29 +506,30 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 		return
 	}
 
+	///////////////////////////////////////////////////////////////
 	// section を追加
 	// 拡大次数が高い=計算量が大きそうなものからいれたい
 	// @TODO ?? rebuild CAD のときに子供が既にいるかもしれないのでチェックが必要
+	///////////////////////////////////////////////////////////////
 	sections := make([]*Cell, 0, len(cs)/2+1)
 	for i := 1; i < len(cs); i += 2 {
 		if cs[i].truth < 0 && cs[i].children == nil {
 			sections = append(sections, cs[i])
 		}
 	}
-	sort.Slice(sections, func(i, j int) bool {
-		if sections[i].defpoly == nil {
-			return false
-		}
-		if sections[j].defpoly == nil {
-			return true
-		}
-		return sections[i].defpoly.deg() > sections[j].defpoly.deg()
-	})
+	if cad.q[cell.lv+1] >= 0 {
+		// 自由変数の場合は全部持ち上げないといけないから，ソート不要
+		sort.Slice(sections, func(i, j int) bool {
+			return sections[i].ex_deg > sections[j].ex_deg
+		})
+	}
 	for _, cc := range sections {
 		stack.push(cc)
 	}
 
+	///////////////////////////////////////////////////////////////
 	// sector をあとで(手前)．
+	///////////////////////////////////////////////////////////////
 	for i := 0; i < len(cs); i += 2 {
 		if cs[i].truth < 0 && cs[i].children == nil {
 			// cad.setSamplePoint(cs, i)
@@ -987,8 +988,7 @@ func (cell *Cell) root_iso_q(cad *CAD, pf ProjFactor, p *Poly) []*Cell {
 				c.sgn_of_left = sgn
 				sgn *= -1
 				c.multiplicity[pf.Index()] = r
-				c.defpoly = q
-				c.ex_deg = len(q.c) - 1
+				c.setDefPoly(q)
 				ciso[i-1] = append(ciso[i-1], c)
 			}
 		}
@@ -1335,7 +1335,7 @@ func (cell *Cell) Square(even int) {
 	for i := 0; i < len(cell.defpoly.c); i++ {
 		p.c[i*even] = cell.defpoly.c[i]
 	}
-	cell.defpoly = p
+	cell.setDefPoly(p)
 	for e := 1; e < even; e *= 2 {
 		cell.nintv.inf.Sqrt(cell.nintv.inf)
 		cell.nintv.sup.Sqrt(cell.nintv.sup)
@@ -1363,7 +1363,7 @@ func (cell *Cell) root_iso_i(cad *CAD, pf ProjFactor, porg, pp *Poly, prec uint,
 		c.sgn_of_left = sign_t(sgn)
 		c.de = true
 		c.multiplicity[pf.Index()] = multiplicity
-		c.defpoly = porg
+		c.setDefPoly(porg)
 		cells[i] = c
 	}
 	return cells, nil
@@ -1406,6 +1406,7 @@ func (cell *Cell) improveIsoIntv(p *Poly, parent bool) {
 				cell.intv.sup = m
 			} else {
 				cell.defpoly = nil
+				cell.ex_deg = 0
 				cell.intv.inf = l
 				cell.intv.sup = m
 				break

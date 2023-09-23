@@ -19,7 +19,7 @@ type Cell struct {
 	defpoly      *Poly
 	intv         qIntrval  // 有理数=defpoly=nil か，bin-interval
 	nintv        *Interval // 数値計算. defpoly=multivariate, de=true
-	ex_deg       int       // 拡大次数
+	ex_deg       int       // 拡大次数.... のつもりだったけど使っていない
 	signature    []sign_t
 	multiplicity []mult_t
 }
@@ -403,3 +403,7 @@ func (cell *Cell) isSection() bool {
 	return cell.index%2 != 0
 }
 
+func (cell *Cell) setDefPoly(p *Poly) {
+	cell.defpoly = p
+	cell.ex_deg = len(p.c) - 1
+}
