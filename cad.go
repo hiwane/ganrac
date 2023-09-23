@@ -6,7 +6,6 @@ package ganrac
 import (
 	"fmt"
 	"io"
-	"math/big"
 	"os"
 	"time"
 )
@@ -45,27 +44,6 @@ type qIntrval struct {
 type AtomProj struct {
 	Atom
 	pl *ProjLink
-}
-
-type Cell struct {
-	de           bool
-	vanish       bool
-	truth        int8
-	sgn_of_left  sign_t
-	lv           Level
-	parent       *Cell
-	children     []*Cell
-	index        uint
-	defpoly      *Poly
-	intv         qIntrval  // 有理数=defpoly=nil か，bin-interval
-	nintv        *Interval // 数値計算. defpoly=multivariate, de=true
-	ex_deg       int       // 拡大次数
-	signature    []sign_t
-	multiplicity []mult_t
-}
-
-type cellStack struct {
-	stack []*Cell
 }
 
 type CADStat struct {
@@ -380,30 +358,6 @@ func (c *CAD) Root() *Cell {
 	return c.root
 }
 
-func newCellStack() *cellStack {
-	cs := new(cellStack)
-	cs.stack = make([]*Cell, 0, 10000)
-	return cs
-}
-
-func (cs *cellStack) empty() bool {
-	return len(cs.stack) == 0
-}
-
-func (cs *cellStack) push(c *Cell) {
-	cs.stack = append(cs.stack, c)
-}
-
-func (cs *cellStack) pop() *Cell {
-	cell := cs.stack[len(cs.stack)-1]
-	cs.stack = cs.stack[:len(cs.stack)-1]
-	return cell
-}
-
-func (cs *cellStack) size() int {
-	return len(cs.stack)
-}
-
 func (cad *CAD) Print(args ...interface{}) error {
 	return cad.Fprint(os.Stdout, args...)
 }
@@ -434,190 +388,5 @@ func (cad *CAD) Fprint(b io.Writer, args ...interface{}) error {
 		return fmt.Errorf("invalid argument")
 	}
 
-	return nil
-}
-
-func (cell *Cell) printSignature(b io.Writer) {
-	ch := '('
-	for j := 0; j < len(cell.signature); j++ {
-		sgns := '+'
-		if cell.signature[j] < 0 {
-			sgns = '-'
-		} else if cell.signature[j] == 0 {
-			sgns = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHJIKLMNOPQRSTUVWXYZ")[cell.multiplicity[j]]
-		}
-		fmt.Fprintf(b, "%c%c", ch, sgns)
-		ch = ' '
-	}
-	fmt.Fprintf(b, ")")
-}
-
-func (cell *Cell) printMultiplicity(b io.Writer) {
-	ch := '('
-	for j := 0; j < len(cell.multiplicity); j++ {
-		if cell.multiplicity[j] == 0 {
-			fmt.Fprintf(b, "%c ", ch)
-		} else {
-			fmt.Fprintf(b, "%c%d", ch, cell.multiplicity[j])
-		}
-		ch = ' '
-	}
-	fmt.Fprintf(b, ")")
-}
-
-func (cell *Cell) stringTruth() string {
-	if cell.truth < 0 {
-		return "?"
-	}
-	return []string{"f", "t", "."}[cell.truth]
-}
-
-func (cell *Cell) Truth() int8 {
-	return cell.truth
-}
-
-func (cell *Cell) Print(args ...interface{}) error {
-	return cell.Fprint(os.Stdout, args...)
-}
-
-func (cell *Cell) Fprint(b io.Writer, args ...interface{}) error {
-	s := "cell"
-	idx := 0
-	var cad *CAD
-	if len(args) > idx {
-		if s2, ok := args[idx].(*CAD); ok {
-			cad = s2
-			idx++
-		}
-	}
-	if len(args) > idx {
-		switch s2 := args[idx].(type) {
-		case *String:
-			s = s2.s
-			idx++
-		case string:
-			s = s2
-			idx++
-		}
-	}
-
-	for i := idx; i < len(args); i++ {
-		ii, ok := args[i].(*Int)
-		if !ok {
-			return fmt.Errorf("invalid argument [expect integer]")
-		}
-		if ii.Sign() < 0 || !ii.IsInt64() || cell.children == nil || ii.Int64() >= int64(len(cell.children)) {
-			return fmt.Errorf("invalid argument [invalid index]")
-		}
-		cell = cell.children[ii.Int64()]
-	}
-
-	switch s {
-	case "sig", "signatures", "tcells", "fcells":
-		if cell.children == nil {
-			return fmt.Errorf("invalid argument [no child]")
-		}
-		truth := int8(-1)
-		switch s {
-		case "tcells":
-			truth = t_true
-		case "fcells":
-			truth = t_false
-		}
-
-		fmt.Fprintf(b, "%s(%v) :: index=%v, truth=%d\n", s, args[1:], cell.Index(), cell.truth)
-		if cad != nil {
-			fmt.Fprintf(b, "         (")
-			for i, pf := range cad.proj[cell.lv+1].gets() {
-				if i != 0 {
-					fmt.Fprintf(b, " ")
-				}
-				if pf.Input() {
-					fmt.Fprintf(b, "i")
-				} else {
-					fmt.Fprintf(b, " ")
-				}
-			}
-			fmt.Fprintf(b, ")\n")
-		}
-
-		for i, c := range cell.children {
-			if truth >= 0 && c.truth != truth {
-				continue
-			}
-			fmt.Fprintf(b, "%3d,%s,", i, c.stringTruth())
-			if c.children == nil {
-				fmt.Fprintf(b, "  ")
-			} else {
-				fmt.Fprintf(b, "%2d", len(c.children))
-			}
-			fmt.Fprintf(b, " ")
-			c.printSignature(b)
-			// fmt.Fprintf(b, " ")
-			// c.printMultiplicity(b)
-			if c.intv.inf != nil {
-				fmt.Fprintf(b, " [% e,% e]", c.intv.inf.Float(), c.intv.sup.Float())
-			} else if c.nintv != nil {
-				fmt.Fprintf(b, " [% e,% e]", c.nintv.inf, c.nintv.sup)
-			}
-			if c.defpoly != nil {
-				fmt.Fprintf(b, " %.50v", c.defpoly)
-			} else if c.isSection() {
-				if c.intv.inf != c.intv.sup {
-					panic("invlaid")
-				}
-				fmt.Fprintf(b, " %v", c.intv.inf)
-			}
-			fmt.Fprintf(b, "\n")
-		}
-	case "cell":
-		fmt.Fprintf(b, "--- information about the cell %v %p ---\n", cell.Index(), cell)
-		fmt.Fprintf(b, "lv=%d:%s, de=%v, exdeg=%d, truth=%d sgn=%d\n",
-			cell.lv, VarStr(cell.lv), cell.de, cell.ex_deg, cell.truth, cell.sgn_of_left)
-		var num int
-		if cell.children == nil {
-			num = -1
-		} else {
-			num = len(cell.children)
-		}
-		fmt.Fprintf(b, "# of children=%d\n", num)
-		if cell.defpoly != nil {
-			fmt.Fprintf(b, "def.poly     =%v\n", cell.defpoly)
-		} else if cell.isSection() {
-			if cell.intv.inf != cell.intv.sup {
-				panic("invlaid")
-			}
-			fmt.Fprintf(b, "def.value    =%v\n", cell.intv.inf)
-		}
-		if cell.signature != nil {
-			fmt.Fprintf(b, "signature    =")
-			cell.printSignature(b)
-			fmt.Fprintf(b, "\n")
-		}
-		if cell.intv.inf != nil {
-			sup := cell.intv.sup.Float()
-			inf := cell.intv.inf.Float()
-			dist := sup - inf
-			fmt.Fprintf(b, "iso.intv     =[%v,%v]\n", cell.intv.inf, cell.intv.sup)
-			fmt.Fprintf(b, "             =[%e,%e].  dist=%e\n", inf, sup, dist)
-		}
-		if cell.nintv != nil {
-			bb := new(big.Float)
-			bb.Sub(cell.nintv.sup, cell.nintv.inf)
-			fmt.Fprintf(b, "iso.nintv    =%f\n", cell.nintv)
-			fmt.Fprintf(b, "             =%e.  dist=%e\n", cell.nintv, bb)
-		}
-	case "cellp":
-		for cell.lv >= 0 {
-			if err := cell.Fprint(b); err != nil {
-				return err
-			}
-			cell = cell.parent
-			fmt.Fprintf(b, "cell %d: %v\n", cell.lv, cell.Index())
-		}
-		return cell.Fprint(b)
-	default:
-		return fmt.Errorf("invalid argument [kind=%s]", s)
-	}
 	return nil
 }

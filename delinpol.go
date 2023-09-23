@@ -25,13 +25,6 @@ func (cell *Cell) ancestor(lv Level) *Cell {
 	return cell
 }
 
-func (cell *Cell) isSector() bool {
-	return cell.index%2 == 0
-}
-func (cell *Cell) isSection() bool {
-	return cell.index%2 == 1
-}
-
 func (cad *CAD) constcoord_test(cell *Cell, pf ProjFactor) bool {
 	// @@1 の前処理. proj. factor にその変数が含まれていたらダメ
 	for c := cell.parent; c.lv >= 0; c = c.parent {

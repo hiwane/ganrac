@@ -13,53 +13,6 @@ import (
 	"time"
 )
 
-func (cell *Cell) Precs() []uint {
-	prec := make([]uint, cell.lv+1)
-	c := cell
-	for c.lv >= 0 {
-		prec[c.lv] = c.Prec()
-		c = c.parent
-	}
-	return prec
-}
-
-func (cell *Cell) Prec() uint {
-	if cell.defpoly == nil {
-		return 0
-	}
-	switch l := cell.intv.inf.(type) {
-	case *BinInt:
-		if l.m > 0 {
-			return 0
-		} else {
-			return uint(-l.m)
-		}
-	}
-	return cell.nintv.Prec()
-}
-
-func (cell *Cell) Index() []uint {
-	// インデックスを返す. 論文は 1 始まりだが，0 始まりであることに注意
-	// つまり， section は奇数である
-	idx := make([]uint, cell.lv+1)
-	c := cell
-	for c.lv >= 0 {
-		idx[c.lv] = c.index
-		c = c.parent
-	}
-	return idx
-}
-
-func (cell *Cell) hasSection() bool {
-	// 自分〜先祖に section がいるか.
-	for c := cell; c.lv >= 0; c = c.parent {
-		if c.isSection() {
-			return true
-		}
-	}
-	return false
-}
-
 func (cell *Cell) set_truth_value_from_children(cad *CAD) {
 	// 子供の真偽値から自分の真偽値を決める.
 	if cad.q[cell.lv+1] < 0 { // 自由変数
@@ -1389,32 +1342,6 @@ func (cell *Cell) Square(even int) {
 	}
 }
 
-func (cell *Cell) Neg() *Cell {
-	c := new(Cell)
-	*c = *cell
-	c.nintv = newInterval(cell.nintv.Prec())
-	c.nintv.inf.Neg(cell.nintv.sup)
-	c.nintv.sup.Neg(cell.nintv.inf)
-	return c
-}
-
-func (cell *Cell) Sign() int {
-	if cell.intv.inf != nil {
-		if cell.intv.inf.Sign() > 0 {
-			return 1
-		} else if cell.intv.sup.Sign() < 0 {
-			return -1
-		}
-	} else {
-		if cell.nintv.inf.Sign() > 0 {
-			return 1
-		} else if cell.nintv.sup.Sign() < 0 {
-			return -1
-		}
-	}
-	return 0
-}
-
 func (cell *Cell) root_iso_i(cad *CAD, pf ProjFactor, porg, pp *Poly, prec uint, multiplicity mult_t) ([]*Cell, error) {
 	// porg: 区間代入前
 	// pp: interval polynomial
@@ -1507,91 +1434,4 @@ func (cell *Cell) improveIsoIntv(p *Poly, parent bool) {
 	fmt.Printf("improveIsoIntv(%v, %v)\n", p, parent)
 	cell.Print("cellp")
 	panic(fmt.Sprintf("unimplemented: prec=%d", prec))
-}
-
-func (cell *Cell) valid(cad *CAD) error {
-	// cell の妥当性評価 for debug
-	if cell.lv >= 0 {
-		if cell.defpoly == nil {
-			if cell.intv.inf != cell.intv.sup {
-				return fmt.Errorf("defpoly=nil but inf != sup %v", cell.Index())
-			}
-		}
-	}
-
-	idx := cell.Index()
-	if len(idx) > 0 && (cad.stage < 2 || cad.q[cell.lv] == q_free) {
-		c := cad.root
-		for _, x := range idx {
-			c = c.children[x]
-		}
-		if c != cell {
-			return fmt.Errorf("cell=%v... but ...", idx)
-		}
-	}
-
-	if cell.children != nil {
-		nt := 0
-		nf := 0
-		ntc := 0
-		nfc := 0
-		children := make([]*Cell, 0, len(cell.children))
-		for i, c := range children {
-			if c.index != uint(i) {
-				return fmt.Errorf("index invalid. expect=%d, actual=%v", i, c.Index())
-			}
-		}
-		for i := 0; i < len(cell.children); i += 2 {
-			children = append(children, cell.children[i])
-		}
-		for i := 1; i < len(cell.children); i += 2 {
-			children = append(children, cell.children[i])
-		}
-		for _, c := range children {
-			if err := c.valid(cad); err != nil {
-				return err
-			}
-			if c.truth == t_true {
-				nt++
-				if c.children != nil {
-					ntc++
-				}
-
-			} else if c.truth == t_false {
-				nf++
-				if c.children != nil {
-					nfc++
-				}
-			}
-			if c.parent != cell && (cad.stage < 2 || cell.truth < 0) {
-				return fmt.Errorf("%v.parent=%v != %v invalid [%p:%p]", c.Index(), c.parent.Index(), cell.Index(), c.parent, cell)
-			}
-		}
-
-		errmes := ""
-		if cad.q[cell.lv+1] == q_forall {
-			if nfc > 1 {
-				errmes = fmt.Sprintf("forall + many false cells")
-			} else if nf > 0 && cell.truth != t_false {
-				errmes = fmt.Sprintf("forall + false false false")
-			} else if nf == 0 && nt > 0 && cell.truth != t_true {
-				errmes = fmt.Sprintf("forall + true true true")
-			}
-		} else if cad.q[cell.lv+1] == q_exists {
-			if ntc > 1 {
-				errmes = fmt.Sprintf("exists + many false cells")
-			} else if nt > 0 && cell.truth != t_true {
-				errmes = fmt.Sprintf("exists + true true true")
-			} else if nt == 0 && nf > 0 && cell.truth != t_false {
-				errmes = fmt.Sprintf("exists + false false false")
-			}
-		}
-		if errmes != "" {
-			cell.Print("cellp")
-			cell.Print("signatures")
-			return fmt.Errorf("%s: index=%v, truth=%d, true=(%d/%d), false=(%d/%d)", errmes, cell.Index(), cell.truth, ntc, nt, nfc, nf)
-		}
-	}
-
-	return nil
 }
