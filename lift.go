@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sort"
 	"sync"
 	"time"
 )
@@ -521,6 +522,7 @@ func (cell *Cell) lift(cad *CAD, stack *cellStack) error {
 	return nil
 }
 
+// stack に cell を詰める.
 func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 	cs := cell.children
 	if cad.q[cell.lv+1] >= 0 { // 束縛変数
@@ -552,14 +554,28 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 	}
 
 	// section を追加
-	// @TODO ほんとは拡大次数が高い=計算量が大きそうなものからいれたい
-	// rebuild CAD のときに子供が既にいるかもしれないのでチェックが必要
+	// 拡大次数が高い=計算量が大きそうなものからいれたい
+	// @TODO ?? rebuild CAD のときに子供が既にいるかもしれないのでチェックが必要
+	sections := make([]*Cell, 0, len(cs)/2+1)
 	for i := 1; i < len(cs); i += 2 {
 		if cs[i].truth < 0 && cs[i].children == nil {
-			stack.push(cs[i])
+			sections = append(sections, cs[i])
 		}
 	}
-	// sector をあとで．
+	sort.Slice(sections, func(i, j int) bool {
+		if sections[i].defpoly == nil {
+			return false
+		}
+		if sections[j].defpoly == nil {
+			return true
+		}
+		return sections[i].defpoly.deg() > sections[j].defpoly.deg()
+	})
+	for _, cc := range sections {
+		stack.push(cc)
+	}
+
+	// sector をあとで(手前)．
 	for i := 0; i < len(cs); i += 2 {
 		if cs[i].truth < 0 && cs[i].children == nil {
 			// cad.setSamplePoint(cs, i)
