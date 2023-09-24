@@ -29,11 +29,15 @@ func BenchmarkCADAdam1(b *testing.B) {
 }
 
 func BenchmarkQEAdam1(b *testing.B) {
-	benchmarkQE(b, "adam1", true)
+	benchmarkQE(b, "adam1", false)
+}
+
+func BenchmarkCADAdam3(b *testing.B) {
+	benchmarkQE(b, "adam3", true)
 }
 
 func BenchmarkQEAdam3(b *testing.B) {
-	benchmarkQE(b, "adam3", true)
+	benchmarkQE(b, "adam3", false)
 }
 
 func TestBench(t *testing.T) {
