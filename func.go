@@ -20,7 +20,7 @@ func (g *Ganrac) setBuiltinFuncTable() {
 	// 関数テーブル
 	g.builtin_func_table = []func_table{
 		// sorted by name
-		{"all", 2, 2, funcForAll, false, "([x], FOF)", "universal quantifier.", ""},
+		{"all", 2, 2, funcForAll, false, "([x], FOF)", "universal quantifier", ""},
 		//		{"and", 2, 2, funcAnd, false, "(FOF, ...):\t\tconjunction (&&)", ""},
 		{"cad", 1, 2, funcCAD, true, "(fof [, option])", "", fmt.Sprintf(`
 Args
@@ -58,8 +58,8 @@ Examples
   > deg(0, y);
   -1
 `}, // deg(F, x)
-		{"diff", 2, 101, funcDiff, false, "(poly, var, ...)", "differential.", ""},
-		{"discrim", 2, 2, funcOXDiscrim, true, "(poly)", "discriminant.", `
+		{"diff", 2, 101, funcDiff, false, "(poly, var, ...)", "differential", ""},
+		{"discrim", 2, 2, funcOXDiscrim, true, "(poly)", "discriminant", `
 Args
 ========
   poly: polynomial
@@ -75,7 +75,7 @@ Examples
   0
 `},
 		{"equiv", 2, 2, funcEquiv, false, "(fof1, fof2)", "fof1 is equivalent to fof2", ""},
-		{"evalcas", 1, 1, funcOXStr, true, "(str)", "evaluate str by CAD", `
+		{"evalcas", 1, 1, funcOXStr, true, "(str)", "evaluate str by CAS", `
 Args
 ========
 str : string
@@ -85,7 +85,7 @@ Examples
   > evalcas("fctr(x^2-4);");
   [[1,1],[x-2,1],[x+2,1]]
 `},
-		{"ex", 2, 2, funcExists, false, "(vars, FOF)", "existential quantifier.", `
+		{"ex", 2, 2, funcExists, false, "(vars, FOF)", "existential quantifier", `
 Args
 ========
   vars: list of variables
@@ -95,11 +95,11 @@ Examples
 ========
   > ex([x], a*x^2+b*x+c == 0);
 `},
-		{"example", 0, 1, funcExample, false, "([name])", "example.", ""},
-		{"fctr", 1, 1, funcOXFctr, true, "(poly)", "factorize polynomial over the rationals.", ""},
+		{"example", 0, 1, funcExample, false, "([name])", "example", ""},
+		{"fctr", 1, 1, funcOXFctr, true, "(poly)", "factorize polynomial over the rationals", ""},
 		{"fctrp", 1, 1, funcOXFctrp, true, "(poly)", "factorize polynomial over the rationals. para", ""},
 		{"gb", 2, 3, funcOXGB, true, "(polys, vars)", "Groebner basis", ""},
-		{"help", 0, 1, nil, false, "()", "show help", ""},
+		{"help", 0, 1, nil, false, "([str])", "show help", ""},
 		//		{"igcd", 2, 2, funcIGCD, false, "(int1, int2)", "The integer greatest common divisor", ""},
 		{"impl", 2, 2, funcImpl, false, "(fof1, fof2)", "fof1 impies fof2", ""},
 		{"indets", 1, 1, funcIndets, false, "(mobj)", "find indeterminates of an expression", ""},
@@ -155,7 +155,7 @@ Examples*
   > print(C, "cell", 1, 1);
   > print(C, "stat");
 `},
-		{"psc", 4, 4, funcOXPsc, true, "(poly, poly, var, int)", "principal subresultant coefficient.", ""},
+		{"psc", 4, 4, funcOXPsc, true, "(poly, poly, var, int)", "principal subresultant coefficient", ""},
 		{"qe", 1, 2, funcQE, true, "(fof [, opt])", "real quantifier elimination", fmt.Sprintf(`
 Args
 ========
@@ -185,9 +185,9 @@ Example
 			getQEoptStr(QEALGO_SMPL_TRAN),
 			getQEoptStr(QEALGO_VSQUAD),
 		)},
-		{"quit", 0, 1, funcQuit, false, "([code])", "bye.", ""},
+		{"quit", 0, 1, funcQuit, false, "([code])", "bye", ""},
 		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)", "real root isolation", ""},
-		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)", "resultant.", ""},
+		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)", "resultant", ""},
 		{"rootbound", 1, 1, funcRootBound, false, "(uni-poly in Z[x])", "root bound", `
 Args
 ========
@@ -203,8 +203,8 @@ Examples
 		{"simplnum", 1, 1, funcSimplNum, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF for DEBUG", ""},
 		{"sleep", 1, 1, funcSleep, false, "(milisecond)", "zzz", ""},
 		// {"sqfr", 1, 1, funcSqfr, false, "(poly)* square-free factorization", ""},
-		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)", "slope resultant.", ""},
-		{"sres", 3, 4, funcOXSres, true, "(poly, poly, var[, int])", "subresultant seq.", ""},
+		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)", "slope resultant", ""},
+		{"sres", 3, 4, funcOXSres, true, "(poly, poly, var[, int])", "subresultant sequence", ""},
 		{"subst", 1, 101, funcSubst, false, "(poly|FOF|List,x,vx,y,vy,...)", "", ""},
 		{"time", 1, 1, funcTime, false, "(expr)", "run command and system resource usage", ""},
 		{init_var_funcname, 0, 0, nil, false, "(var, ...)", "init variable order", `
@@ -1223,7 +1223,7 @@ func funcHelps(builtin_func_table []func_table, name string) (interface{}, error
 			fmt.Printf("%s %-*s\t%s\n", mark, maxlen, label, fv.descript)
 		}
 		fmt.Printf("\n")
-		fmt.Printf(" * ... required OX-server\n")
+		fmt.Printf(" * ... required CAS\n")
 		fmt.Printf(" @ ... not implemented\n")
 		fmt.Printf("\n")
 		fmt.Printf("\n")

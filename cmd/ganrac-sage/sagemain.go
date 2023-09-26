@@ -15,13 +15,13 @@ var gitCommit string
 func main() {
 	var (
 		tmpfile = flag.String("tmpfile", "/tmp/ganrac.tmp", "temporary file")
-		paran   = flag.Int("para", 0, "parallel number")
+		paran   = flag.Int("para", 0, "number of concurrent processes")
 
 		cp cmd.CmdParam
 	)
 
 	flag.IntVar(&cp.Verbose, "verbose", 0, "verbose")
-	flag.IntVar(&cp.CadVerbose, "cad_verbose", 0, "cad_verbose")
+	flag.IntVar(&cp.CadVerbose, "cad-verbose", 0, "cad verbose")
 	flag.BoolVar(&cp.Color, "color", false, "colored")
 	flag.BoolVar(&cp.Quiet, "q", false, "quiet mode")
 	flag.StringVar(&cp.CmdHistory, "history", "", "command history")
