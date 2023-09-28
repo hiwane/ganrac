@@ -5,8 +5,6 @@ package sage
 */
 
 // #include <Python.h>
-// #cgo CFLAGS: -I/usr/include/python3.10/
-// #cgo LDFLAGS: -L/usr/lib/x86_64-linux-gnu/ -lpython3.10
 import "C"
 
 import (
