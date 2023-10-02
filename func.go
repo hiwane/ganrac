@@ -151,7 +151,7 @@ Examples*
   > print(C, "proji");
   > cadlift(C);
   > print(C, "signatures");
-  > print(C, "signatures", 1);
+  > print(C, "sig", 1);  # "sig" is an abbreviation for "signatures"
   > print(C, "cell", 1, 1);
   > print(C, "stat");
 `},
@@ -763,6 +763,43 @@ func funcVS(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 // //////////////////////////////////////////////////////////
 // util
 // //////////////////////////////////////////////////////////
+func printQEPCADheader(fml Fof) error {
+	if !fml.isPrenex() {
+		return fmt.Errorf("not a prenex formula")
+	}
+
+	maxv := fml.maxVar()
+	freev := make([]Level, 0, maxv+1)
+	num := 0
+	for i := Level(0); i <= maxv; i++ {
+		if fml.hasVar(i) {
+			num++
+			if fml.hasFreeVar(i) {
+				freev = append(freev, i)
+			}
+		}
+	}
+	sep := '('
+	for _, v := range freev {
+		fmt.Printf("%c%s", sep, VarStr(v))
+		sep = ','
+	}
+	if fq, ok := fml.(FofQ); ok {
+		for fq != nil {
+			for _, v := range fq.Qs() {
+				fmt.Printf("%c%s", sep, VarStr(v))
+				sep = ','
+			}
+			fq, ok = fq.Fml().(FofQ)
+			if !ok {
+				break
+			}
+		}
+	}
+	fmt.Printf(")\n%d\n", len(freev))
+	return nil
+}
+
 func funcPrint(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	switch cc := args[0].(type) {
 	case *CAD:
@@ -789,9 +826,19 @@ func funcPrint(g *Ganrac, name string, args []interface{}) (interface{}, error) 
 		case "dump":
 			fmt.Printf("%V\n", cc)
 		case "qepcad":
+			if fml, ok := cc.(Fof); ok {
+				err := printQEPCADheader(fml)
+				if err != nil {
+					return nil, err
+				}
+			}
 			fmt.Printf("%Q\n", cc)
 		default:
-			fmt.Printf(t+"\n", cc)
+			if len(t) > 0 && t[0] == '%' {
+				fmt.Printf(t+"\n", cc)
+			} else {
+				return nil, fmt.Errorf("invalid 2nd arg")
+			}
 		}
 		return nil, nil
 	default:

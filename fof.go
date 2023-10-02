@@ -11,6 +11,7 @@ var falseObj = new(AtomF)
 // first-order formula
 type Fof interface {
 	GObj
+	fmt.Formatter
 	indeter
 	equaler // 等価まではやらない. 形として同じもの
 	simpler
@@ -1072,7 +1073,13 @@ func (p *ForAll) Format(b fmt.State, format rune) {
 		for _, lv := range p.q {
 			fmt.Fprintf(b, "(A %s)", VarStr(lv))
 		}
+		if !p.fml.IsQuantifier() {
+			fmt.Fprintf(b, " [ ")
+		}
 		p.fml.Format(b, format)
+		if !p.fml.IsQuantifier() {
+			fmt.Fprintf(b, " ].")
+		}
 	case FORMAT_DUMP: // dump
 		fmt.Fprintf(b, "(all ")
 		for i, lv := range p.q {
@@ -1126,7 +1133,13 @@ func (p *Exists) Format(b fmt.State, format rune) {
 		for _, lv := range p.q {
 			fmt.Fprintf(b, "(E %s)", VarStr(lv))
 		}
+		if !p.fml.IsQuantifier() {
+			fmt.Fprintf(b, " [ ")
+		}
 		p.fml.Format(b, format)
+		if !p.fml.IsQuantifier() {
+			fmt.Fprintf(b, " ].")
+		}
 	case FORMAT_DUMP: // dump
 		fmt.Fprintf(b, "(ex ")
 		for i, lv := range p.q {
