@@ -117,7 +117,7 @@ func (cad *CAD) liftallpara() error {
 
 	stacks := make([]*cellStack, cad.g.paranum)
 	for i := 0; i < cad.g.paranum; i++ {
-		stacks[i] = newCellStack()
+		stacks[i] = newCellStack(10000)
 		go fn(ctx_pare, ch, cad, stacks[i], cherr, i)
 	}
 
@@ -517,8 +517,24 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 			sections = append(sections, cs[i])
 		}
 	}
+	goood := newCellStack(5)
 	if cad.q[cell.lv+1] >= 0 {
 		// 自由変数の場合は全部持ち上げないといけないから，ソート不要
+		if cell.isSection() {
+			// 隣の sector が見つけた良いところから処理したい.
+			// 良いところとは exists なら true なセルのそば
+			for j := -1; j <= 1; j += 2 {
+				cn := cell.parent.children[int(cell.index)+j]
+				if cn.truth == cad.q[cell.lv+1] {
+					for _, cc := range cn.children {
+						if cc.truth == cn.truth {
+							goood.push(cc)
+							break
+						}
+					}
+				}
+			}
+		}
 		sort.Slice(sections, func(i, j int) bool {
 			return sections[i].ex_deg > sections[j].ex_deg
 		})
@@ -537,7 +553,60 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 		}
 	}
 
-	return
+	///////////////////////////////////////////////////////////////
+	// 先にもちあげると良さげなセル
+	///////////////////////////////////////////////////////////////
+	if !cad.lift_strategy {
+		return
+	}
+
+	cad.stat.good_cell[cell.lv+1] += goood.size()
+	cell.pushGoodCells(cad, stack, goood)
+}
+
+func (cell *Cell) pushGoodCells(cad *CAD, stack *cellStack, goood *cellStack) {
+	cs := cell.children
+	sections := make([]*Cell, 0, len(cs)/2)
+	sectors := make([]bool, len(cs))
+
+	///////////////////////////////////////////
+	// いれるべき section があるか
+	///////////////////////////////////////////
+	for i := 1; i < len(cs); i += 2 {
+		c := cs[i]
+		for _, g := range goood.stack {
+			if g.isSection() && g.isSameSignature(c) && c.truth < 0 {
+				stack.push(c)
+				sections = append(sections, c)
+				break
+			}
+		}
+	}
+
+	for _, c := range sections {
+		for i := -1; i <= 1; i += 2 {
+			di := int(c.index) + i
+			if !sectors[di] && cs[di].truth < 0 {
+				sectors[di] = true
+				stack.push(cs[di])
+			}
+		}
+	}
+
+	///////////////////////////////////////////
+	// いれるべき sector があるか
+	///////////////////////////////////////////
+	for i := 0; i < len(cs); i += 2 {
+		c := cs[i]
+		if sectors[i] || c.truth >= 0 {
+			continue
+		}
+		for _, g := range goood.stack {
+			if !g.isSection() && g.isSameSignature(c) {
+				stack.push(c)
+			}
+		}
+	}
 }
 
 func (cell *Cell) set_signatures(cs []*Cell, signs []sign_t) {

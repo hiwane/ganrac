@@ -25,13 +25,15 @@ func (g *Ganrac) setBuiltinFuncTable() {
 		{"cad", 1, 2, funcCAD, true, "(fof [, option])", "", fmt.Sprintf(`
 Args
 ========
-fof: first-order formula
-opt: dictionary.
-	proj: (m|h) projection operator.  (default: m)
-	var : (0|1) 1 if auto             (default: 0)
+fof   : first-order formula or example name
+option: dictionary.
+	proj: (m|h) projection operator.             (default: m)
+	var : (0|1) variable order.       1 if auto  (default: 0)
+	ls  : (0|1) lifting strategy.                (default: 1)
+                   0: basic, 1: improved
 `)},
-		{"cadinit", 1, 1, funcCADinit, true, "(FOF)", "", ""},
-		{"cadlift", 1, 10, funcCADlift, true, "(CAD)", "", ""},
+		{"cadinit", 1, 2, funcCADinit, true, "(fof [, option])", "", ""},
+		{"cadlift", 1, 10, funcCADlift, true, "(CAD [, index, ...])", "", ""},
 		{"cadproj", 1, 2, funcCADproj, true, "(CAD [, proj])", "", ""},
 		{"cadsfc", 1, 1, funcCADsfc, true, "(CAD)", "", ""},
 		{"coef", 3, 3, funcCoef, false, "(poly, var, deg)", "", ""}, // coef(F, x, 2)
@@ -606,6 +608,18 @@ func funcGetFormula(name string, arg interface{}) (Fof, error) {
 	return fof, nil
 }
 
+func cadArgProj(name string, v any) (ProjectionAlgo, error) {
+	var algo ProjectionAlgo = PROJ_McCallum
+	if vstr, ok := v.(*String); ok && vstr.s == "m" {
+		algo = PROJ_McCallum
+	} else if ok && vstr.s == "h" {
+		algo = PROJ_HONG
+	} else {
+		return algo, fmt.Errorf("%s(2nd arg): invalid proj value: %v", name, v)
+	}
+	return algo, nil
+}
+
 func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	fof, err := funcGetFormula(name, args[0])
 	if err != nil {
@@ -618,7 +632,8 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("%s(1st arg): prenext formula is expected: %v", name, args[0])
 	}
 	var algo ProjectionAlgo = PROJ_McCallum
-	var var_order bool = false
+	var var_order bool
+	var lifting_strategy bool = true
 	if len(args) > 1 {
 		dic, ok := args[1].(*Dict)
 		if !ok {
@@ -627,15 +642,14 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 		for k, v := range dic.v {
 			switch k {
 			case "proj":
-				if vstr, ok := v.(*String); ok && vstr.s == "m" {
-					algo = PROJ_McCallum
-				} else if ok && vstr.s == "h" {
-					algo = PROJ_HONG
-				} else {
-					return nil, fmt.Errorf("%s(2nd arg): invalid proj value: %v", name, v)
+				algo, err = cadArgProj(name, v)
+				if err != nil {
+					return nil, err
 				}
 			case "var":
 				var_order = funcArgBoolVal(v)
+			case "ls":
+				lifting_strategy = funcArgBoolVal(v)
 			default:
 				return nil, fmt.Errorf("%s(2nd arg): unknown option: %s", name, k)
 			}
@@ -661,6 +675,7 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	cad.lift_strategy = lifting_strategy
 	_, err = cad.Projection(algo)
 	if err != nil {
 		return nil, err
@@ -688,7 +703,28 @@ func funcCADinit(g *Ganrac, name string, args []interface{}) (interface{}, error
 		return nil, err
 	}
 
-	return NewCAD(c, g)
+	var lifting_strategy bool = true
+	if len(args) > 1 {
+		dic, ok := args[1].(*Dict)
+		if !ok {
+			return nil, fmt.Errorf("%s(2nd arg): expected Dict: %v", name, args[1])
+		}
+		for k, v := range dic.v {
+			switch k {
+			case "ls":
+				lifting_strategy = funcArgBoolVal(v)
+			default:
+				return nil, fmt.Errorf("%s(2nd arg): unknown option: %s", name, k)
+			}
+		}
+	}
+
+	cad, err := NewCAD(c, g)
+	if err != nil {
+		return nil, err
+	}
+	cad.lift_strategy = lifting_strategy
+	return cad, nil
 }
 
 func funcCADproj(g *Ganrac, name string, args []interface{}) (interface{}, error) {
@@ -699,11 +735,11 @@ func funcCADproj(g *Ganrac, name string, args []interface{}) (interface{}, error
 
 	var algo ProjectionAlgo = PROJ_McCallum
 	if len(args) > 1 {
-		algoi, ok := args[1].(*Int)
-		if !ok || (!algoi.IsZero() && !algoi.IsOne()) {
-			return nil, fmt.Errorf("%s(2nd-arg) expected proj operator", name)
+		var err error
+		algo, err = cadArgProj(name, args[1])
+		if err != nil {
+			return nil, err
 		}
-		algo = ProjectionAlgo(algoi.Int64())
 	}
 
 	p, err := c.Projection(algo)

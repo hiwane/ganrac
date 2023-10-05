@@ -29,9 +29,9 @@ type cellStack struct {
 	stack []*Cell
 }
 
-func newCellStack() *cellStack {
+func newCellStack(cap int) *cellStack {
 	cs := new(cellStack)
-	cs.stack = make([]*Cell, 0, 10000)
+	cs.stack = make([]*Cell, 0, cap)
 	return cs
 }
 
@@ -51,6 +51,23 @@ func (cs *cellStack) pop() *Cell {
 
 func (cs *cellStack) size() int {
 	return len(cs.stack)
+}
+
+// signature が重複するセルがあるか.
+func (cs *cellStack) hasSig(c *Cell) bool {
+	for _, g := range cs.stack {
+		if g.isSameSignature(c) {
+			return true
+		}
+	}
+	return false
+}
+
+// signature が重複しなければ cell を push する
+func (cs *cellStack) pushSig(c *Cell) {
+	if !cs.hasSig(c) {
+		cs.push(c)
+	}
 }
 
 // signature (projection factor の符号列)を返す.
@@ -406,4 +423,23 @@ func (cell *Cell) isSection() bool {
 func (cell *Cell) setDefPoly(p *Poly) {
 	cell.defpoly = p
 	cell.ex_deg = len(p.c) - 1
+}
+
+func (c *Cell) isSameSignature(d *Cell) bool {
+	if c.lv != d.lv {
+		panic(fmt.Sprintf("not same level c=%v, d=%v", c.Index(), d.Index()))
+	}
+	if len(c.signature) != len(d.signature) {
+		panic(fmt.Sprintf("not same len c[%d]=%v, d[%d]=%v", len(c.signature), c.Index(), len(d.signature), d.Index()))
+	}
+	if c.isSection() != d.isSection() {
+		return false
+	}
+
+	for i := 0; i < len(c.signature); i++ {
+		if c.signature[i] != d.signature[i] {
+			return false
+		}
+	}
+	return true
 }

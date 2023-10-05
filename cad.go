@@ -59,6 +59,7 @@ type CADStat struct {
 	cell         []int
 	true_cell    []int
 	false_cell   []int
+	good_cell    []int
 	precision    int
 	lift         []int
 	rlift        []int
@@ -67,22 +68,23 @@ type CADStat struct {
 }
 
 type CAD struct {
-	qfml     Fof           // quantified formula: input
-	fml      Fof           // qff
-	output   Fof           // qff
-	q        []int8        // quantifier
-	proj     []ProjFactors // [level]
-	u        []*Interval   // [level]
-	pl4const []*ProjLink   // 定数用 0, +, -
-	apppoly  []*Poly       // makepdf 用. 入力以外の多項式
-	stack    *cellStack
-	root     *Cell
-	rootp    *Cellmod
-	g        *Ganrac
-	stat     CADStat
-	nwo      bool // well-oriented
-	stage    int8
-	palgo    ProjectionAlgo
+	qfml          Fof           // quantified formula: input
+	fml           Fof           // qff
+	output        Fof           // qff
+	q             []int8        // quantifier
+	proj          []ProjFactors // [level]
+	u             []*Interval   // [level]
+	pl4const      []*ProjLink   // 定数用 0, +, -
+	apppoly       []*Poly       // makepdf 用. 入力以外の多項式
+	stack         *cellStack
+	root          *Cell
+	rootp         *Cellmod
+	g             *Ganrac
+	stat          CADStat
+	nwo           bool // well-oriented
+	lift_strategy bool
+	stage         int8
+	palgo         ProjectionAlgo
 }
 
 type CAD_error_wo struct {
@@ -142,7 +144,7 @@ func (stat CADStat) Fprint(b io.Writer, cad *CAD) {
 		fmt.Fprintf(b, "---+---------+---------+---------+---------+---------\n")
 		sn := make([]int, 5)
 		for i := 0; i < len(cad.q); i++ {
-			fmt.Fprintf(b, "%2d |%8d |%8d |%8d |%8d |%8d\n", i, stat.cell[i], stat.true_cell[i], stat.false_cell[i], stat.lift[i], stat.rlift[i])
+			fmt.Fprintf(b, "%2d |%8d |%8d |%8d |%8d |%8d |%8d\n", i, stat.cell[i], stat.true_cell[i], stat.false_cell[i], stat.lift[i], stat.rlift[i], stat.good_cell[i])
 			sn[0] += stat.cell[i]
 			sn[1] += stat.true_cell[i]
 			sn[2] += stat.false_cell[i]
@@ -269,11 +271,12 @@ _NEXT:
 	}
 
 	c.InitRoot()
-	c.stack = newCellStack()
+	c.stack = newCellStack(10000)
 	c.stack.push(c.root)
 	c.stat.cell = make([]int, len(c.q))
 	c.stat.true_cell = make([]int, len(c.q))
 	c.stat.false_cell = make([]int, len(c.q))
+	c.stat.good_cell = make([]int, len(c.q))
 	c.stat.lift = make([]int, len(c.q))
 	c.stat.rlift = make([]int, len(c.q))
 	c.stat.tm = make([]time.Duration, 3)
@@ -373,7 +376,7 @@ func (cad *CAD) Fprint(b io.Writer, args ...interface{}) error {
 	}
 
 	switch s.s {
-	case "stat":
+	case "stat", "statistics":
 		cad.stat.Fprint(b, cad)
 	case "proj":
 		return cad.FprintProj(b, args[1:]...)
