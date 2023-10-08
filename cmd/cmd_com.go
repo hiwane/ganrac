@@ -256,5 +256,5 @@ func (cp *CmdParam) FlagVars() {
 	flag.BoolVar(&cp.Color, "color", false, "colored")
 	flag.BoolVar(&cp.Quiet, "q", false, "quiet mode")
 	flag.StringVar(&cp.CmdHistory, "history", "", "command history")
-	flag.IntVar(&cp.ConcurrentNum, "para", 0, "number of concurrent processes")
+	flag.IntVar(&cp.ConcurrentNum, "conc", 0, "number of concurrent processes")
 }
