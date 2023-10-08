@@ -3,6 +3,7 @@ package ganrac
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -20,106 +21,83 @@ func (g *Ganrac) setBuiltinFuncTable() {
 	// 関数テーブル
 	g.builtin_func_table = []func_table{
 		// sorted by name
-		{"all", 2, 2, funcForAll, false, "([x], FOF)", "universal quantifier", ""},
+		{"all", 2, 2, funcForAll, false, "([x], FOF)", "universal quantifier", nil, "", "", ""},
 		//		{"and", 2, 2, funcAnd, false, "(FOF, ...):\t\tconjunction (&&)", ""},
-		{"cad", 1, 2, funcCAD, true, "(fof [, option])", "", fmt.Sprintf(`
-Args
-========
-fof   : first-order formula or example name
-option: dictionary.
-	proj: (m|h) projection operator.             (default: m)
-	var : (0|1) variable order.       1 if auto  (default: 0)
-	ls  : (0|1) lifting strategy.                (default: 1)
-                   0: basic, 1: improved
-`)},
-		{"cadinit", 1, 2, funcCADinit, true, "(fof [, option])", "", ""},
-		{"cadlift", 1, 10, funcCADlift, true, "(CAD [, index, ...])", "", ""},
-		{"cadproj", 1, 2, funcCADproj, true, "(CAD [, proj])", "", ""},
-		{"cadsfc", 1, 1, funcCADsfc, true, "(CAD)", "", ""},
-		{"coef", 3, 3, funcCoef, false, "(poly, var, deg)", "", ""}, // coef(F, x, 2)
-		{"counter", 0, 0, funcCounter, false, "()", "", ""},
-		{"deg", 2, 2, funcDeg, false, "(poly|FOF, var)", "degree of a polynomial with respect to var", `
-Args
-========
-  poly: a polynomial
-  FOF : a first-order formula
-  var : a variable
-
-Returns
-========
-  degree of a polynomial w.r.t a variable
-
-Examples
-========
-  > deg(x^2+3*y+1, x);
-  2
-  > deg(x^2+3*y+1, y);
-  1
-  > deg(x^2+3*y+1>0 && x^3+y^3==0, y);
-  3
-  > deg(0, y);
-  -1
-`}, // deg(F, x)
-		{"diff", 2, 101, funcDiff, false, "(poly, var, ...)", "differential", ""},
-		{"discrim", 2, 2, funcOXDiscrim, true, "(poly)", "discriminant", `
-Args
-========
-  poly: polynomial
-  var : a variable in poly
-
-Examples
-========
-  > discrim(2*x^2-3*x-3, x);
-  33
-  > discrim(a*x^2+b*x+c, x);
-  -4*c*a+b^2
-  > discrim(a*x^2+b*x+c, y);
-  0
-`},
-		{"equiv", 2, 2, funcEquiv, false, "(fof1, fof2)", "fof1 is equivalent to fof2", ""},
-		{"evalcas", 1, 1, funcOXStr, true, "(str)", "evaluate str by CAS", `
-Args
-========
-str : string
-
-Examples
-========
-  > evalcas("fctr(x^2-4);");
-  [[1,1],[x-2,1],[x+2,1]]
-`},
-		{"ex", 2, 2, funcExists, false, "(vars, FOF)", "existential quantifier", `
-Args
-========
-  vars: list of variables
-  FOF : a first-order formula
-
-Examples
-========
-  > ex([x], a*x^2+b*x+c == 0);
-`},
-		{"example", 0, 1, funcExample, false, "([name])", "example", ""},
-		{"fctr", 1, 1, funcOXFctr, true, "(poly)", "factorize polynomial over the rationals", ""},
-		{"fctrp", 1, 1, funcOXFctrp, true, "(poly)", "factorize polynomial over the rationals. para", ""},
-		{"gb", 2, 3, funcOXGB, true, "(polys, vars)", "Groebner basis", ""},
-		{"help", 0, 1, nil, false, "([str])", "show help", ""},
+		{"cad", 1, 2, funcCAD, true, "(fof [, option])", "", []func_help{
+			{"fof", "first-order formula or example name", true, "", nil, ""},
+			{"option", "dictionary", false, "", []func_help{
+				{"proj", "(m|h) projection operator", false, "m", nil, ""},
+				{"var", "(0|1) variable order.       1 if auto", false, "0", nil, ""},
+				{"ls", "(0|1) lifting strategy.", false, "1", []func_help{
+					{"0", "basic", false, "", nil, ""},
+					{"1", "improved", false, "", nil, ""},
+				}, ""},
+			}, ""},
+		}, "", "", ""},
+		{"cadinit", 1, 2, funcCADinit, true, "(fof [, option])", "", nil, "", "", ""},
+		{"cadlift", 1, 10, funcCADlift, true, "(CAD [, index, ...])", "", nil, "", "", ""},
+		{"cadproj", 1, 2, funcCADproj, true, "(CAD [, proj])", "", nil, "", "", ""},
+		{"cadsfc", 1, 1, funcCADsfc, true, "(CAD)", "", nil, "", "", ""},
+		{"coef", 3, 3, funcCoef, false, "(poly, var, deg)", "", nil, "", "", ""}, // coef(F, x, 2)
+		{"counter", 0, 0, funcCounter, false, "()", "", nil, "", "", ""},
+		{"deg", 2, 2, funcDeg, false, "(poly|fof, var)", "degree of a polynomial with respect to var", []func_help{
+			{"poly", "polynomial", true, "", nil, ""},
+			{"fof", "first-order formula", true, "", nil, ""},
+			{"var", "variable", true, "", nil, ""},
+		}, "degree of a polynomial w.r.t a variable", `
+> deg(x^2+3*y+1, x);
+2
+> deg(x^2+3*y+1, y);
+1
+> deg(x^2+3*y+1>0 && x^3+y^3==0, y);
+3
+> deg(0, y);
+-1
+`, ""}, // deg(F, x)
+		{"diff", 2, 101, funcDiff, false, "(poly, var, ...)", "differential", nil, "", "", ""},
+		{"discrim", 2, 2, funcOXDiscrim, true, "(poly, var)", "discriminant", []func_help{
+			{"poly", "polynomial", true, "", nil, ""},
+			{"var", "variable", true, "", nil, ""},
+		}, "", `
+> discrim(2*x^2-3*x-3, x);
+33
+> discrim(a*x^2+b*x+c, x);
+-4*c*a+b^2
+> discrim(a*x^2+b*x+c, y);
+0
+`, ""},
+		{"equiv", 2, 2, funcEquiv, false, "(fof1, fof2)", "fof1 is equivalent to fof2", nil, "", "", ""},
+		{"evalcas", 1, 1, funcOXStr, true, "(str)", "evaluate str by CAS", []func_help{
+			{"str", "string", true, "", nil, ""},
+		}, "", `
+> evalcas("fctr(x^2-4);");
+[[1,1],[x-2,1],[x+2,1]]
+`, ""},
+		{"ex", 2, 2, funcExists, false, "(vars, FOF)", "existential quantifier", []func_help{
+			{"vars", "list of variables", true, "", nil, ""},
+			{"FOF", "first-order formula", true, "", nil, ""},
+		}, "", `
+> ex([x], a*x^2+b*x+c == 0):
+`, ""},
+		{"example", 0, 1, funcExample, false, "([name])", "example", nil, "", "", ""},
+		{"fctr", 1, 1, funcOXFctr, true, "(poly)", "factorize polynomial over the rationals", nil, "", "", ""},
+		{"fctrp", 1, 1, funcOXFctrp, true, "(poly)", "factorize polynomial over the rationals. para", nil, "", "", ""},
+		{"gb", 2, 3, funcOXGB, true, "(polys, vars)", "Groebner basis", nil, "", "", ""},
+		{"help", 0, 1, nil, false, "([str])", "show help", nil, "", "", ""},
 		//		{"igcd", 2, 2, funcIGCD, false, "(int1, int2)", "The integer greatest common divisor", ""},
-		{"impl", 2, 2, funcImpl, false, "(fof1, fof2)", "fof1 impies fof2", ""},
-		{"indets", 1, 1, funcIndets, false, "(mobj)", "find indeterminates of an expression", ""},
-		{"intv", 1, 3, funcIntv, false, "(lb, ub [, prec])", "make an interval", ""},
-		{"len", 1, 1, funcLen, false, "(mobj)", "length of an object", ""},
-		{"load", 2, 2, funcLoad, false, "(fname)@", "load file", ""},
-		{"not", 1, 1, funcNot, false, "(FOF)", "", `
-Args
-========
-  FOF : a first-order formula
-
-Examples
-========
-  > not(x > 0);
-  x <= 0
-  > not(ex([x], a*x^2+b*x+c==0));
-  all([x], a*x^2+b*x+c != 0)
-`},
+		{"impl", 2, 2, funcImpl, false, "(fof1, fof2)", "fof1 impies fof2", nil, "", "", ""},
+		{"indets", 1, 1, funcIndets, false, "(mobj)", "find indeterminates of an expression", nil, "", "", ""},
+		{"intv", 1, 3, funcIntv, false, "(lb, ub [, prec])", "make an interval", nil, "", "", ""},
+		{"len", 1, 1, funcLen, false, "(mobj)", "length of an object", nil, "", "", ""},
+		{"load", 2, 2, funcLoad, false, "(fname)@", "load file", nil, "", "", ""},
+		{"not", 1, 1, funcNot, false, "(fof)", "", []func_help{
+			{"fof", "first-order formula", true, "", nil, ""},
+		}, "", `
+> not(x > 0);
+x <= 0
+> not(ex([x], a*x^2+b*x+c==0));
+all([x], a*x^2+b*x+c != 0)
+`, ""},
 		/*
 		   		{"oxfunc", 2, 100, funcOXFunc, true, "(fname, args...)*\tcall ox-function by ox-asir", `
 		   Args
@@ -135,97 +113,76 @@ Examples
 		     4
 		   `},
 		*/
-		{"print", 1, 10, funcPrint, false, "(obj [, kind, ...])", "print object", `
+		{"print", 1, 10, funcPrint, false, "(obj [, kind, ...])", "print object", nil, "", `
+> print(x^10+y-3);
+y+x^10-3
+> print(x^10+y-3, "tex");
+y+x^{10}-3
+> print(ex([x], x^2>1 && y +x == 0), "tex");
+\exists x x^2-1 > 0 \land y+x = 0
 
-Examples*
-========
-  > print(x^10+y-3);
-  y+x^10-3
-  > print(x^10+y-3, "tex");
-  y+x^{10}-3
-  > print(ex([x], x^2>1 && y +x == 0), "tex");
-  \exists x x^2-1 > 0 \land y+x = 0
-
-  > ` + init_var_funcname + `(a,b,c,x);
-  > C = cadinit(ex([x], a*x^2+b*x+c==0));
-  > cadproj(C);
-  > print(C, "proj");
-  > print(C, "proji");
-  > cadlift(C);
-  > print(C, "signatures");
-  > print(C, "sig", 1);  # "sig" is an abbreviation for "signatures"
-  > print(C, "cell", 1, 1);
-  > print(C, "stat");
-`},
-		{"psc", 4, 4, funcOXPsc, true, "(poly, poly, var, int)", "principal subresultant coefficient", ""},
-		{"qe", 1, 2, funcQE, true, "(fof [, opt])", "real quantifier elimination", fmt.Sprintf(`
-Args
-========
-fof: first-order formula
-opt: dictionary.
-  %9s: (0|1) linear    virtual substitution
-  %9s: (0|1) quadratic virtual substitution
-  %9s: (0|1) linear    equational constraint [Hong93]
-  %9s: (0|1) quadratic equational constraint [Hong93]
-  %9s: (0|1) inequational constraints [Iwane15]
-  %9s: (0|1) simplify  even formula
-  %9s: (0|1) simplify  homogeneous formula
-  %9s: (0|1) simplify  translatation formula
-
-Example
-=======
-  > vars(x, b, c);
-  > F = ex([x], x^2+b*x+c == 0, {%s: 0});
-`,
-			getQEoptStr(QEALGO_VSLIN),
-			getQEoptStr(QEALGO_VSQUAD),
-			getQEoptStr(QEALGO_EQLIN),
-			getQEoptStr(QEALGO_EQQUAD),
-			getQEoptStr(QEALGO_NEQ),
-			getQEoptStr(QEALGO_SMPL_EVEN),
-			getQEoptStr(QEALGO_SMPL_HOMO),
-			getQEoptStr(QEALGO_SMPL_TRAN),
-			getQEoptStr(QEALGO_VSQUAD),
-		)},
-		{"quit", 0, 1, funcQuit, false, "([code])", "bye", ""},
-		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)", "real root isolation", ""},
-		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)", "resultant", ""},
-		{"rootbound", 1, 1, funcRootBound, false, "(uni-poly in Z[x])", "root bound", `
-Args
-========
-  poly: univariate polynomial
-
-Examples
-========
-  > rootbound(x^2-2);
-  3
-`},
-		{"save", 2, 3, funcSave, false, "(obj, fname)@", "save object...", ""},
-		{"simpl", 1, 3, funcSimplify, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF", ""},
-		{"simplnum", 1, 1, funcSimplNum, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF for DEBUG", ""},
-		{"sleep", 1, 1, funcSleep, false, "(milisecond)", "zzz", ""},
-		// {"sqfr", 1, 1, funcSqfr, false, "(poly)* square-free factorization", ""},
-		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)", "slope resultant", ""},
-		{"sres", 3, 4, funcOXSres, true, "(poly, poly, var[, int])", "subresultant sequence", ""},
-		{"subst", 1, 101, funcSubst, false, "(poly|FOF|List,x,vx,y,vy,...)", "", ""},
-		{"time", 1, 1, funcTime, false, "(expr)", "run command and system resource usage", ""},
-		{init_var_funcname, 0, 0, nil, false, "(var, ...)", "init variable order", `
-Args
-========
-  var
-
-Examples*
-========
-  > ` + init_var_funcname + `(x,y,z);
-  > F = x^2+2;
-  > F;
-  > ` + init_var_funcname + `(a,b,c);
-  > F;
-  a^2+2
-  > x;
-  error: undefined variable ` + "`x`\n"},
-		{"verbose", 1, 2, funcVerbose, false, "(int [, int])", "set verbose level", ""},
-		{"vs", 1, 2, funcVS, true, "(FOF, int) ", "virtual substitution", ""},
+> ` + init_var_funcname + `(a,b,c,x);
+> C = cadinit(ex([x], a*x^2+b*x+c==0));
+> cadproj(C);
+> print(C, "proj");
+> print(C, "proji");
+> cadlift(C);
+> print(C, "signatures");
+> print(C, "sig", 1);  # "sig" is an abbreviation for "signatures"
+> print(C, "cell", 1, 1);
+> print(C, "stat");
+`, ""},
+		{"psc", 4, 4, funcOXPsc, true, "(poly, poly, var, int)", "principal subresultant coefficient", nil, "", "", ""},
+		{"qe", 1, 2, funcQE, true, "(fof [, opt])", "real quantifier elimination", []func_help{
+			{"fof", "first-order formula", true, "", nil, ""},
+			{"opt", "dictionary", false, "",
+				[]func_help{
+					{getQEoptStr(QEALGO_VSLIN), "(0|1) linear       virtual substitution", false, "1", nil, ""},
+					{getQEoptStr(QEALGO_VSQUAD), "(0|1) quadratic    virtual substitution", false, "1", nil, ""},
+					{getQEoptStr(QEALGO_EQLIN), "(0|1) linear       equational constraint [Hong93]", false, "1", nil, ""},
+					{getQEoptStr(QEALGO_EQQUAD), "(0|1) quadratic    equational constraint [Hong93]", false, "1", nil, ""},
+					{getQEoptStr(QEALGO_NEQ), "(0|1) inequational constraints [Iwane15]", false, "1", nil, ""},
+					{getQEoptStr(QEALGO_SMPL_EVEN), "(0|1) simplify     even formula", false, "1", nil, ""},
+					{getQEoptStr(QEALGO_SMPL_HOMO), "(0|1) simplify     homogeneous formula", false, "1", nil, ""},
+					{getQEoptStr(QEALGO_SMPL_TRAN), "(0|1) simplify     translatation formula", false, "1", nil, ""},
+				}, ""},
+		}, "", fmt.Sprintf(`
+> vars(x, b, c):
+> F = ex([x], x^2+b*x+c == 0, {%s: 0, %s: 1});
+`, getQEoptStr(QEALGO_VSQUAD), getQEoptStr(QEALGO_SMPL_HOMO)), ""},
+		{"quit", 0, 1, funcQuit, false, "([code])", "bye", nil, "", "", ""},
+		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)", "real root isolation", nil, "", "", ""},
+		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)", "resultant", nil, "", "", ""},
+		{"rootbound", 1, 1, funcRootBound, false, "(unipoly)", "root bound",
+			[]func_help{
+				{"unipoly", "univariate polynomial", true, "", nil, ""},
+			}, "", `
+> rootbound(x^2-2);
+3
+`, ""},
+		{"save", 2, 3, funcSave, false, "(obj, fname)@", "save object...", nil, "", "", ""},
+		{"simpl", 1, 3, funcSimplify, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF", nil, "", "", ""},
+		{"simplnum", 1, 1, funcSimplNum, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF for DEBUG", nil, "", "", ""},
+		{"sleep", 1, 1, funcSleep, false, "(milisecond)", "zzz", nil, "", "", ""},
+		// {"sqfr", 1, 1, funcSqfr, false, "(poly)* square-free factorization", nil, "", "", ""},
+		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)", "slope resultant", nil, "", "", ""},
+		{"sres", 3, 4, funcOXSres, true, "(poly, poly, var[, int])", "subresultant sequence", nil, "", "", ""},
+		{"subst", 1, 101, funcSubst, false, "(poly|FOF|List,x,vx,y,vy,...)", "", nil, "", "", ""},
+		{"time", 1, 1, funcTime, false, "(expr)", "run command and system resource usage", nil, "", "", ""},
+		{init_var_funcname, 0, 0, nil, false, "(var, ...)", "init variable order",
+			[]func_help{
+				{"var", "variable", true, "", nil, ""},
+			}, "", `
+> ` + init_var_funcname + `(x,y,z);
+> F = x^2+2;
+> F;
+> ` + init_var_funcname + `(a,b,c);
+> F;
+a^2+2
+> x;
+error: undefined variable ` + "`x`\n", ""},
+		{"verbose", 1, 2, funcVerbose, false, "(int [, int])", "set verbose level", nil, "", "", ""},
+		{"vs", 1, 2, funcVS, true, "(FOF, int) ", "virtual substitution", nil, "", "", ""},
 	}
 }
 
@@ -1271,7 +1228,7 @@ func funcHelp(builtin_func_table []func_table, name string, args []interface{}) 
 }
 
 func funcHelps(builtin_func_table []func_table, name string) (interface{}, error) {
-	if name == "@" {
+	if name == "@" { // 引数なし
 		fmt.Printf("GANRAC\n")
 		fmt.Printf("==========\n")
 		fmt.Printf("TOKENS:\n")
@@ -1322,15 +1279,76 @@ func funcHelps(builtin_func_table []func_table, name string) (interface{}, error
 		fmt.Printf("  > help(\"deg\");\n")
 		return nil, nil
 	}
+	// 引数ありのばあい
+	const sep = "================\n"
+	const indent = "  "
 	for _, fv := range builtin_func_table {
 		if fv.name == name {
-			fmt.Printf("%s%s\n", fv.name, fv.descript)
-			if fv.help != "" {
-				fmt.Printf("%s\n", fv.help)
+			fmt.Printf("%s%s: %s\n", fv.name, fv.args, fv.descript)
+			if fv.arguments != nil {
+				fmt.Printf("\nArguments:\n%s", sep)
+				maxn := 0
+				for _, a := range fv.arguments {
+					if maxn < len(a.name) {
+						maxn = len(a.name)
+					}
+				}
+				for _, a := range fv.arguments {
+					fmt.Printf("%s%-*s: %s", indent, maxn, a.name, a.atype)
+					if a.defval != "" {
+						fmt.Printf("\t(default: %s)", a.defval)
+					}
+					fmt.Printf("\n")
+					maxm := 0
+					maxd := 0
+					for _, b := range a.dic {
+						if ln := len(b.name); maxm < ln {
+							maxm = ln
+						}
+						if ln := len(b.atype); maxd < ln {
+							maxd = ln
+						}
+					}
+					if maxm+len(indent) == maxn {
+						// コロンの位置が揃うと見づらいため，ずらす
+						maxm++
+					}
+					for _, b := range a.dic {
+						fmt.Printf("%s%s%-*s: %-*s", indent, indent, maxm, b.name, maxd, b.atype)
+						if b.defval != "" {
+							fmt.Printf("  (default: %s)", b.defval)
+						}
+						fmt.Printf("\n")
+					}
+				}
 			}
+			if fv.returns != "" {
+				fmt.Printf("\nReturns:\n%s", sep)
+				fmt.Printf("%s%s\n", indent, fv.returns)
+			}
+			if fv.examples != "" {
+				fmt.Printf("\nExamples:\n%s", sep)
+				fmt.Printf("%s", add_indent(fv.examples, indent))
+			}
+
 			return nil, nil
 		}
 	}
 
 	return nil, fmt.Errorf("unknown function `%s()`\n", name)
+}
+
+func add_indent(input, ws string) string {
+	vs := strings.Split(input, "\n")
+	ret := ""
+	for i, v := range vs {
+		if i == 0 && v == "" {
+			continue
+		} else if v == "" {
+			ret += "\n"
+		} else {
+			ret += ws + v + "\n"
+		}
+	}
+	return ret
 }

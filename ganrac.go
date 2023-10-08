@@ -22,14 +22,26 @@ func IncDebugCounter(f string, n int) int {
 
 var init_var_funcname string = "vars"
 
-type func_table struct {
+type func_help struct {
 	name     string
-	min, max int
-	f        func(g *Ganrac, name string, args []interface{}) (interface{}, error)
-	ox       bool
-	args     string // 引数情報
-	descript string // 1行説明
-	help     string // 詳細説明
+	atype    string
+	required bool
+	defval   string
+	dic      []func_help
+	reserved string
+}
+
+type func_table struct {
+	name      string
+	min, max  int
+	f         func(g *Ganrac, name string, args []interface{}) (interface{}, error)
+	ox        bool
+	args      string // 引数情報
+	descript  string // 1行説明
+	arguments []func_help
+	returns   string
+	examples  string
+	reserved  string
 }
 
 type Ganrac struct {
