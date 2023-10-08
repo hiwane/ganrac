@@ -16,20 +16,17 @@ var gitCommit string
 
 func main() {
 	var (
+		// OX版固有オプション
 		cport      = flag.String("control", "localhost:1234", "ox-asir, control port")
 		dport      = flag.String("data", "localhost:4321", "ox-asir, data port")
 		ox         = flag.Bool("ox", false, "use ox-asir")
 		ox_verbose = flag.Bool("ox-verbose", false, "verbose ox-asir")
-		paran      = flag.Int("para", 0, "number of concurrent processes")
 
+		// 共通オプション
 		cp cmd.CmdParam
 	)
 
-	flag.IntVar(&cp.Verbose, "verbose", 0, "verbose")
-	flag.IntVar(&cp.CadVerbose, "cad-verbose", 0, "cad verbose")
-	flag.BoolVar(&cp.Color, "color", false, "colored")
-	flag.BoolVar(&cp.Quiet, "q", false, "quiet mode")
-	flag.StringVar(&cp.CmdHistory, "history", "", "command history")
+	cp.FlagVars()
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [-ox][-data host:port][-control host:port]\n", os.Args[0])
@@ -62,8 +59,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		g.SetParaNum(*paran)
-		if *paran > 0 {
+		g.SetParaNum(cp.ConcurrentNum)
+		if cp.ConcurrentNum > 0 {
 			paracas := para.NewParaCAS(ox)
 			defer paracas.Close()
 			g.SetCAS(paracas)

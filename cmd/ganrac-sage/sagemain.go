@@ -14,17 +14,14 @@ var gitCommit string
 
 func main() {
 	var (
+		// SageMath版固有オプション
 		tmpfile = flag.String("tmpfile", "/tmp/ganrac.tmp", "temporary file")
-		paran   = flag.Int("para", 0, "number of concurrent processes")
 
+		// 共通オプション
 		cp cmd.CmdParam
 	)
 
-	flag.IntVar(&cp.Verbose, "verbose", 0, "verbose")
-	flag.IntVar(&cp.CadVerbose, "cad-verbose", 0, "cad verbose")
-	flag.BoolVar(&cp.Color, "color", false, "colored")
-	flag.BoolVar(&cp.Quiet, "q", false, "quiet mode")
-	flag.StringVar(&cp.CmdHistory, "history", "", "command history")
+	cp.FlagVars()
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s\n", os.Args[0])
@@ -38,8 +35,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "initialize sage failed: %s\n", err.Error())
 		os.Exit(1)
 	}
-	g.SetParaNum(*paran)
-	if *paran > 0 {
+	g.SetParaNum(cp.ConcurrentNum)
+	if cp.ConcurrentNum > 0 {
 		paracas := para.NewParaCAS(Sage)
 		defer paracas.Close()
 		g.SetCAS(paracas)

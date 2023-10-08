@@ -7,6 +7,7 @@ import (
 	"github.com/hiwane/ganrac"
 
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -16,10 +17,11 @@ import (
 )
 
 type CmdParam struct {
-	Verbose    int
-	CadVerbose int
-	Color      bool
-	Quiet      bool
+	Verbose       int
+	CadVerbose    int
+	Color         bool
+	Quiet         bool
+	ConcurrentNum int
 
 	CmdHistory string
 }
@@ -246,4 +248,13 @@ func (cp CmdParam) Interpreter(g *ganrac.Ganrac) {
 			fmt.Println(p)
 		}
 	}
+}
+
+func (cp *CmdParam) FlagVars() {
+	flag.IntVar(&cp.Verbose, "verbose", 0, "verbose")
+	flag.IntVar(&cp.CadVerbose, "cad-verbose", 0, "cad verbose")
+	flag.BoolVar(&cp.Color, "color", false, "colored")
+	flag.BoolVar(&cp.Quiet, "q", false, "quiet mode")
+	flag.StringVar(&cp.CmdHistory, "history", "", "command history")
+	flag.IntVar(&cp.ConcurrentNum, "para", 0, "number of concurrent processes")
 }
