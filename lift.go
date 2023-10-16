@@ -520,17 +520,25 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 	goood := newCellStack(5)
 	if cad.q[cell.lv+1] >= 0 {
 		// 自由変数の場合は全部持ち上げないといけないから，ソート不要
+		var n int
 		if cell.isSection() {
-			// 隣の sector が見つけた良いところから処理したい.
-			// 良いところとは exists なら true なセルのそば
-			for j := -1; j <= 1; j += 2 {
-				cn := cell.parent.children[int(cell.index)+j]
-				if cn.truth == cad.q[cell.lv+1] {
-					for _, cc := range cn.children {
-						if cc.truth == cn.truth {
-							goood.push(cc)
-							break
-						}
+			n = 1
+		} else {
+			n = 2
+		}
+		// 隣の sector が見つけた良いところから処理したい.
+		// 良いところとは exists なら true なセルのそば
+		for j := -1; j <= 1; j += 2 {
+			idx := int(cell.index) + j*n
+			if idx < 0 || idx >= len(cell.parent.children) {
+				continue
+			}
+			cn := cell.parent.children[idx]
+			if cn.truth == cad.q[cell.lv+1] {
+				for _, cc := range cn.children {
+					if cc.truth == cn.truth {
+						goood.push(cc)
+						break
 					}
 				}
 			}
