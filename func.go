@@ -27,7 +27,8 @@ func (g *Ganrac) setBuiltinFuncTable() {
 			{"fof", "first-order formula or example name", true, "", nil, ""},
 			{"option", "dictionary", false, "", []func_help{
 				{"proj", "(m|h) projection operator", false, "m", nil, ""},
-				{"var", "(0|1) variable order.       1 if auto", false, "0", nil, ""},
+				{"var", "(0|1) variable order.         1 if auto", false, "0", nil, ""},
+				{"stat", "(0|1) print statistics data.  1 if print", false, "0", nil, ""},
 				{"ls", "(0|1) lifting strategy.", false, "1", []func_help{
 					{"0", "basic", false, "", nil, ""},
 					{"1", "improved", false, "", nil, ""},
@@ -590,6 +591,7 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	}
 	var algo ProjectionAlgo = PROJ_McCallum
 	var var_order bool
+	var print_stat bool
 	var lifting_strategy bool = true
 	if len(args) > 1 {
 		dic, ok := args[1].(*Dict)
@@ -607,6 +609,8 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 				var_order = funcArgBoolVal(v)
 			case "ls":
 				lifting_strategy = funcArgBoolVal(v)
+			case "stat":
+				print_stat = funcArgBoolVal(v)
 			default:
 				return nil, fmt.Errorf("%s(2nd arg): unknown option: %s", name, k)
 			}
@@ -647,10 +651,16 @@ func funcCAD(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if var_order {
 		fml = qeopt.qe_cad_varorder_post(fml, cond, fof.maxVar()+1, o2)
 	}
+	if print_stat {
+		err = cad.Print(NewString("stat"))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return fml, nil
 }
 
