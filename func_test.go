@@ -1,8 +1,6 @@
 package ganrac
 
 import (
-	"bufio"
-	"strings"
 	"testing"
 )
 
