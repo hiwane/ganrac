@@ -518,7 +518,7 @@ func (cell *Cell) lift_term(cad *CAD, undefined bool, stack *cellStack) {
 		}
 	}
 	goood := newCellStack(5)
-	if cad.q[cell.lv+1] >= 0 {
+	if cad.q[cell.lv+1] >= 0 && cell.parent != nil {
 		// 自由変数の場合は全部持ち上げないといけないから，ソート不要
 		var n int
 		if cell.isSection() {
