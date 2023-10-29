@@ -36,6 +36,7 @@ var qeExampleTable []qeExTable = []qeExTable{
 	{"easy7", exEasy7},
 	{"hong93", exHong93},
 	{"imo13-1", exImo13_1_5},
+	{"kyoto2010h2", exKyoto2010h2},
 	{"makepdf", exMakePdf},
 	{"makepd2", exMakePdf2},
 	{"neq1", exNeq1},
@@ -256,6 +257,21 @@ func exEasy7() *QeExample {
 
 	return q
 }
+
+func exKyoto2010h2() *QeExample {
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{0, 1}, NewFmlAnds(
+		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, -2), -1), 1), EQ),
+		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -9, 4), 1), LE),
+		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -4, 1), 2), GE),
+		NewAtom(NewPolyCoef(1, NewPolyCoef(0, -6, -2), 3), LE)))
+	q.Output = NewFmlAnds(
+		NewAtom(NewPolyCoef(2, -6, 1), LE),
+		NewAtom(NewPolyCoef(2, -2, 1), GE))
+	q.Ref = "first entrance exam Kyoto U. 2010, humanities [2]"
+	return q
+}
+
 func exMakePdf() *QeExample {
 	q := new(QeExample)
 	q.Input = NewQuantifier(false, []Level{1}, NewFmlAnds(
