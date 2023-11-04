@@ -28,3 +28,4 @@
 | [Translation invariant formula](../simpl_tran.go) |✔| [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
 | Rotation invariant formula || [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
 | [Symbolic-numeric](../simpl_num.go) |✔| [[Iwane18](http://www.jssac.org/Editor/Suushiki/V24/V242.html)] |
+| Dynamic Programming with QE | | [[Iwane11](https://link.springer.com/chapter/10.1007/978-3-642-23568-9_19)] |
