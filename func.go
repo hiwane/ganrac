@@ -508,7 +508,11 @@ func funcExample(g *Ganrac, name string, args []interface{}) (interface{}, error
 
 	ll := NewList()
 	ll.Append(ex.Input)
-	ll.Append(ex.Output)
+	if ex.Output != nil {
+		ll.Append(ex.Output)
+	} else {
+		ll.Append(ex.Input)
+	}
 	ll.Append(NewString(ex.Ref))
 	ll.Append(NewString(ex.DOI))
 
