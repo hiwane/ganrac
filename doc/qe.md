@@ -23,7 +23,7 @@
 | [Basic](../simpl_basic.go) |✔| [[Dolzmann97](https://www.sciencedirect.com/science/article/pii/S0747717197901231)] |
 | [Factorization](../simpl_fctr.go) |✔| [[Dolzmann97](https://www.sciencedirect.com/science/article/pii/S0747717197901231)] |
 | [Equotional constraints](../simpl_reduce.go) |✔|
-| [Even formula](../even.go) `phi(x^2) <=> ex([y], x^2 = y /\ phi(y) /\ y >= 0)` ||
+| [Even formula](../even.go) `phi(x^2) <=> ex([y], x^2 = y /\ phi(y))` ||
 | [Scale invaiant formula](../simpl_homo.go) |✔| [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
 | [Translation invariant formula](../simpl_tran.go) |✔| [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
 | Rotation invariant formula || [[Iwane17](https://dl.acm.org/doi/abs/10.1145/3087604.3087627)] |
