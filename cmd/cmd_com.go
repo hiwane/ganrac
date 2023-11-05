@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"github.com/chzyer/readline"
+	"github.com/hiwane/flagvar"
 	"github.com/hiwane/ganrac"
 
 	"bufio"
@@ -19,9 +20,9 @@ import (
 type CmdParam struct {
 	Verbose       int
 	CadVerbose    int
-	Color         bool
 	Quiet         bool
 	ConcurrentNum int
+	Color         *flagvar.ChoiceVar
 
 	CmdHistory string
 }
@@ -47,8 +48,13 @@ func (cp CmdParam) NewGanracLogger(cas, revision string) (*ganrac.Ganrac, *log.L
 	g := ganrac.NewGANRAC()
 	// logger := log.New(os.Stderr, "", log.Ltime)
 	logger := log.New(os.Stderr, "", 0)
-	if cp.Color {
+	if cp.Color.String() == "always" {
 		ganrac.SetColordFml(true)
+	} else if cp.Color.String() == "auto" {
+		fd := os.Stdout.Fd()
+		if readline.IsTerminal(int(fd)) {
+			ganrac.SetColordFml(true)
+		}
 	}
 	g.Eval(strings.NewReader(fmt.Sprintf("verbose(%d,%d);", cp.Verbose, cp.CadVerbose)))
 	g.SetLogger(logger)
@@ -253,7 +259,9 @@ func (cp CmdParam) Interpreter(g *ganrac.Ganrac) {
 func (cp *CmdParam) FlagVars() {
 	flag.IntVar(&cp.Verbose, "verbose", 0, "verbose")
 	flag.IntVar(&cp.CadVerbose, "cad-verbose", 0, "cad verbose")
-	flag.BoolVar(&cp.Color, "color", false, "colored")
+	color_args := []string{"auto", "always", "never"}
+	cp.Color = flagvar.NewChoiceVar("never", color_args)
+	flag.Var(cp.Color, "color", fmt.Sprintf("colorize the output (choose from %v)", color_args))
 	flag.BoolVar(&cp.Quiet, "q", false, "quiet mode")
 	flag.StringVar(&cp.CmdHistory, "history", "", "command history")
 	flag.IntVar(&cp.ConcurrentNum, "conc", 0, "number of concurrent processes")
