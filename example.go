@@ -37,8 +37,10 @@ var qeExampleTable []qeExTable = []qeExTable{
 	{"hong93", exHong93},
 	{"imo13-1", exImo13_1_5},
 	{"kyoto2010h2", exKyoto2010h2},
+	{"lass", exLass},
 	{"makepdf", exMakePdf},
 	{"makepd2", exMakePdf2},
+	{"mooea", exMooea},
 	{"neq1", exNeq1},
 	{"neq2", exNeq2},
 	{"neq3", exNeq3},
@@ -46,6 +48,7 @@ var qeExampleTable []qeExTable = []qeExTable{
 	{"neq5", exNeq5},
 	{"neq6", exNeq6},
 	{"pl01", exPL01},
+	{"portfolio", exPortfolio},
 	{"quad", exQuad},
 	{"quart", exQuart},
 	{"sdc2", exSDC2},
@@ -272,6 +275,22 @@ func exKyoto2010h2() *QeExample {
 	return q
 }
 
+func exLass() *QeExample {
+	q := new(QeExample)
+	q.Input = NewQuantifier(true, []Level{1, 2, 3}, NewFmlOrs(
+		NewAtom(NewPolyCoef(3, 0, 1), LT),
+		NewAtom(NewPolyCoef(3, -1, 1), GE),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(1, 0, 1), 1), LT),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(1, 0, -1), 1), LT),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, 1), 1), LT),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(2, 0, -1), 1), LT),
+		NewAtom(NewPolyCoef(2, NewPolyCoef(0, 1, -1), 0, NewPolyCoef(1, 0, 0, -1, 0, 1), 0, NewPolyCoef(1, 0, 0, 1)), GE)))
+	q.Output = NewAtom(NewPolyCoef(0, -26, 27), LE)
+	q.Ref = "Jean B. Lasserre. Global Optimization with Polynomials and the Problem of Moments. 2001"
+	q.DOI = "10.1137/S1052623400366802"
+	return q
+}
+
 func exMakePdf() *QeExample {
 	q := new(QeExample)
 	q.Input = NewQuantifier(false, []Level{1}, NewFmlAnds(
@@ -461,6 +480,19 @@ func exPL01() *QeExample {
 		NewAtom(NewPolyCoef(2, NewPolyCoef(0, 1, -1), 0, NewPolyCoef(1, 0, 0, -3, 0, 1), 0, NewPolyCoef(1, 0, 0, 1)), GE)))
 	q.Ref = "P. Parrilo and S. Lall. Semidefinite Programming Relaxation and Algebraic Optimization in Control."
 	q.DOI = ""
+	return q
+}
+
+func exPortfolio() *QeExample {
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{1, 2, 3}, NewFmlAnds(
+		NewAtom(NewPolyCoef(1, 0, 1), GE),
+		NewAtom(NewPolyCoef(2, 0, 1), GE),
+		NewAtom(NewPolyCoef(3, 0, 1), GE),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, -10000, 1), 1), 1), LE),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, -100000, 5), -4), 15), GE),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, -1), 0, 8), NewPolyCoef(1, 0, -40), 3), NewPolyCoef(2, NewPolyCoef(1, 0, 10), -30), 45), EQ)))
+	q.Ref = "J. Schattman. Portfolio optimization under nonconvex transaction costs with the global optimization toolbox. https://www.maplesoft.com/Applications/Detail.aspx?id=1401"
 	return q
 }
 
@@ -758,5 +790,15 @@ func exImo13_1_5() *QeExample {
 	q.Output = trueObj
 	q.Ref = "H. Iwane, H. Anai. Formula Simplification for Real Quantifier Elimination Using Geometric Invariance"
 	q.DOI = "10.1145/3087604.3087627"
+	return q
+}
+
+func exMooea() *QeExample {
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{2, 3, 4}, NewFmlAnds(
+		NewAtom(NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(0, 0, -1), 0, 1), 0, 1), 1), EQ),
+		NewAtom(NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 1, -1), -2, 1), 0, 1), 1), EQ),
+		NewAtom(NewPolyCoef(2, 2, 1), GE), NewAtom(NewPolyCoef(2, -2, 1), LE),
+		NewAtom(NewPolyCoef(3, 2, 1), GE), NewAtom(NewPolyCoef(3, -2, 1), LE), NewAtom(NewPolyCoef(4, 1, 10), GE), NewAtom(NewPolyCoef(4, -1, 10), LE)))
 	return q
 }
