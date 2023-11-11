@@ -7,6 +7,7 @@
 | Collins' projection  | |
 | [Hong's projection](../projhh.go) | ✔ |
 | [McCallum's projection](../projmc.go) | ✔ |
+| MC projection with equational constraints | |
 | Lazard's projection |  |
 
 
