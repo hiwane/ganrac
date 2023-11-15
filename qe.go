@@ -495,6 +495,10 @@ func (qeopt QEopt) appendNecSuf(qff Fof, cond qeCond) Fof {
 	return qff
 }
 
+// QE では，変数順序は任意の値を設定できるが，
+// CAD では，効率化のために，決められた変数順序でのみ実行可能としている.
+// そのため，ユーザが入力した変数順序を，CADが実行可能な順序に変換する
+//
 // Parameters:
 //
 //	fof: Prenex Formula
@@ -601,7 +605,7 @@ func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
 		}
 		qeopt.log(cond, 1, "cad", "not well-oriented %v\n", fof2)
 
-		// NOT well-oriented で Hong-proj へ
+		// NOT well-oriented だったので Hong-proj へ移行
 		cad, _ = NewCAD(fof2, qeopt.g)
 		cad.Projection(PROJ_HONG)
 		err = cad.Lift()
@@ -614,6 +618,7 @@ func (qeopt QEopt) qe_cad(fof FofQ, cond qeCond) Fof {
 	return qeopt.qe_cad_varorder_post(fof3, cond, maxvar, o2)
 }
 
+// qe_cad_varorder_pre() で変数順序を変換したので，元に戻す
 func (qeopt QEopt) qe_cad_varorder_post(fof3 Fof, cond qeCond, maxvar Level, o2 []Level) Fof {
 	lvs := make([]Level, 0, len(o2))
 	vas := make([]RObj, 0, len(o2))
@@ -626,6 +631,7 @@ func (qeopt QEopt) qe_cad_varorder_post(fof3 Fof, cond qeCond, maxvar Level, o2 
 	return fof3
 }
 
+// nonprenex であるが，一番外側が限量子である場合
 func (qeopt QEopt) qe_nonpreq(fofq FofQ, cond qeCond) Fof {
 	qeopt.log(cond, 2, "qenpr", "%v\n", fofq)
 	fs := make([]FofQ, 1)

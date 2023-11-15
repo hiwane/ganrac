@@ -139,10 +139,10 @@ func (stat CADStat) Fprint(b io.Writer, cad *CAD) {
 	}
 	if cad.stage >= CAD_STAGE_LIFTED {
 		fmt.Fprintf(b, "CAD cell stat....\n")
-		fmt.Fprintf(b, "=====================================================\n")
-		fmt.Fprintf(b, "LV |    cell |    true |   false |    lift |   rlift\n")
-		fmt.Fprintf(b, "---+---------+---------+---------+---------+---------\n")
-		sn := make([]int, 5)
+		fmt.Fprintf(b, "===============================================================\n")
+		fmt.Fprintf(b, "LV |    cell |    true |   false |    lift |   rlift |    good\n")
+		fmt.Fprintf(b, "---+---------+---------+---------+---------+---------|---------\n")
+		sn := make([]int, 6)
 		for i := 0; i < len(cad.q); i++ {
 			fmt.Fprintf(b, "%2d |%8d |%8d |%8d |%8d |%8d |%8d\n", i, stat.cell[i], stat.true_cell[i], stat.false_cell[i], stat.lift[i], stat.rlift[i], stat.good_cell[i])
 			sn[0] += stat.cell[i]
@@ -150,9 +150,10 @@ func (stat CADStat) Fprint(b io.Writer, cad *CAD) {
 			sn[2] += stat.false_cell[i]
 			sn[3] += stat.lift[i]
 			sn[4] += stat.rlift[i]
+			sn[5] += stat.good_cell[i]
 		}
-		fmt.Fprintf(b, "---+---------+---------+---------+---------+---------\n")
-		fmt.Fprintf(b, "%2d |%8d |%8d |%8d |%8d |%8d\n", -1, sn[0], sn[1], sn[2], sn[3], sn[4])
+		fmt.Fprintf(b, "---+---------+---------+---------+---------+---------|---------\n")
+		fmt.Fprintf(b, "   |%8d |%8d |%8d |%8d |%8d |%8d\n", sn[0], sn[1], sn[2], sn[3], sn[4], sn[5])
 		fmt.Fprintf(b, "\n")
 	}
 	fmt.Fprintf(b, "CA stat....\n")

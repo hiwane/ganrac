@@ -37,7 +37,7 @@ func main() {
 
 	g, logger := cp.NewGanracLogger("OX", gitCommit)
 	if *ox {
-		logger.Printf("connect OX!!!!")
+		logger.Printf("connecting OX!!!!")
 		connc, err := net.Dial("tcp", *cport)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "connect control [%s] failed: %s\n", *cport, err.Error())

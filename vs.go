@@ -22,21 +22,27 @@ type fof_vser interface {
 
 type vs_sample_point struct {
 	// (num + sqrt(v)) / den
-	num    RObj
-	den    []RObj // [den^0, den, den^2, den^3, ...]
-	sqr    RObj
-	lc     RObj
-	deg    int
-	sqrc   int
+	num  RObj
+	den  []RObj // [den^0, den, den^2, den^3, ...]
+	sqr  RObj
+	lc   RObj
+	deg  int
+	sqrc int
+
+	// DNF な P(x) に対して， ex([x], P(x)) の出力はできるだけ,
+	// DNF に近い形式で復帰したい
+	// 原子論理式への代入ごとに, 分母にくる主変数の符号での場合わけを避けるため，
+	// 主変数の符号を記録しておく
 	densgn int
+
 	// 線形なら +1, ２次なら +1 or -1.
 	// 一番大きな根なら +1 = 主係数の符号と x+e の符号が一致
 	// 一番小さな根なら -1 = 主係数の符号と x+e の符号が一致しない
-
 	idx    int
 	neccon Fof
 }
 
+// サンプル点の表示
 func (sp *vs_sample_point) Format(s fmt.State, format rune) {
 	fmt.Fprintf(s, "[sp, (")
 	if sp.sqr != nil {
@@ -66,6 +72,7 @@ func (sp *vs_sample_point) Format(s fmt.State, format rune) {
 	fmt.Fprintf(s, "]")
 }
 
+// 分母用の配列を生成
 func makeDenAry(v RObj, deg int) []RObj {
 	ret := make([]RObj, deg+1)
 	ret[0] = one
