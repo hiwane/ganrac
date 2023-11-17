@@ -115,6 +115,7 @@ func (pf *ProjFactorHH) proj_coeff(cad *CAD) {
 				return
 			}
 		} else {
+			pf.coeff[i] = cad.addProjRObj(c)
 			if gb.Len() > 0 {
 				for lv, b := range bl {
 					if !b && c.(*Poly).hasVar(Level(lv)) {
@@ -129,13 +130,12 @@ func (pf *ProjFactorHH) proj_coeff(cad *CAD) {
 					c = r
 				}
 				if c.IsNumeric() {
-					if !c.IsZero() {
+					if !c.IsZero() { // これ以上次数が下がらないことがわかった
 						return
 					}
 					continue
 				}
 			}
-			pf.coeff[i] = cad.addProjRObj(c)
 			for lv, b := range bl {
 				if !b && c.(*Poly).hasVar(Level(lv)) {
 					bl[lv] = true
