@@ -647,6 +647,9 @@ func (qeopt QEopt) qe_nonpreq(fofq FofQ, cond qeCond) Fof {
 			for i := len(fs) - 1; i >= 0; i-- {
 				fml = fs[i].gen(fs[i].Qs(), fml)
 			}
+			if fml.IsQff() {
+				return fml
+			}
 			fml = qeopt.qe_prenex(fml.(FofQ), cond)
 			if fml.IsQff() {
 				return fml
