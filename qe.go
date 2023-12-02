@@ -639,7 +639,8 @@ func (qeopt QEopt) qe_nonpreq(fofq FofQ, cond qeCond) Fof {
 	for {
 		fml := fofq.Fml()
 		if fml.IsQuantifier() {
-			fs = append(fs, fml.(FofQ))
+			fofq = fml.(FofQ)
+			fs = append(fs, fofq)
 		} else if fmlao, ok := fml.(FofAO); ok {
 			fml = qeopt.qe_andor(fmlao, cond)
 
