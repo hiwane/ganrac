@@ -8,6 +8,7 @@ import "C"
 
 import (
 	"fmt"
+	"github.com/hiwane/ganrac"
 	"unsafe"
 )
 
@@ -58,6 +59,22 @@ func toPyString(s string) *C.PyObject {
 	p := C.CString(s)
 	defer C.free(unsafe.Pointer(p))
 	return C.PyUnicode_FromString(p)
+}
+
+// 変数はすべて xi 形式にする
+func polyToPyString(p *ganrac.Poly) *C.PyObject {
+	s := fmt.Sprintf("%"+string(ganrac.FORMAT_INDEX), p)
+	return toPyString(s)
+}
+
+func listToPyString(p *ganrac.List) *C.PyObject {
+	s := fmt.Sprintf("%"+string(ganrac.FORMAT_INDEX), p)
+	return toPyString(s)
+}
+
+func lvToPyString(lv ganrac.Level) *C.PyObject {
+	s := fmt.Sprintf("x%d", lv)
+	return toPyString(s)
 }
 
 func toGoString(s *C.PyObject) string {

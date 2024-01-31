@@ -449,8 +449,8 @@ func (sage *Sage) Gcd(p, q *Poly) RObj {
 	varn := sage.varn(p, q)
 
 	// 変数はすべて xi 形式にする
-	ps := toPyString(fmt.Sprintf("%I", p))
-	qs := toPyString(fmt.Sprintf("%I", q))
+	ps := polyToPyString(p)
+	qs := polyToPyString(q)
 	// fmt.Printf("ps=%s qs=%p\n", fmt.Sprintf("%I", p), qs)
 
 	ret := callFunctionv(sage.pGCD, varn, ps, qs)
@@ -475,7 +475,7 @@ func (sage *Sage) Factor(q *Poly) *List {
 	varn := sage.varn(q)
 
 	p, cont := q.PPC()
-	ps := toPyString(fmt.Sprintf("%I", p)) // 変数はすべて xi 形式にする
+	ps := polyToPyString(p)
 
 	ret := callFunctionv(sage.pFactor, varn, ps)
 	if ret == nil {
@@ -522,8 +522,8 @@ func (sage *Sage) Discrim(p *Poly, lv Level) RObj {
 	varn := sage.varn(p)
 
 	// 変数はすべて xi 形式にする
-	ps := toPyString(fmt.Sprintf("%I", p))
-	xs := toPyString(fmt.Sprintf("x%d", lv))
+	ps := polyToPyString(p)
+	xs := lvToPyString(lv)
 
 	ret := callFunctionv(sage.pDiscrim, varn, ps, xs)
 	if ret == nil {
@@ -541,9 +541,9 @@ func (sage *Sage) Resultant(p *Poly, q *Poly, lv Level) RObj {
 	varn := sage.varn(p, q)
 
 	// 変数はすべて xi 形式にする
-	ps := toPyString(fmt.Sprintf("%I", p))
-	qs := toPyString(fmt.Sprintf("%I", q))
-	xs := toPyString(fmt.Sprintf("x%d", lv))
+	ps := polyToPyString(p)
+	qs := polyToPyString(q)
+	xs := lvToPyString(lv)
 
 	ret := callFunctionv(sage.pResultant, varn, ps, qs, xs)
 	if ret == nil {
@@ -560,8 +560,8 @@ func (sage *Sage) Resultant(p *Poly, q *Poly, lv Level) RObj {
 func (sage *Sage) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 	// sage.all.Matrix([[x,y],[z,w]]).det()
 	varn := sage.varn(p, q)
-	ps := toPyString(fmt.Sprintf("%I", p))
-	qs := toPyString(fmt.Sprintf("%I", q))
+	ps := polyToPyString(p)
+	qs := polyToPyString(q)
 	lvs := C.PyLong_FromLong(C.long(lv))
 	js := C.PyLong_FromLong(C.long(j))
 
@@ -580,8 +580,8 @@ func (sage *Sage) Psc(p *Poly, q *Poly, lv Level, j int32) RObj {
 func (sage *Sage) Sres(p *Poly, q *Poly, lv Level, k int32) *List {
 	sage.log("Sres(%s) start!\n", p)
 	varn := sage.varn(p, q)
-	ps := toPyString(fmt.Sprintf("%I", p))
-	qs := toPyString(fmt.Sprintf("%I", q))
+	ps := polyToPyString(p)
+	qs := polyToPyString(q)
 	lvs := C.PyLong_FromLong(C.long(lv))
 	ks := C.PyLong_FromLong(C.long(k))
 
@@ -600,8 +600,8 @@ func (sage *Sage) Sres(p *Poly, q *Poly, lv Level, k int32) *List {
 func (sage *Sage) Slope(p *Poly, q *Poly, lv Level, k int32) RObj {
 	sage.log("Slope(%s) start!\n", p)
 	varn := sage.varn(p, q)
-	ps := toPyString(fmt.Sprintf("%I", p))
-	qs := toPyString(fmt.Sprintf("%I", q))
+	ps := polyToPyString(p)
+	qs := polyToPyString(q)
 	lvs := C.PyLong_FromLong(C.long(lv))
 	ks := C.PyLong_FromLong(C.long(k))
 
@@ -621,7 +621,7 @@ func (sage *Sage) toPyVars(vars *List) *C.PyObject {
 	vs := C.PyTuple_New(C.long(vars.Len()))
 	for i := 0; i < vars.Len(); i++ {
 		v, _ := vars.Geti(i)
-		C.PyTuple_SetItem(vs, C.long(i), toPyString(fmt.Sprintf("x%d", v.(*Poly).Level())))
+		C.PyTuple_SetItem(vs, C.long(i), lvToPyString(v.(*Poly).Level()))
 	}
 	return vs
 }
@@ -630,7 +630,7 @@ func (sage *Sage) GB(p *List, vars *List, n int) *List {
 	sage.cnt++
 	sage.log("[%d] GB(%s,%s,%d) start!\n", sage.cnt, p, vars, n)
 	// 変数はすべて xi 形式にする
-	ps := toPyString(fmt.Sprintf("%I", p))
+	ps := listToPyString(p)
 	ns := C.PyLong_FromLong(C.long(n))
 
 	vs := sage.toPyVars(vars)
@@ -651,8 +651,8 @@ func (sage *Sage) GB(p *List, vars *List, n int) *List {
 func (sage *Sage) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 	sage.cnt++
 	sage.log("[%d] Reduce(%s,%s,%s,%d) start!\n", sage.cnt, p, gb, vars, n)
-	ps := toPyString(fmt.Sprintf("%I", p))
-	gbs := toPyString(fmt.Sprintf("%I", gb))
+	ps := polyToPyString(p)
+	gbs := listToPyString(gb)
 	vs := sage.toPyVars(vars)
 	for i := 0; i < vars.Len(); i++ {
 		_vi, _ := vars.Geti(i)
@@ -680,9 +680,9 @@ func (sage *Sage) Reduce(p *Poly, gb *List, vars *List, n int) (RObj, bool) {
 	return sage.EvalRObj(retstr), false
 }
 
-func (sage *Sage) Eval(p string) (GObj, error) {
-	sage.log("Eval(%s) start!\n", p)
-	ps := toPyString(p)
+func (sage *Sage) Eval(str string) (GObj, error) {
+	sage.log("Eval(%s) start!\n", str)
+	ps := toPyString(str)
 	ret := callFunction(sage.pEval, ps) // 変数設定は??
 	if ret == nil {
 		C.PyErr_Print()
