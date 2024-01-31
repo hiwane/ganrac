@@ -1,10 +1,11 @@
 package sage
 
-/*
-404350,
-*/
+// python3.8 で Py_CompileString がマクロな場合があった
 
 // #include <Python.h>
+// PyAPI_FUNC(PyObject *) Py_CompileStringGanrac(const char *str, const char *p, int s) {
+//   return Py_CompileString(str, p, s);
+// }
 import "C"
 
 import (
@@ -321,7 +322,7 @@ def gan_eval(varn: int, s):
 	*/
 	cstr := C.CString(str)
 	defer C.free(unsafe.Pointer(cstr))
-	po := C.Py_CompileString(cstr, C.CString(fname), C.Py_file_input)
+	po := C.Py_CompileStringGanrac(cstr, C.CString(fname), C.Py_file_input)
 
 	mname := "ganrac" // module名
 	pName := C.CString(mname)
