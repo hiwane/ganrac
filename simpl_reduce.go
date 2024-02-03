@@ -9,6 +9,8 @@ import (
 // 等式制約を利用して，atom を簡単化する
 /////////////////////////////////////
 
+// 新しい等式制約が見つかったので, GB (inf.eqns) を更新する
+// Returns: GB が更新されたかどうか.
 func (inf *reduce_info) updateGB(g *Ganrac, maxvar Level) bool {
 	// maxvar := p.maxVar()
 	for _, eq := range inf.eqns.Iter() {
@@ -129,13 +131,13 @@ func (inf *reduce_info) isQ(lv Level) bool {
 }
 
 func (inf *reduce_info) Reduce(g *Ganrac, p *Poly) (RObj, bool) {
-	n := 0 // 一時的に変数リストを増やす
 	if int(p.lv) >= len(inf.varb) {
 		b := make([]bool, p.lv+1)
 		copy(b, inf.varb)
 		inf.varb = b
 	}
 
+	n := 0 // 一時的に変数リストを増やす
 	for lv := p.lv; lv >= Level(0); lv-- {
 		if !inf.varb[lv] && p.hasVar(lv) {
 			inf.vars.Append(NewPolyVar(lv))
@@ -218,7 +220,7 @@ func (p *Atom) simplReduce(g *Ganrac, inf *reduce_info) Fof {
 //	f == 0 && G <==> false ならば，
 //
 // p <==> G と簡単化できる
-func simplReduceAO2(g *Ganrac, infbase *reduce_info, p FofAO, fmls []Fof, op OP, bx []int) Fof {
+func simplReduceAO2(g *Ganrac, infbase *reduce_info, p FofAO, fmls []Fof, op OP, eqn_const []*Poly) Fof {
 	if true { // とても遅かった. テスト時間が 7分→11分になった
 		return p
 	}
@@ -228,14 +230,11 @@ func simplReduceAO2(g *Ganrac, infbase *reduce_info, p FofAO, fmls []Fof, op OP,
 	nop := op.not()
 	var update bool
 
-	b := make([]int, len(bx))
-	copy(b, bx)
-
 	for i, fml := range p.Fmls() {
-		if b[i] != 0 {
+		if eqn_const[i] != nil {
 			continue
 		}
-		qs := make([]*Atom, 0, len(b))
+		qs := make([]*Atom, 0, len(eqn_const))
 		switch f := fml.(type) {
 		case *Atom:
 			if f.op == nop {
@@ -275,7 +274,7 @@ func simplReduceAO2(g *Ganrac, infbase *reduce_info, p FofAO, fmls []Fof, op OP,
 				// not(fmls[i]) を加えて GB 計算し，他の AND 要素を簡単化すると false になった.
 				// つまり，fmls[i] は条件として不要であることがわかった
 				for j := 0; j < len(fmls); j++ {
-					if b[j] == 0 && j != i {
+					if eqn_const[j] == nil && j != i {
 						f := fmls[j].simplReduce(g, inf)
 						_, okt := f.(*AtomT)
 						_, okf := f.(*AtomF)
@@ -305,6 +304,7 @@ func simplReduceAO2(g *Ganrac, infbase *reduce_info, p FofAO, fmls []Fof, op OP,
 func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 	update := false
 	fmls := make([]Fof, len(p.Fmls()))
+	// 外側にある等式制約を用いて簡単化
 	for i, fml := range p.Fmls() {
 		fmls[i] = fml.simplReduce(g, inf)
 		if fmls[i] != fml {
@@ -313,16 +313,20 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 	}
 
 	n := 0
-	b := make([]int, len(fmls))
+	// fmls のうち等式制約部分を保持する
+	eqn_const := make([]*Poly, len(fmls))
 	for i, fml := range fmls {
 		switch f := fml.(type) {
 		case *Atom:
 			if f.op != op {
 				continue
 			}
-			b[i] = +1
+			eqn_const[i] = f.getPoly()
 			n++
 		case FofAO:
+			// f_i := poly, q_j := fof として, 以下も等式制約
+			//       (f_1 = 0 || f_2 == 0 || f_3 == 0) && q_2 && q_3 && ...
+			//  <==>  f_1 * f_2 * f_3 = 0              && q_2 && q_3 && ...
 			noeq := false
 			for _, g := range f.Fmls() {
 				if a, ok := g.(*Atom); !ok || a.op != op {
@@ -334,7 +338,15 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 				continue
 			}
 			// 積が等式制約
-			b[i] = -1
+			var mul RObj
+			for j, f := range fml.(FofAO).Fmls() {
+				if j == 0 {
+					mul = f.(*Atom).getPoly()
+				} else {
+					mul = Mul(mul, f.(*Atom).getPoly())
+				}
+			}
+			eqn_const[i] = mul.(*Poly)
 			n++
 		}
 	}
@@ -345,47 +357,43 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 
 		// 新たに等式制約を追加して GB 計算
 		inf = inf.Clone()
-		for i, fml := range fmls {
-			if b[i] > 0 {
-				inf.Append(fml.(*Atom).getPoly())
-			} else if b[i] < 0 {
-				var mul RObj
-				for j, f := range fml.(FofAO).Fmls() {
-					if j == 0 {
-						mul = f.(*Atom).getPoly()
-					} else {
-						mul = Mul(mul, f.(*Atom).getPoly())
-					}
-				}
-
-				inf.Append(mul.(*Poly))
+		for _, eqpoly := range eqn_const {
+			if eqpoly != nil {
+				inf.Append(eqpoly)
 			}
 		}
 
 		upgb := inf.updateGB(g, p.maxVar())
 		if v, ok := inf.eqns.geti(0).(NObj); ok {
+			// GB が [1] になったということは，
+			// 等式制約を満たすものがいない
 			if v.Sign() == 0 {
 				panic("????")
 			}
 			return NewAtom(v, op)
 		}
 
-		for i, fml := range fmls {
-			if b[i] != 0 {
-				continue
-			}
-			fmls[i] = fml.simplReduce(g, inf)
-			if fmls[i] != fml {
-				update = true
+		if upgb {
+			// 更新された GB で再度簡単化
+			for i, fml := range fmls {
+				if eqn_const[i] != nil {
+					continue
+				}
+				fmls[i] = fml.simplReduce(g, inf)
+				if fmls[i] != fml {
+					update = true
+				}
 			}
 		}
 		if upgb && n >= inf.eqns.Len() {
+			// GB 計算したことによって，等式制約の数が減った
 			fmls2 := make([]Fof, 0, len(fmls))
 			for i, fml := range fmls {
-				if b[i] == 0 {
+				if eqn_const[i] == nil {
 					fmls2 = append(fmls2, fml)
 				}
 			}
+
 			for _, eq := range inf.eqns.Iter() {
 				fmls2 = append(fmls2, NewAtom(eq.(*Poly), op))
 			}
@@ -397,7 +405,7 @@ func simplReduceAO(g *Ganrac, inf *reduce_info, p FofAO, op OP) Fof {
 	if update {
 		return p.gen(fmls)
 	} else {
-		return simplReduceAO2(g, inf, p, fmls, op, b)
+		return simplReduceAO2(g, inf, p, fmls, op, eqn_const)
 	}
 }
 

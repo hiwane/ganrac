@@ -7,8 +7,9 @@ type reduce_info struct {
 	q     []Level
 	qn    int
 	vars  *List
-	varb  []bool // quantified variable?
-	eqns  *List  // list of *Poly
+	// ex([x], f && ex([y], g && ex([x], h))) のようなケースを考慮するため
+	varb []bool // quantified variable?
+	eqns *List  // list of *Poly
 }
 
 type simpler interface {
