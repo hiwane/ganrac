@@ -37,6 +37,7 @@ var qeExampleTable []qeExTable = []qeExTable{
 	{"hong93", exHong93},
 	{"imo13-1", exImo13_1_5},
 	{"kyoto2010h2", exKyoto2010h2},
+	{"lampinen", exLampinen},
 	{"lass", exLass},
 	{"makepdf", exMakePdf},
 	{"makepd2", exMakePdf2},
@@ -64,6 +65,7 @@ var qeExampleTable []qeExTable = []qeExTable{
 	{"wo4", exWO4},
 	{"xaxis", exXAxisEllipse},
 	{"whitney", exWhitneyUmbrella},
+	{"wilson", exWilson},
 }
 
 func GetExampleFof(name string) *QeExample {
@@ -800,5 +802,29 @@ func exMooea() *QeExample {
 		NewAtom(NewPolyCoef(4, NewPolyCoef(3, NewPolyCoef(2, NewPolyCoef(1, 1, -1), -2, 1), 0, 1), 1), EQ),
 		NewAtom(NewPolyCoef(2, 2, 1), GE), NewAtom(NewPolyCoef(2, -2, 1), LE),
 		NewAtom(NewPolyCoef(3, 2, 1), GE), NewAtom(NewPolyCoef(3, -2, 1), LE), NewAtom(NewPolyCoef(4, 1, 10), GE), NewAtom(NewPolyCoef(4, -1, 10), LE)))
+	return q
+}
+
+func exWilson() *QeExample {
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{0, 1}, NewFmlAnds(
+		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, -5, 4, -1), 2, -1), 1), EQ),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(1, NewPolyCoef(0, -36, 0, -1), 12, -1), 1), EQ),
+		NewAtom(NewPolyCoef(0, -2, 5), GE),
+		NewAtom(NewPolyCoef(0, -8, 5), LE),
+		NewAtom(NewPolyCoef(1, -2, 1), GE),
+		NewAtom(NewPolyCoef(1, -5, 1), LE)))
+	return q
+}
+
+func exLampinen() *QeExample {
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{0, 1}, NewFmlAnds(
+		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, -1), -1), 1), EQ),
+		NewAtom(NewPolyCoef(3, NewPolyCoef(1, NewPolyCoef(0, 0, -1), 0, -1), 1), EQ),
+		NewAtom(NewPolyCoef(0, 10, 1), GE),
+		NewAtom(NewPolyCoef(0, -10, 1), LE),
+		NewAtom(NewPolyCoef(1, 10, 1), GE),
+		NewAtom(NewPolyCoef(1, -10, 1), LE)))
 	return q
 }
