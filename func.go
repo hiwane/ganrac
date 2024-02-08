@@ -83,7 +83,7 @@ func (g *Ganrac) setBuiltinFuncTable() {
 		{"example", 0, 1, funcExample, false, "([name])", "example", nil, "", "", ""},
 		{"fctr", 1, 1, funcOXFctr, true, "(poly)", "factorize polynomial over the rationals", nil, "", "", ""},
 		{"fctrp", 1, 1, funcOXFctrp, true, "(poly)", "factorize polynomial over the rationals. para", nil, "", "", ""},
-		{"gb", 2, 3, funcOXGB, true, "(polys, vars)", "Groebner basis", nil, "", "", ""},
+		{"gb", 2, 3, funcOXGB, true, "(polys, vars [, n])", "Groebner basis", nil, "", "", ""},
 		{"help", 0, 1, nil, false, "([str])", "show help", nil, "", "", ""},
 		//		{"igcd", 2, 2, funcIGCD, false, "(int1, int2)", "The integer greatest common divisor", ""},
 		{"impl", 2, 2, funcImpl, false, "(fof1, fof2)", "fof1 impies fof2", nil, "", "", ""},
@@ -360,14 +360,11 @@ func funcOXDiscrim(g *Ganrac, name string, args []interface{}) (interface{}, err
 }
 
 func funcOXFctr(g *Ganrac, name string, args []interface{}) (interface{}, error) {
-	fmt.Printf("go funcOXFctr\n")
 	f0, ok := args[0].(*Poly)
-	fmt.Printf("f0 =%v\n", f0)
 	if !ok {
 		return nil, fmt.Errorf("%s(1st arg): expected poly: %d:%v", name, args[0].(GObj).Tag(), args[0])
 	}
 
-	fmt.Printf("go oxFctor\n")
 	return g.ox.Factor(f0), nil
 }
 

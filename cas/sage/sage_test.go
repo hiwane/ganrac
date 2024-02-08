@@ -8,10 +8,12 @@ import (
 	castest "github.com/hiwane/ganrac/cas/test"
 )
 
+var sage_tmpfname = "/tmp/ganrac_sage.log"
+
 func TestFactor(t *testing.T) {
 	funcname := "TestFactor"
 	g := ganrac.NewGANRAC()
-	sage, err := NewSage(g, "/tmp/ganrac.log")
+	sage, err := NewSage(g, sage_tmpfname)
 	if err != nil {
 		fmt.Printf("skip %s... init sage failed\n", funcname)
 		return
@@ -23,7 +25,7 @@ func TestFactor(t *testing.T) {
 func TestResultant(t *testing.T) {
 	funcname := "TestResultant"
 	g := ganrac.NewGANRAC()
-	sage, err := NewSage(g, "/tmp/ganrac.log")
+	sage, err := NewSage(g, sage_tmpfname)
 	if err != nil {
 		fmt.Printf("skip %s... init sage failed\n", funcname)
 		return
@@ -35,7 +37,7 @@ func TestResultant(t *testing.T) {
 func TestDiscrim(t *testing.T) {
 	funcname := "TestDiscrim"
 	g := ganrac.NewGANRAC()
-	sage, err := NewSage(g, "/tmp/ganrac.log")
+	sage, err := NewSage(g, sage_tmpfname)
 	if err != nil {
 		fmt.Printf("skip %s... init sage failed\n", funcname)
 		return
@@ -47,7 +49,7 @@ func TestDiscrim(t *testing.T) {
 func TestGBReduce(t *testing.T) {
 	funcname := "TestGBReduce"
 	g := ganrac.NewGANRAC()
-	sage, err := NewSage(g, "/tmp/ganrac.log")
+	sage, err := NewSage(g, sage_tmpfname)
 	if err != nil {
 		fmt.Printf("skip %s... init sage failed\n", funcname)
 		return
@@ -59,7 +61,7 @@ func TestGBReduce(t *testing.T) {
 func TestPsc(t *testing.T) {
 	funcname := "TestPsc"
 	g := ganrac.NewGANRAC()
-	sage, err := NewSage(g, "/tmp/ganrac.log")
+	sage, err := NewSage(g, sage_tmpfname)
 	if err != nil {
 		fmt.Printf("skip %s... init sage failed\n", funcname)
 		return
@@ -71,7 +73,7 @@ func TestPsc(t *testing.T) {
 func TestSlope(t *testing.T) {
 	funcname := "TestSlope"
 	g := ganrac.NewGANRAC()
-	sage, err := NewSage(g, "/tmp/ganrac.log")
+	sage, err := NewSage(g, sage_tmpfname)
 	if err != nil {
 		t.Errorf("stop")
 		fmt.Printf("skip %s... init sage failed\n", funcname)
@@ -84,11 +86,23 @@ func TestSlope(t *testing.T) {
 func TestSageSres(t *testing.T) {
 	funcname := "TestSageSres"
 	g := ganrac.NewGANRAC()
-	sage, err := NewSage(g, "/tmp/ganrac.log")
+	sage, err := NewSage(g, sage_tmpfname)
 	if err != nil {
 		t.Errorf("stop")
 		fmt.Printf("skip %s... init sage failed\n", funcname)
 		return
 	}
 	castest.SresTest(g, sage, t)
+}
+
+func TestSageGB(t *testing.T) {
+	funcname := "TestSageGB"
+	g := ganrac.NewGANRAC()
+	sage, err := NewSage(g, sage_tmpfname)
+	if err != nil {
+		t.Errorf("stop")
+		fmt.Printf("skip %s... init sage failed\n", funcname)
+		return
+	}
+	castest.GBTest(g, sage, t)
 }

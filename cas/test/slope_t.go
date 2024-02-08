@@ -35,7 +35,7 @@ func slopeTest(g *ganrac.Ganrac, cas ganrac.CAS, t *testing.T, ii int,
 
 		act := cas.Slope(p, q, x.Level(), int32(jj))
 		if act == nil {
-			t.Errorf("ii=(%d,%d) %s slope error [%s]", ii, jj, expstr, err.Error())
+			t.Errorf("ii=(%d,%d) slope(%s,%s) returns nil", ii, jj, p, q)
 			return
 		}
 
