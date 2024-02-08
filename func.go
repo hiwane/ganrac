@@ -153,6 +153,7 @@ y+x^{10}-3
 `, getQEoptStr(QEALGO_VSQUAD), getQEoptStr(QEALGO_SMPL_HOMO)), ""},
 		{"quit", 0, 1, funcQuit, false, "([code])", "bye", nil, "", "", ""},
 		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)", "real root isolation", nil, "", "", ""},
+		{"reduce", 3, 4, funcOXReduce, true, "(poly, gb, vars [, n])", "reduce", nil, "", "", ""},
 		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)", "resultant", nil, "", "", ""},
 		{"rootbound", 1, 1, funcRootBound, false, "(unipoly)", "root bound",
 			[]func_help{
@@ -407,6 +408,35 @@ func funcOXGB(g *Ganrac, name string, args []interface{}) (interface{}, error) {
 	}
 
 	return g.ox.GB(f0, f1, n), nil
+}
+
+func funcOXReduce(g *Ganrac, name string, args []interface{}) (interface{}, error) {
+	p, ok := args[0].(*Poly)
+	if !ok {
+		return nil, fmt.Errorf("%s(1st arg): expected poly-list: %d:%v", name, args[0].(GObj).Tag(), args[0])
+	}
+	f0, ok := args[1].(*List)
+	if !ok {
+		return nil, fmt.Errorf("%s(2nd arg): expected poly-list: %d:%v", name, args[1].(GObj).Tag(), args[1])
+	}
+
+	f1, ok := args[2].(*List)
+	if !ok {
+		return nil, fmt.Errorf("%s(3rd arg): expected var-list: %d:%v", name, args[2].(GObj).Tag(), args[2])
+	}
+
+	n := 0
+	if len(args) == 4 {
+		f2, ok := args[3].(*Int)
+		if !ok || f2.Sign() < 0 || !f2.IsInt64() {
+			return nil, fmt.Errorf("%s(4th arg): expected nonnegint: %d:%v", name, args[3].(GObj).Tag(), args[3])
+		}
+		n = int(f2.Int64())
+	}
+
+	r, _ := g.ox.Reduce(p, f0, f1, n)
+
+	return r, nil
 }
 
 func funcOXPsc(g *Ganrac, name string, args []interface{}) (interface{}, error) {
