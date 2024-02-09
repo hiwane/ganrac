@@ -8,8 +8,9 @@ GaNRAC
 
 ### Requirements
 
-- [ox-asir](http://www.math.sci.kobe-u.ac.jp/OpenXM/) or
-- [SageMath](https://www.sagemath.org/)
+- [ox-asir](http://www.math.sci.kobe-u.ac.jp/OpenXM/),
+- [SageMath](https://www.sagemath.org/) or
+- [SymPy](https://www.sympy.org/)
 
 #### install ox-asir
 

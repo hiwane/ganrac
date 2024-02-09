@@ -18,6 +18,7 @@ const (
 	FORMAT_SRC    = 'S'
 	FORMAT_QEPCAD = 'Q'
 	FORMAT_INDEX  = 'I'
+	FORMAT_SYMPY  = 'J'
 )
 
 // ganrac object

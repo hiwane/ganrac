@@ -260,18 +260,25 @@ func (z *Poly) Format(s fmt.State, format rune) {
 	case FORMAT_SRC: // source
 		z.write_src(s)
 	case FORMAT_TEX, FORMAT_QEPCAD:
-		z.write(s, format, false, " ", true)
+		z.write(s, format, false, " ", "^", true)
 	default:
 		if p, ok := s.Precision(); ok {
 			ss := fmt.Sprintf("%v", z)
 			fmt.Fprintf(s, "%.*s", p, ss)
 		} else {
-			z.write(s, format, false, "*", format != FORMAT_INDEX)
+			var pow string
+			if format == FORMAT_SYMPY {
+				pow = "**"
+			} else {
+				pow = "^"
+			}
+			z.write(s, format, false, "*", pow,
+				format != FORMAT_INDEX && format != FORMAT_SYMPY)
 		}
 	}
 }
 
-func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string, vars bool) {
+func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul, pow string, vars bool) {
 	// out_sgn 主係数で + の出力が必要ですよ
 	for i := len(z.c) - 1; i >= 0; i-- {
 		if z.c[i].IsZero() {
@@ -301,7 +308,7 @@ func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string, vars bo
 				}
 			} else if p, ok := z.c[i].(*Poly); ok {
 				if p.isMono() { // 括弧不要
-					p.write(b, format, i != len(z.c)-1 || out_sgn, mul, vars)
+					p.write(b, format, i != len(z.c)-1 || out_sgn, mul, pow, vars)
 					if i > 0 {
 						fmt.Fprintf(b, "%s", mul)
 					}
@@ -311,10 +318,10 @@ func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string, vars bo
 							fmt.Fprintf(b, "+")
 						}
 						fmt.Fprintf(b, "(")
-						p.write(b, format, false, mul, vars)
+						p.write(b, format, false, mul, pow, vars)
 						fmt.Fprintf(b, ")%s", mul)
 					} else {
-						p.write(b, format, true, mul, vars)
+						p.write(b, format, true, mul, pow, vars)
 					}
 				}
 			}
@@ -325,9 +332,9 @@ func (z *Poly) write(b fmt.State, format rune, out_sgn bool, mul string, vars bo
 					fmt.Fprintf(b, "x%d", z.lv)
 				}
 				if i >= 10 && mul == " " { // TeX
-					fmt.Fprintf(b, "^{%d}", i)
+					fmt.Fprintf(b, "%s{%d}", pow, i)
 				} else if i > 1 {
-					fmt.Fprintf(b, "^%d", i)
+					fmt.Fprintf(b, "%s%d", pow, i)
 				}
 			}
 		}
