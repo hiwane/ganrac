@@ -179,20 +179,45 @@ def gan_discrim(varn: int, p, x):
 	X = vardic[x]
 	return str(F.discriminant(X))
 
+def gan_coef(f, x, i):
+	if hasattr(f, 'coefficient'):
+		return f.coefficient({x: i})
+	elif i == 0:
+		return f
+	else:
+		return 0
+
 def gan_sres(varn: int, p, q, x, CC):
 	P, vardic = polyringinit(varn)
 	F = sage.all.sage_eval(p, locals=vardic)
 	G = sage.all.sage_eval(q, locals=vardic)
 	X = vardic['x' + str(x)]
-	V = F.subresultants(G, X)
+	degF = F.degree(X)
+	degG = G.degree(X)
+	if degF > degG:
+		N = degF - 1
+	elif degF < degG:
+		N = degG - 1
+	else:
+		N = degF - 0
+	V = [0] * N
+	N -= 1
+	for v in reversed(F.subresultants(G, X)):
+		D = v.degree(X)
+		V[N] = v
+		if N != D:
+			N = D
+		else:
+			N = N - 1
+
 	if CC == 0:
 		return str(V)
 	if CC == 1:
-		return str([v.coefficient({X: i}) for i, v in enumerate(V)])
+		return str([gan_coef(v, X, i) for i, v in enumerate(V)])
 	if CC == 2:
-		return str([v.coefficient({X: 0}) for v in V])
+		return str([gan_coef(v, X, 0) for v in V])
 	if CC == 3:
-		return str([V[0]] + [V[i].coefficient({X: 0}) + X**i * V[i].coefficient({X: i}) for i in range(1, len(V))])
+		return str([V[0]] + [gan_coef(V[i], X, 0) + X**i * gan_coef(V[i], X, i) for i in range(1, len(V))])
 	return str(V)
 
 def gan_psc(varn: int, p, q, x, J):

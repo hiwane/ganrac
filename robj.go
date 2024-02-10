@@ -32,6 +32,16 @@ type RObj interface {
 type RObjSample struct {
 }
 
+func Coeff(p RObj, lv Level, deg uint) RObj {
+	if q, ok := p.(*Poly); ok {
+		return q.Coef(lv, deg)
+	} else if deg == 0 {
+		return p
+	} else {
+		return zero
+	}
+}
+
 func (z *RObjSample) Tag() uint {
 	return TAG_NONE
 }

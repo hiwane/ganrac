@@ -184,22 +184,56 @@ def gan_discrim(p, x):
 	debuglog(["discrim", F, X])
 	return str(sympy.discriminant(F, X))
 
+def gan_coef(f, x, i):
+	if hasattr(f, 'coeff'):
+		return f.coeff(x, i)
+	elif i == 0:
+		return f
+	else:
+		return 0
+
 def gan_sres(p, q, x, CC):
 	debuglog(["sres", p, q, x, CC])
 	F = sympy.parse_expr(p)
 	G = sympy.parse_expr(q)
 	X = sympy.Symbol(x)
 	debuglog(["sres", F, G, X])
-	V = sympy.subresultants(F, G, X)[2:]
-	V.reverse()
+	degF = sympy.Poly(F).degree(X)
+	degG = sympy.Poly(G).degree(X)
+	if degF > degG:
+		N = degF - 1
+	elif degF < degG:
+		N = degG - 1
+	else:
+		N = degF - 0
+	V = [0] * (N + 2)
+	V[N] = G
+	V[N+1] = F
+	N -= 1
+	for v in sympy.subresultants(F, G, X)[2:]:
+		w = sympy.Poly(v)
+		if w.has(X):
+			D = w.degree(X)
+		else:
+			D = 0
+		V[N] = v
+		if N != D:
+			# N[D] を算出する. subresultant theorem (2)
+			numer = V[N] * (gan_coef(V[N], X, D) ** (N - D))
+			denom = gan_coef(V[N + 1], X, N + 1) ** (N - D)
+			q, r = sympy.div(numer, denom)
+			V[D] = q
+		N = D - 1
+	V = V[:-2]
+
 	if CC == 0:
 		return str(V)
 	if CC == 1:
-		return str([v.coeff(X, i) for i, v in enumerate(V)])
+		return str([gan_coef(v, X, i) for i, v in enumerate(V)])
 	if CC == 2:
-		return str([v.coeff(X, 0) for v in V])
+		return str([gan_coef(v, X, 0) for v in V])
 	if CC == 3:
-		return str([V[0]] + [V[i].coeff(X, 0) + X**i * V[i].coeff(X, i) for i in range(1, len(V))])
+		return str([V[0]] + [gan_coef(V[i], X, 0) + X**i * gan_coef(V[i], X, i) for i in range(1, len(V))])
 	return str(V)
 
 def gan_psc(p, q, x, J):
