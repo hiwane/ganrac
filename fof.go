@@ -1300,7 +1300,7 @@ func (p *FmlOr) Subst(xs RObj, lvs Level) Fof {
 		}
 	}
 	if len(q.fml) == 0 {
-		return NewBool(true)
+		return NewBool(false)
 	} else if len(q.fml) == 1 {
 		return q.fml[0]
 	}
