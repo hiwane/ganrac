@@ -928,11 +928,11 @@ func (p *FmlAnd) simplNum(g *Ganrac, t, f *NumRegion) (Fof, *NumRegion, *NumRegi
 		}
 
 		if print_log {
-			fmt.Printf("   And.simplNum case3>%d: f=%v, t=%v, f=%v\n", i, p.fml[i], t, f)
+			fmt.Printf("   And.simplNum case3>%d: f=%v, t=%v, f=%v\n", i, fmls[i], t, ff)
 		}
 		fmls[i], tt, ff = fml.simplNum(g, t, ff)
 		if print_log {
-			fmt.Printf("   And.simplNum case3<%d: f=%v, t=%v, f=%v\n", i, p.fml[i], t, f)
+			fmt.Printf("   And.simplNum case3<%d: f=%v, t=%v, f=%v\n", i, fmls[i], t, ff)
 		}
 		if err := fmls[i].valid(); err != nil {
 			fmt.Printf("simplNum(%v) => %v; %V\n", fml, fmls[i], fmls[i])

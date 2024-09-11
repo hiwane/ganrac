@@ -152,7 +152,7 @@ y+x^{10}-3
 > F = ex([x], x^2+b*x+c == 0, {%s: 0, %s: 1});
 `, getQEoptStr(QEALGO_VSQUAD), getQEoptStr(QEALGO_SMPL_HOMO)), ""},
 		{"quit", 0, 1, funcQuit, false, "([code])", "bye", nil, "", "", ""},
-		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly)", "real root isolation", nil, "", "", ""},
+		{"realroot", 2, 2, funcRealRoot, false, "(uni-poly, prec)", "real root isolation", nil, "", "", ""},
 		{"reduce", 3, 4, funcOXReduce, true, "(poly, gb, vars [, n])", "reduce", nil, "", "", ""},
 		{"res", 3, 3, funcOXRes, true, "(poly, poly, var)", "resultant", nil, "", "", ""},
 		{"rootbound", 1, 1, funcRootBound, false, "(unipoly)", "root bound",
@@ -164,7 +164,7 @@ y+x^{10}-3
 `, ""},
 		{"save", 2, 3, funcSave, false, "(obj, fname)@", "save object...", nil, "", "", ""},
 		{"simpl", 1, 3, funcSimplify, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF", nil, "", "", ""},
-		{"simplnum", 1, 1, funcSimplNum, true, "(Fof [, neccon [, sufcon]])", "simplify formula FoF for DEBUG", nil, "", "", ""},
+		{"simplnum", 1, 2, funcSimplNum, true, "(Fof [, flag])", "simplify formula FoF for DEBUG", nil, "", "", ""},
 		{"sleep", 1, 1, funcSleep, false, "(milisecond)", "zzz", nil, "", "", ""},
 		// {"sqfr", 1, 1, funcSqfr, false, "(poly)* square-free factorization", nil, "", "", ""},
 		{"slope", 4, 4, funcOXSlope, true, "(poly, poly, var, int)", "slope resultant", nil, "", "", ""},
@@ -576,7 +576,29 @@ func funcSimplNum(g *Ganrac, name string, args []interface{}) (interface{}, erro
 		return nil, fmt.Errorf("%s(1st arg) expected FOF", name)
 	}
 
+	var flag int
+	if len(args) > 1 {
+		fint, ok := args[1].(*Int)
+		if !ok {
+			return nil, fmt.Errorf("%s(2nd arg) expected int", name)
+		}
+
+		flag = int(fint.Int64())
+	}
+	if (flag & 0x01) != 0 {
+		c = c.simplFctr(g)
+		fmt.Printf("c1=%v\n", c)
+	}
+	if (flag & 0x02) != 0 {
+		c = c.normalize()
+		fmt.Printf("c2=%v\n", c)
+	}
+	if (flag & 0x04) != 0 {
+		c = c.simplBasic(trueObj, falseObj)
+		fmt.Printf("c4=%v\n", c)
+	}
 	r, _, _ := c.simplNum(g, nil, nil)
+
 	return r, nil
 }
 

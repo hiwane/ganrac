@@ -937,16 +937,13 @@ func (z *Poly) subst_intv(x, x2 *Interval, lv Level, prec uint) RObj {
 	}
 	var a RObj
 	var b RObj
-	if z.c[modd].IsZero() {
-		a = z.c[modd]
-	} else {
-		a = z.c[modd].Mul(x)
-	}
+	a = z.c[modd]
 	b = z.c[meven]
 
 	for i := modd - 2; i >= 0; i -= 2 {
 		a = Add(a.Mul(x2), z.c[i])
 	}
+	a = a.Mul(x)
 	for i := meven - 2; i >= 0; i -= 2 {
 		b = Add(b.Mul(x2), z.c[i])
 	}
