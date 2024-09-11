@@ -25,11 +25,13 @@ package main
 // |   8 | 14 | 87361 | 89592 |      134 |      353 |
 //
 //
-// SH-Theorem: 	QE&CAD
+// SH-Theorem: 	QE&CAD L., Gonzalez-Vega
 // p.303 Theorem2 Sturm-Habicht Structure Theorem
 //
 // espresso -Dexact -epos 4.in : 5
 // espresso -estrong 8.in : 5
+//
+// see cmd/esp/
 
 import (
 	"bufio"
@@ -161,7 +163,11 @@ func (st *sgn_table) W(debug bool) int {
 	return n
 }
 
-// atom 用
+/** atom 用
+ *
+ * psc の符号から，実根の数を求める
+ * QE&CAD L., Gonzalez-Vega p369 Proposition 1
+ */
 func (st *sgn_table) evalAtom() (val_t, string) {
 	ks := 0
 	var ask sgn_t // 非ゼロの右端
@@ -200,7 +206,7 @@ func (st *sgn_table) evalAtom() (val_t, string) {
 		}
 	}
 
-	mes := fmt.Sprintf(": m(%d) = p(%d) - c(%d) + e(%d)", m, p, c, e)
+	mes := fmt.Sprintf(": m(%2d) = p(%d) - c(%d) + e(%2d)", m, p, c, e)
 	if m > 0 {
 		return st.valNot, mes
 	} else if m < 0 {
@@ -448,6 +454,7 @@ func (st *sgn_table) print(t val_t, mes string) {
 	}
 }
 
+/** looph -> loops -> loopc **/
 func (st *sgn_table) loopc(n int) {
 	if n == st.deg {
 		t, mes := st.evalSdc()
@@ -471,6 +478,7 @@ func (st *sgn_table) loopc(n int) {
 	}
 }
 
+/** looph -> loops -> loopc **/
 func (st *sgn_table) loops() {
 	for c := 0; c <= st.deg; c++ {
 		st.c[c] = st.h[c]
@@ -487,6 +495,13 @@ func (st *sgn_table) loops() {
 	}
 }
 
+/**
+ * psc の符号を決定する
+ *
+ * gen() から looph(0) で呼び出される
+ *
+ * looph -> loops -> loopc
+ **/
 func (st *sgn_table) looph(n int) {
 	if n == 0 {
 		// constant term
@@ -502,7 +517,7 @@ func (st *sgn_table) looph(n int) {
 			if t == 0 || t == 1 {
 				st.count[t]++
 			}
-			if 0 < t || st.pfalse {
+			if t > 0 || st.pfalse {
 				st.print(t, mes)
 			}
 			return
@@ -608,7 +623,7 @@ func main() {
 	s.count = make([]int, 2)
 	s.deg = *deg
 	s.debug = *debug
-	if *all {
+	if *all { // forall 用の論理式の場合
 		s.valEqual = 1
 		s.valNot = 0
 	} else {
@@ -617,6 +632,7 @@ func main() {
 	}
 	s.pfalse = *falsePrint
 	s.fp = bufio.NewWriter(os.Stdout)
+
 	(&s).gen()
 	if s.debug {
 		fmt.Fprintf(s.fp, "T=%d, F=%d\n", s.count[1], s.count[0])

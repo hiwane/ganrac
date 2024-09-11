@@ -1,11 +1,12 @@
 package ganrac
 
-//
 // QE for atom.
 //  ex([x], f(x) <= 0)
 //
 // QE for sign definite condition.
 //   ex([x], x >= 0 && f(x) <= 0)
+//
+// @see cmd/sdc/
 
 import (
 	"fmt"
@@ -147,6 +148,7 @@ func atomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 
 		pd := p.Diff(lv).(*Poly)
 		sres := qeopt.g.ox.Sres(p, pd, lv, 1)
+
 		// fmt.Printf("atom=%v\n", atom)
 		// fmt.Printf("sres=%v\n", sres)
 
@@ -165,7 +167,7 @@ func atomQE(atom *Atom, lv Level, neccon Fof, qeopt QEopt) Fof {
 			}
 			ret = atomQEconstruct(ret, sresneg, afml, nec2)
 
-		} else {
+		} else { // LE
 			// 主係数で成立確定
 			ret = append(ret, NewFmlAnds(neccon, NewAtom(lc, atom.op & ^EQ)))
 
