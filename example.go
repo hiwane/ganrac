@@ -58,6 +58,9 @@ var qeExampleTable []qeExTable = []qeExTable{
 	{"root2", exRoot2},
 	{"root3", exRoot3},
 	{"root4", exRoot4},
+	{"root4-2", exRoot4_2},
+	{"root4-3", exRoot4_3},
+	{"root6", exSato1},
 	{"wlog1", exWlog1},
 	{"wo1", exWO1},
 	{"wo2", exWO2},
@@ -528,6 +531,16 @@ func exQuart() *QeExample {
 	return q
 }
 
+func exSato1() *QeExample {
+	// ex([y], y^6-2*y^4-(a+2)*y^3+y^2+2*y+1==0);
+	// <==>
+	// 729*a^3+8856*a^2+43632*a+33856<=0 || a>=0
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{1}, NewAtom(NewPolyCoef(1, 1, 2, 1, NewPolyCoef(0, -2, -1), -2, 0, 1), EQ))
+	q.Output = NewFmlOrs(NewAtom(NewPolyCoef(0, 33856, 43632, 8856, 729), LE), NewAtom(NewPolyCoef(0, 0, 1), GE))
+	return q
+}
+
 func exSDC2() *QeExample {
 	// ex([x], x>=0 && x^2+b*x+c <= 0)
 	// <==>
@@ -605,6 +618,42 @@ func exRoot4() *QeExample {
 	q.Ref = "Gonzalez-Vega, Laureano.  A combinatorial algorithm solving some quantifier elimination problems.  1998"
 	return q
 }
+
+func exRoot4_2() *QeExample {
+	// ex([x], a*x^4+b*x^2+c*x+1<=0)
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{3}, NewAtom(NewPolyCoef(3, 1, NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), LE))
+	q.Output = NewFmlOrs(
+		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, -256), 0, NewPolyCoef(0, 0, 128), 0, -16), 0, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -144), 0, 4), 0, NewPolyCoef(0, 0, 27)), GT),
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(2, 0, 1), NE),
+			NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, -256), 0, NewPolyCoef(0, 0, 128), 0, -16), 0, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -144), 0, 4), 0, NewPolyCoef(0, 0, 27)), EQ),
+		),
+		NewAtom(NewPolyCoef(0, 0, 1), LT),
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -4), 0, 1), GE),
+			NewAtom(NewPolyCoef(1, 0, 1), LT)))
+	return q
+}
+
+func exRoot4_3() *QeExample {
+	// ex([x], a*x^4+b*x^2+c*x+1==0)
+	q := new(QeExample)
+	q.Input = NewQuantifier(false, []Level{3}, NewAtom(NewPolyCoef(3, 1, NewPolyCoef(2, 0, 1), NewPolyCoef(1, 0, 1), 0, NewPolyCoef(0, 0, 1)), EQ))
+	q.Output = NewFmlOrs(
+		NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, -256), 0, NewPolyCoef(0, 0, 128), 0, -16), 0, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -144), 0, 4), 0, NewPolyCoef(0, 0, 27)), GT),
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(2, 0, 1), NE),
+			NewAtom(NewPolyCoef(2, NewPolyCoef(1, NewPolyCoef(0, 0, 0, -256), 0, NewPolyCoef(0, 0, 128), 0, -16), 0, NewPolyCoef(1, 0, NewPolyCoef(0, 0, -144), 0, 4), 0, NewPolyCoef(0, 0, 27)), EQ),
+		),
+		NewAtom(NewPolyCoef(0, 0, 1), LT),
+		NewFmlAnds(
+			NewAtom(NewPolyCoef(1, NewPolyCoef(0, 0, -4), 0, 1), GE),
+			NewAtom(NewPolyCoef(1, 0, 1), LT)))
+
+	return q
+}
+
 func exWlog1() *QeExample {
 	/* 正三角形のひとつの角の余弦
 	 all([x,y,z,w,a,b], impl((x != z || y != w) &&
