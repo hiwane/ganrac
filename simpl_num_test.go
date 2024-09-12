@@ -133,6 +133,10 @@ func TestSimplNum(t *testing.T) {
 					NewFmlOrs(
 						NewAtom(NewPolyCoef(0, 0, 1), LT),
 						NewAtom(NewPolyCoef(0, -1, 3), GE)))),
+		}, {
+			// x*(729*x^3+8856*x^2+43632*x+33856)<=0 && 162*x^3+1971*x^2+8772*x+4048>0;
+			NewFmlAnds(NewAtom(NewPolyCoef(0, 0, 33856, 43632, 8856, 729), LE), NewAtom(NewPolyCoef(0, 4048, 8772, 1971, 162), GT)),
+			nil,
 		},
 	} {
 		if ss.expect == nil {
