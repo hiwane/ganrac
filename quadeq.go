@@ -7,6 +7,60 @@ import (
 // Quantifier Elimination for Formulas Constrained by Quadratic Equations via Slope Resultants
 // Hoon Hong, The computer J., 1993
 
+// ///////////////////////////////////////////////
+// quadeq_t... 等式制約が複数ある場合に，
+//             どの等式制約を選択するかを
+//             決定するための情報
+// ///////////////////////////////////////////////
+
+type quadeq_t struct {
+	lv  Level
+	a   *Atom
+	p   *Poly
+	z   RObj
+	idx int
+	deg int
+	lc  bool // lc(a.p) is constant?
+	uni bool // p is univariate
+}
+
+/**
+ * 現在設定されているものよりも簡易だったら，更新する
+ * @param d int = poly.Deg(q)
+ * @param q Level Quantifier
+ */
+func (minatom *quadeq_t) SetAtomIfEasy(fof FofQ, atom *Atom, dmin, dmax, ii int) {
+	poly := atom.getPoly()
+	minatom.idx = -3
+	for _, q := range fof.Qs() {
+		d := poly.Deg(q)
+		if d < dmin || d > dmax {
+			continue
+		}
+
+		z := poly.Coef(q, uint(d))
+		_, lc := z.(NObj)
+		univ := poly.isUnivariate()
+
+		fmt.Printf("EQ!  poly=%v, d=%d, lc=%v\n", poly, d, lc)
+
+		// 次数が低いか，主係数が定数なものを選択する
+		if minatom.a == nil || minatom.deg > d ||
+			(minatom.deg == d && univ) ||
+			(minatom.deg == d && !minatom.uni && lc) ||
+			(minatom.deg == d && !minatom.lc) {
+			minatom.lv = q
+			minatom.a = atom
+			minatom.p = poly
+			minatom.z = z
+			minatom.idx = ii
+			minatom.deg = d
+			minatom.lc = lc
+			minatom.uni = univ
+		}
+	}
+}
+
 type fof_quad_eqer interface {
 	// ax+b=0 && sgn a > 0 && fof
 	qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof
@@ -207,44 +261,11 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 	if !ok {
 		return nil
 	}
-	var minatom struct {
-		lv  Level
-		a   *Atom
-		p   *Poly
-		z   RObj
-		idx int
-		deg int
-		lc  bool // lc(a.p) is constant?
-		uni bool // p is univariate
-	}
+	minatom := &quadeq_t{}
 
 	for ii, fffi := range fff.Fmls() {
 		if atom, ok := fffi.(*Atom); ok && atom.op == op {
-			poly := atom.getPoly()
-			for _, q := range fof.Qs() {
-				d := poly.Deg(q)
-				if d < dmin || d > dmax {
-					continue
-				}
-				z := poly.Coef(q, uint(d))
-				_, lc := z.(NObj)
-				univ := poly.isUnivariate()
-
-				// 次数が低いか，主係数が定数なものを選択する
-				if minatom.a == nil || minatom.deg > d ||
-					(minatom.deg == d && univ) ||
-					(minatom.deg == d && !minatom.uni && lc) ||
-					(minatom.deg == d && !minatom.lc) {
-					minatom.lv = q
-					minatom.a = atom
-					minatom.p = poly
-					minatom.z = z
-					minatom.idx = ii
-					minatom.deg = d
-					minatom.lc = lc
-					minatom.uni = univ
-				}
-			}
+			minatom.SetAtomIfEasy(fof, atom, dmin, dmax, ii)
 		}
 	}
 
