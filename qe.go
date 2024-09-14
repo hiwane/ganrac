@@ -17,6 +17,7 @@ const (
 
 	QEALGO_EQLIN  = 0x0010
 	QEALGO_EQQUAD = 0x0020
+	QEALGO_EQCUBE = 0x0040
 
 	QEALGO_NEQ = 0x0100 // 非等式制約QE
 
@@ -46,6 +47,7 @@ type qeCond struct {
 func NewQEopt() *QEopt {
 	o := new(QEopt)
 	o.Algo = -1
+	o.DelAlgo(QEALGO_EQCUBE)
 	o.assert = true
 	return o
 }
@@ -64,6 +66,7 @@ var qeOptTable = []struct {
 }{
 	{QEALGO_EQQUAD, "eqquad"},
 	{QEALGO_EQLIN, "eqlin"},
+	{QEALGO_EQCUBE, "eqcube"},
 	{QEALGO_VSQUAD, "vsquad"},
 	{QEALGO_VSLIN, "vslin"},
 	{QEALGO_NEQ, "neq"},
@@ -390,10 +393,11 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 	// 線形か2次の等式制約が含まれる場合.
 	////////////////////////////////
 	if qeopt.Algo&(QEALGO_EQLIN|QEALGO_EQQUAD) != 0 {
+		qeopt.log(cond, 2, "2deqi", "%v\n", fof)
 		if ff := qeopt.qe_quadeq(fof, cond); ff != nil {
 			ff = qeopt.reconstruct(fqs, ff, cond)
 			ff = qeopt.simplify(ff, cond)
-			qeopt.log(cond, 2, "eqret", "%v\n", ff)
+			qeopt.log(cond, 2, "2deqo", "%v\n", ff)
 			return ff
 		}
 	}
@@ -432,6 +436,19 @@ func (qeopt QEopt) qe_prenex_main(prenex_formula FofQ, cond qeCond) Fof {
 
 	if ff := qeopt.qe_simpl(fof, cond); ff != nil {
 		return ff
+	}
+
+	////////////////////////////////
+	// 3 次等式制約
+	////////////////////////////////
+	if (qeopt.Algo & QEALGO_EQCUBE) != 0 {
+		qeopt.log(cond, 2, "3deqi", "%v\n", fof)
+		if ff := qeopt.qe_cubeeq(fof, cond); ff != nil {
+			ff = qeopt.reconstruct(fqs, ff, cond)
+			ff = qeopt.simplify(ff, cond)
+			qeopt.log(cond, 2, "3deqo", "%v\n", ff)
+			return ff
+		}
 	}
 
 	////////////////////////////////
