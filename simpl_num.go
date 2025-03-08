@@ -693,7 +693,7 @@ func (poly *Poly) simplNumPoly(g *Ganrac, t, f *NumRegion, dv Level) (OP, *NumRe
 	} else {
 		panic("bug")
 	}
-	if poly.isUnivariate() {
+	if poly.IsUnivariate() {
 		return poly.simplNumUniPoly(gray)
 	}
 	var pret, nret *NumRegion

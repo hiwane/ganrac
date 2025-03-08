@@ -130,6 +130,7 @@ func (op OP) strict() OP {
 	return op & NE
 }
 
+// atom(f, op) == atom(-f, op.neg())
 func (op OP) neg() OP {
 	// 負  :        1 <--> 4, 2 <-->2, 3 <--> 6, 5 <-->5
 	if op == EQ || op == NE || op == OP_TRUE || op == OP_FALSE {
@@ -139,6 +140,7 @@ func (op OP) neg() OP {
 	}
 }
 
+// atom(f. op) = Not(atom(f, op.not()))
 func (op OP) not() OP {
 	// 否定
 	return 7 - op
@@ -171,7 +173,7 @@ func (op OP) Format(b fmt.State, format rune) {
 		fmt.Fprintf(b, "%s", op.String())
 		return
 	}
-	fmt.Fprintf(b, "%s", strs[op])
+	fmt.Fprintf(b, buildFormatString(b, 's'), strs[op])
 }
 
 ///////////////////////
@@ -1446,7 +1448,7 @@ func NewAtoms(pp []RObj, op OP) Fof {
 		// pi is poly
 		p := pi.(*Poly)
 		if p.Sign() < 0 {
-			p = p.Neg().(*Poly)
+			p = p.neg()
 			s *= -1
 		}
 		polys = append(polys, p)
@@ -1486,7 +1488,7 @@ func NewAtom(p RObj, op OP) Fof {
 
 	a.p = []*Poly{p.(*Poly)}
 	if a.p[0].Sign() < 0 { // 正規化. 主係数を正にする.
-		a.p[0] = a.p[0].Neg().(*Poly)
+		a.p[0] = a.p[0].neg()
 		a.op = op.neg()
 	} else {
 		a.op = op
@@ -2205,10 +2207,10 @@ func (a *Atom) getPoly() *Poly {
 	return a.pmul
 }
 
-func (a *Atom) isUnivariate() bool {
+func (a *Atom) IsUnivariate() bool {
 	lv := Level(-1)
 	for _, p := range a.p {
-		if !p.isUnivariate() {
+		if !p.IsUnivariate() {
 			return false
 		} else if lv < 0 {
 			lv = p.lv

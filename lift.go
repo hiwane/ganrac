@@ -1109,7 +1109,7 @@ func (cell *Cell) make_cells_try1(cad *CAD, pf ProjFactor, pr RObj) (*Poly, []*C
 
 	switch p := pr.(type) {
 	case *Poly:
-		if p.isUnivariate() && p.lv == pf.Lv() {
+		if p.IsUnivariate() && p.lv == pf.Lv() {
 			// 他の変数が全部消えた.
 			return nil, cell.root_iso_q(cad, pf, p), sign_t(p.Sign())
 		} else if p.lv != pf.Lv() {
@@ -1278,7 +1278,7 @@ func (cell *Cell) subst_intv(p *Poly, prec uint) RObj {
 func (cell *Cell) subst_intv_nozero(cad *CAD, p *Poly) *Poly {
 	prec := uint(53)
 	pp := cell.subst_intv(p, prec).(*Poly)
-	if !pp.isUnivariate() {
+	if !pp.IsUnivariate() {
 		panic("invalid")
 	}
 

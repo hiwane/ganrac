@@ -97,12 +97,12 @@ func (cad *CAD) need_delineating_poly(cell *Cell, pf ProjFactor) bool {
 							// fmt.Printf("[%d,%d/%d] pf=%v, q=%v, qc=%v\n", t, j, pf.P().lv, pf.P(), q, qc)
 							return false
 						}
-						if !qc.isUnivariate() {
+						if !qc.IsUnivariate() {
 							// 代入できんかったし
 							return false
 						}
 						if qc.Sign() < 0 {
-							qc = qc.Neg().(*Poly) // projection に保存した形式で
+							qc = qc.neg() // projection に保存した形式で
 						}
 						b = append(b, qc)
 					default:
@@ -149,7 +149,7 @@ func (cad *CAD) need_delineating_poly(cell *Cell, pf ProjFactor) bool {
 			fctr, _ := gx.Geti(k)
 			g = fctr.(*List).getiPoly(0)
 			if g.Sign() < 0 {
-				g = g.Neg().(*Poly)
+				g = g.neg()
 			}
 			found := false
 			for _, p := range cad.proj[g.lv].gets() {

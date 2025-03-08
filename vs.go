@@ -27,12 +27,13 @@ type vs_sample_point struct {
 	sqr  RObj
 	lc   RObj
 	deg  int
-	sqrc int
+	sqrc int // sqrt 前の符号
 
 	// DNF な P(x) に対して， ex([x], P(x)) の出力はできるだけ,
 	// DNF に近い形式で復帰したい
 	// 原子論理式への代入ごとに, 分母にくる主変数の符号での場合わけを避けるため，
 	// 主変数の符号を記録しておく
+	// 0 なら分母が変数をもつ
 	densgn int
 
 	// 線形なら +1, ２次なら +1 or -1.
@@ -70,6 +71,7 @@ func (sp *vs_sample_point) Format(s fmt.State, format rune) {
 		fmt.Fprintf(s, ",")
 	}
 	fmt.Fprintf(s, "]")
+	fmt.Fprintf(s, "]")
 }
 
 // 分母用の配列を生成
@@ -83,10 +85,37 @@ func makeDenAry(v RObj, deg int) []RObj {
 	return ret
 }
 
-func newVslinSamplePoint(deg, maxd int, num, den RObj) *vs_sample_point {
+/*
+ *
+ * - a*x^2+b*x+c のサンプル点を生成する.
+ *
+ * - sp1: -b/2a
+ * - spr: b^2-4c
+ */
+func newVsQuadSamplePoint(maxd int, c2, c1, c0 RObj) *vs_sample_point {
+	sp1 := newVsLinSamplePoint(maxd, c1, Mul(c2, two))
+	sp1.sqr = Discrim2(c2, c1, c0)    // 根号部分は判別式
+	sp1.neccon = NewAtom(sp1.sqr, GE) // 判別式が非負
+	sp1.sqrc = 1
+	sp1.deg = 2
+	sp1.lc = c2 // 分母が2倍になっているので，c2 を保存しておく
+	sp1.idx = 1
+	return sp1
+}
+
+func (sp *vs_sample_point) newVsQuadSamplePointNeg() *vs_sample_point {
+	sp2 := new(vs_sample_point)
+	*sp2 = *sp
+	sp2.sqrc = -1
+	sp2.idx = -sp.idx
+	return sp2
+}
+
+// 1 次のサンプル点 z = -num/den を表す.
+func newVsLinSamplePoint(maxd int, num, den RObj) *vs_sample_point {
 	sp := new(vs_sample_point)
 	sp.num = num
-	sp.deg = deg
+	sp.deg = 1
 	if den.IsNumeric() {
 		sp.densgn = den.Sign()
 	} else {
@@ -238,26 +267,16 @@ func gen_sample_vsquad(p *Poly, lv Level, maxd int) []*vs_sample_point {
 
 	// c2=0 の場合は，1次のものに条件付き
 	if !c2.IsNumeric() {
-		sp := newVslinSamplePoint(1, maxd, c0, c1)
+		sp := newVsLinSamplePoint(maxd, c0, c1)
 		sp.neccon = NewAtom(c2, EQ)
 		sps = append(sps, sp)
 	}
 
 	// 2次の場合は，解の公式を用いて...
-	sp1 := newVslinSamplePoint(2, maxd, c1, Mul(c2, two))
-	sp1.sqr = Sub(c1.Mul(c1), Mul(Mul(c2, c0), four)) // 混合部分は判別式
-	sp1.neccon = NewAtom(sp1.sqr, GE)                 // 判別式が非負
-	sp1.sqrc = 1
-	sp1.deg = 2
-	sp1.lc = c2 // 2倍しているのが嫌い
-	sp1.idx = 1
-
+	sp1 := newVsQuadSamplePoint(maxd, c2, c1, c0)
 	sps = append(sps, sp1)
 
-	sp2 := new(vs_sample_point)
-	*sp2 = *sp1
-	sp2.sqrc = -1
-	sp2.idx = -sp1.idx
+	sp2 := sp1.newVsQuadSamplePointNeg()
 	sps = append(sps, sp2)
 
 	return sps
@@ -266,7 +285,7 @@ func gen_sample_vsquad(p *Poly, lv Level, maxd int) []*vs_sample_point {
 func gen_sample_vslin(p *Poly, lv Level, maxd int) *vs_sample_point {
 	num := p.Coef(lv, 0)
 	den := p.Coef(lv, 1)
-	return newVslinSamplePoint(1, maxd, num, den)
+	return newVsLinSamplePoint(maxd, num, den)
 }
 
 func virtual_subst(atom *Atom, ptt *vs_sample_point, lv Level) Fof {

@@ -66,7 +66,7 @@ var qeOptTable = []struct {
 }{
 	{QEALGO_EQQUAD, "eqquad"},
 	{QEALGO_EQLIN, "eqlin"},
-	{QEALGO_EQCUBE, "eqcube"},
+	//	{QEALGO_EQCUBE, "eqcube"},
 	{QEALGO_VSQUAD, "vsquad"},
 	{QEALGO_VSLIN, "vslin"},
 	{QEALGO_NEQ, "neq"},
@@ -468,7 +468,7 @@ func (qeopt QEopt) is_easy_cond(fof Fof, cond Fof) bool {
 	case *AtomT, *AtomF:
 		return false // 追加する必要がないということ
 	case *Atom:
-		if !c.isUnivariate() {
+		if !c.IsUnivariate() {
 			return false
 		}
 		return fof.hasVar(c.p[0].lv)

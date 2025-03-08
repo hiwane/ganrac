@@ -23,7 +23,7 @@ func newCadSqfr(cell *Cell, p *Poly, r mult_t) *cadSqfr {
 		sq.p = cell.reduce(sq.p).(*Poly)
 	}
 	if sq.p.Sign() < 0 {
-		sq.p = sq.p.Neg().(*Poly)
+		sq.p = sq.p.neg()
 	}
 	sq.r = r
 	return sq
@@ -144,7 +144,7 @@ func (cad *CAD) symsex_zero_chk(p *Poly, cell *Cell) bool {
 				}
 			}
 		} else {
-			if !p.isUnivariate() {
+			if !p.IsUnivariate() {
 				panic("??") // @DEBUG
 			}
 			r := p.reduce(c.defpoly)

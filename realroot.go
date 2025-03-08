@@ -341,7 +341,7 @@ func (p *Poly) realRootIsolation(prec int) []*dcsr {
 }
 
 func (p *Poly) RealRootIsolation(prec int) (*List, error) {
-	if !p.isUnivariate() {
+	if !p.IsUnivariate() {
 		return nil, fmt.Errorf("not a unirariate polynomial")
 	}
 

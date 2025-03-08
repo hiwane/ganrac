@@ -5,7 +5,7 @@ import (
 )
 
 func (z *Poly) RootBound() (NObj, error) {
-	if !z.isUnivariate() {
+	if !z.IsUnivariate() {
 		return nil, fmt.Errorf("supported only for univariate polynomial")
 	}
 

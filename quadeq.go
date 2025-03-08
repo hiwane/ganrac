@@ -8,20 +8,27 @@ import (
 // Hoon Hong, The computer J., 1993
 
 // ///////////////////////////////////////////////
-// quadeq_t... 等式制約が複数ある場合に，
+// quadEQ_t... 等式制約が複数ある場合に，
 //             どの等式制約を選択するかを
 //             決定するための情報
 // ///////////////////////////////////////////////
 
-type quadeq_t struct {
-	lv  Level
-	a   *Atom
-	p   *Poly
-	z   RObj
-	idx int
-	deg int
-	lc  bool // lc(a.p) is constant?
-	uni bool // p is univariate
+type quadEQ_t struct {
+	lv    Level // 消去する変数レベル
+	a     *Atom // specialQE で利用するを等式制約
+	p     *Poly // a.Poly()
+	z     RObj  // p の主係数
+	idx   int   // ?
+	deg   int   // p の lv に関する次数/
+	lc    bool  // lc(a.p) is constant?
+	uni   bool  // p is univariate
+	coefs []RObj
+	atoms map[OP]*Atom
+	diff  map[int]*vs_sample_point
+}
+
+func (minatom *quadEQ_t) String() string {
+	return fmt.Sprintf("quadEQ_t{lv=%d, a=%v, p=%v, z=%v, idx=%d, deg=%d, lc=%v, uni=%v}", minatom.lv, minatom.a, minatom.p, minatom.z, minatom.idx, minatom.deg, minatom.lc, minatom.uni)
 }
 
 /**
@@ -29,9 +36,8 @@ type quadeq_t struct {
  * @param d int = poly.Deg(q)
  * @param q Level Quantifier
  */
-func (minatom *quadeq_t) SetAtomIfEasy(fof FofQ, atom *Atom, dmin, dmax, ii int) {
+func (minatom *quadEQ_t) SetAtomIfEasy(fof FofQ, atom *Atom, dmin, dmax, ii int) {
 	poly := atom.getPoly()
-	minatom.idx = -3
 	for _, q := range fof.Qs() {
 		d := poly.Deg(q)
 		if d < dmin || d > dmax {
@@ -40,9 +46,9 @@ func (minatom *quadeq_t) SetAtomIfEasy(fof FofQ, atom *Atom, dmin, dmax, ii int)
 
 		z := poly.Coef(q, uint(d))
 		_, lc := z.(NObj)
-		univ := poly.isUnivariate()
+		univ := poly.IsUnivariate()
 
-		fmt.Printf("EQ!  poly=%v, d=%d, lc=%v\n", poly, d, lc)
+		// fmt.Printf("EQ!  poly=%v, d=%d, lc=%v\n", poly, d, lc)
 
 		// 次数が低いか，主係数が定数なものを選択する
 		if minatom.a == nil || minatom.deg > d ||
@@ -241,6 +247,7 @@ func (fof *Exists) qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{})
 }
 
 func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
+	// fmt.Printf("qe_quadeq(%v)\n", fof)
 	var op OP
 	if _, ok := fof.(*Exists); ok {
 		op = EQ
@@ -261,7 +268,8 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 	if !ok {
 		return nil
 	}
-	minatom := &quadeq_t{}
+	minatom := &quadEQ_t{}
+	minatom.idx = -3
 
 	for ii, fffi := range fff.Fmls() {
 		if atom, ok := fffi.(*Atom); ok && atom.op == op {

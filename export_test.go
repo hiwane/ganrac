@@ -229,3 +229,18 @@ func SdcAtomQE(fof Fof, lv Level, qeopt QEopt, cond qeCond) Fof {
 func (qeopt *QEopt) SetG(g *Ganrac) {
 	qeopt.g = g
 }
+
+func QuadEQPremAtom(g *Ganrac, p *Atom, q *Poly, lv Level) (Fof, Fof) {
+	atom := NewAtom(q, EQ)
+	d := q.Deg(lv)
+	lc := q.Coef(lv, uint(d))
+	minatom := &quadEQ_t{lv: lv, a: atom.(*Atom), p: q, z: lc, deg: d, idx: 0}
+	return minatom.prem_atom(p)
+}
+
+func QECubicEq(g *Ganrac, fof FofQ) Fof {
+	qeopt := NewQEopt()
+	qeopt.qe_init(g, fof)
+	cond := NewQeCond()
+	return qeopt.qe_cubeeq(fof, *cond)
+}

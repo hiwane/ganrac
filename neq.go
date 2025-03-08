@@ -317,7 +317,7 @@ func apply_neqQE_atom(fof Fof, atom *Atom, lv Level, qeopt QEopt, cond qeCond) F
 				qq))
 			return ret
 
-		} else if poly.isUnivariate() {
+		} else if poly.IsUnivariate() {
 			r := apply_neqQE_atom_univ(fof, qffneq, NewAtom(poly, atom.op).(*Atom), lv, qeopt, cond)
 			if r == nil {
 				return nil

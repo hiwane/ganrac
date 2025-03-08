@@ -122,7 +122,7 @@ func (qeopt QEopt) gbred_tran(gb2, vars *List, lv Level) (*List, map[Level]poly_
 		gb := NewListN(gb2.Len())
 		for _, gx := range gb2.Iter() {
 			if g, ok := gx.(*Poly); ok {
-				if g.isUnivariate() {
+				if g.IsUnivariate() {
 					// 値が確定した. 有理数でない場合ある???
 					if len(g.c) != 2 {
 						fmt.Printf("lv=%d\n", lv)

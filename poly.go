@@ -385,6 +385,10 @@ func (z *Poly) Neg() RObj {
 	return x
 }
 
+func (z *Poly) neg() *Poly {
+	return z.Neg().(*Poly)
+}
+
 func (x *Poly) Add(y RObj) RObj {
 	p, ok := y.(*Poly)
 	if !ok {
@@ -975,15 +979,14 @@ func (z *Poly) Subst(xs RObj, lv Level) RObj {
 	return p
 }
 
+// returns to, tc s.t.
+// z(num + sgn *sqrt($sqr)) = to + tc * sqrt($sqr)
 func (z *Poly) subst_frac_sqr(num, sqr RObj, sgn int, dens []RObj, lv Level) (RObj, RObj) {
 	// VS からの呼び出しを仮定.
 	// dens = [1, den, ..., den^d]
 	// d = len(dens) - 1
 	// z(x[lv]=(num+sgn*root(sqr)/den) * den^d = to + tc * root(sqr)
 
-	if len(dens) > 3 {
-		panic("unsupprted len(dens)")
-	}
 	if z.lv > lv {
 		p := make([]RObj, len(z.c))
 		q := make([]RObj, len(z.c))
@@ -1038,19 +1041,28 @@ func (z *Poly) subst_frac_sqr(num, sqr RObj, sgn int, dens []RObj, lv Level) (RO
 		tc = tc.Neg()
 	}
 
-	if z.deg() == 2 {
+	if z.deg() >= 2 {
 		// 2次
-		// (a+sqrt(b))^2 = a^2 + b + 2a*sqrt(b)
+		// (a+sqrt(b))^2 = a^2 + b +- 2a*sqrt(b)
 		vv := Mul(z.c[2], dens[dd-2])
 		to = Add(to, Mul(vv, Add(Mul(num, num), sqr)))
-		if sgn < 0 {
-			tc = Sub(tc, Mul(vv, Mul(num, two)))
-		} else {
-			tc = Add(tc, Mul(vv, Mul(num, two)))
-		}
+		ss := Mul(vv, Mul(num, two))
+		tc = AddOrSub(tc, ss, sgn)
 	}
-	if z.deg() > 2 {
-		panic("unsupported VS")
+	if z.deg() >= 3 {
+		// 3次
+		// (a+-sqrt(b))^3 = a^3 +- 3a^2*sqrt(b) + 3a*b +- sqrt(b)^3
+		//               =(a^3+3*a*b) +- (3a^2+b)*sqrt(b)
+		a3 := Mul(num, NewInt(3))
+		oo := Add(Mul(Mul(num, num), num), Mul(sqr, a3))
+		cc := Add(Mul(a3, num), sqr)
+
+		vv := Mul(z.c[3], dens[dd-3])
+		to = Add(to, Mul(vv, oo))
+		tc = AddOrSub(tc, Mul(vv, cc), sgn)
+	}
+	if z.deg() >= 4 {
+		panic(fmt.Sprintf("unsupported VS (deg); %v", z))
 	}
 
 	return to, tc
@@ -1168,7 +1180,7 @@ func (z *Poly) subst_binint_1var(numer *Int, denom uint) RObj {
 	return p
 }
 
-func (z *Poly) isUnivariate() bool {
+func (z *Poly) IsUnivariate() bool {
 	for _, c := range z.c {
 		if _, ok := c.(NObj); !ok {
 			return false
@@ -1749,12 +1761,12 @@ func (p *Poly) Cmp(q *Poly) int {
 	if p.lv != q.lv {
 		return int(p.lv - q.lv)
 	}
-	if p.isUnivariate() {
-		if !q.isUnivariate() {
+	if p.IsUnivariate() {
+		if !q.IsUnivariate() {
 			return -1
 		}
 	} else {
-		if q.isUnivariate() {
+		if q.IsUnivariate() {
 			return +1
 		}
 	}
@@ -2117,4 +2129,9 @@ func (f *Poly) SubstXinvLv(lv Level, n int) RObj {
 		}
 		return z
 	}
+}
+
+// ax^2+bx+c の判別式
+func Discrim2(a, b, c RObj) RObj {
+	return Sub(Mul(b, b), Mul(four, Mul(a, c)))
 }

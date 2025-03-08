@@ -2,6 +2,7 @@ package ganrac
 
 import (
 	"fmt"
+	"strings"
 )
 
 // グローバル変数にしたくないのだけど，
@@ -15,6 +16,28 @@ var coloredFml bool
 type varInfo struct {
 	v string
 	p *Poly
+}
+
+func buildFormatString(f fmt.State, verb rune) string {
+	var format strings.Builder
+
+	format.WriteByte('%')
+	for _, flag := range []byte{'-', '+', ' ', '#', '0'} {
+		if f.Flag(int(flag)) {
+			format.WriteByte(flag)
+		}
+	}
+
+	if w, ok := f.Width(); ok {
+		format.WriteString(fmt.Sprintf("%d", w))
+	}
+
+	if p, ok := f.Precision(); ok {
+		format.WriteString(fmt.Sprintf(".%d", p))
+	}
+
+	format.WriteRune(verb)
+	return format.String()
 }
 
 func VarStr(lv Level) string {
@@ -111,6 +134,14 @@ func Sub(x, y RObj) RObj {
 	} else {
 		// num - poly
 		return y.Neg().Add(x)
+	}
+}
+
+func AddOrSub(x, y RObj, sgn int) RObj {
+	if sgn > 0 {
+		return Add(x, y)
+	} else {
+		return Sub(x, y)
 	}
 }
 
