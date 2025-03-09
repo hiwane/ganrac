@@ -89,15 +89,32 @@ func (sfc *CADSfc) make_pdf() (Fof, error) {
 			sfc.add_ds_proj(lv, pf)
 		}
 
-		// rlift がバグっているので，諦める.
+		// rlift がバグっているので，諦めて最初から構築し直す
 		if proj_num[lv] != sfc.cad.proj[lv].Len() {
-			cad2, _ := NewCAD(sfc.cad.qfml, sfc.cad.g)
+			sfc.cad.log(3, "  lv=%d, proj=%d, sfc=%d\n", lv, proj_num[lv], sfc.cad.proj[lv].Len())
+			cad2, err := NewCAD(sfc.cad.qfml, sfc.cad.g)
+			if err != nil {
+				return nil, err
+			}
 			for j := proj_num[lv]; j < sfc.cad.proj[lv].Len(); j++ {
 				cad2.apppoly = append(cad2.apppoly, sfc.cad.proj[lv].get(uint(j)).P())
 			}
 
 			cad2.Projection(sfc.cad.palgo)
-			cad2.Lift()
+			err = cad2.Lift()
+			if err != nil {
+				if _, ok := err.(*CAD_error_wo); !ok {
+					return nil, err
+				}
+
+				// NOT well-oriented だったので Hong-projへ移行
+
+				cad3, _ := NewCAD(sfc.cad.qfml, sfc.cad.g)
+				cad3.Projection(PROJ_HONG)
+				cad3.Lift()
+				return cad3.Sfc()
+			}
+
 			return cad2.Sfc()
 		}
 
