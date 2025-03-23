@@ -97,7 +97,7 @@ sig(["sig" 1 1]) :: index=[1 1], truth=-1
   | |  |  | |           |                    |
   | |  |  | |           |                    +--- defining polynomial
   | |  |  | |           +------------------------ isolating interval
-  | |  |  | +------------------------------------ sign of P(2, 1) ... 0 if P(2, 1) vanish on cell(1, 1)          
+  | |  |  | +------------------------------------ sign of P(2, 1) ... 0 if P(2, 1) vanish on cell(1, 1)
   | |  |  +-------------------------------------- sign of P(2, 0) ... P(2, 0) is zero on cell(1, 1, 1) with multiplicity 1
   | |  +----------------------------------------- number of children
   | +-------------------------------------------- truth value

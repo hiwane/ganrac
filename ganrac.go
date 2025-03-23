@@ -185,6 +185,10 @@ func (g *Ganrac) SetCAS(cas CAS) {
 	g.ox = cas
 }
 
+func (g *Ganrac) CAS() CAS {
+	return g.ox
+}
+
 func (g *Ganrac) log(lv, caller int, format string, a ...interface{}) {
 	if lv <= g.verbose {
 		_, file, line, _ := runtime.Caller(caller)

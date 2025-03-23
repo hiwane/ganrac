@@ -249,10 +249,10 @@ func (z *Poly) Format(s fmt.State, format rune) {
 		for _, c := range z.c {
 			if c == nil {
 				fmt.Fprintf(s, "nil")
-			} else if cp, ok := c.(*Poly); ok {
+			} else if cp, ok := c.(fmt.Formatter); ok {
 				cp.Format(s, format)
 			} else {
-				fmt.Fprintf(s, "%v", c)
+				fmt.Fprintf(s, "%"+string(FORMAT_DUMP), c)
 			}
 			fmt.Fprintf(s, " ")
 		}

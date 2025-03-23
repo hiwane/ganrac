@@ -6,6 +6,7 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/hiwane/flagvar"
 	"github.com/hiwane/ganrac"
+	"github.com/hiwane/ganrac/cas/cache"
 
 	"bufio"
 	"flag"
@@ -23,6 +24,7 @@ type CmdParam struct {
 	Quiet         bool
 	ConcurrentNum int
 	Color         *flagvar.ChoiceVar
+	Cache         int
 
 	CmdHistory string
 }
@@ -235,6 +237,12 @@ func (cp CmdParam) Interpreter(g *ganrac.Ganrac) {
 	var cl CmdLine
 	cl.rl = rl
 
+	if cp.Cache > 0 {
+		cas := g.CAS()
+		cache := cache.New(cas, cp.Cache)
+		g.SetCAS(cache)
+	}
+
 	for {
 		line, err := cl.get_line()
 		if err == readline.ErrInterrupt {
@@ -256,6 +264,15 @@ func (cp CmdParam) Interpreter(g *ganrac.Ganrac) {
 			fmt.Println(p)
 		}
 	}
+
+	if cp.Cache > 0 {
+		cache := g.CAS().(*cache.Cache)
+		if cp.Verbose > 0 {
+			g.Logger().Printf("Cache hit=%d, miss=%d (rate=%.4f), remove=%d, size=%d/%d\n", cache.Hit(), cache.Miss(),
+				float64(cache.Hit())/float64(cache.Hit()+cache.Miss()),
+				cache.RemoveCount(), cache.Len(), cache.Capacity())
+		}
+	}
 }
 
 func (cp *CmdParam) FlagVars() {
@@ -267,4 +284,5 @@ func (cp *CmdParam) FlagVars() {
 	flag.BoolVar(&cp.Quiet, "q", false, "quiet mode")
 	flag.StringVar(&cp.CmdHistory, "history", "", "command history")
 	flag.IntVar(&cp.ConcurrentNum, "conc", 0, "number of concurrent processes")
+	flag.IntVar(&cp.Cache, "cache", 0, "cache capacity. 0 means no cache")
 }
