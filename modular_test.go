@@ -18,29 +18,25 @@ func TestUintNobj(t *testing.T) {
 
 func TestModularInvUint(t *testing.T) {
 	for _, s := range []struct {
-		a Uint
 		p Uint
 	}{
-		{1, 5},
-		{2, 5},
-		{3, 5},
-		{4, 5},
-		{1, 11},
-		{2, 11},
-		{3, 11},
-		{5, 11},
-		{6, 11},
-		{7, 11},
+		{5}, {11}, {29}, {101},
 	} {
-		b := s.a.inv_mod(nil, s.p).(Uint)
-		if b == 0 || b >= s.p {
-			t.Errorf("invalid input=%v, p=%v, inv=%v", s.a, s.p, b)
-			continue
-		}
-		u := (uint64(b) * uint64(s.a)) % uint64(s.p)
-		if u != 1 {
-			t.Errorf("invalid input=%v, p=%v, inv=%v, mul=%v", s.a, s.p, b, u)
-			continue
+		for a := Uint(1); a < s.p; a++ {
+			b := a.inv_mod(nil, s.p).(Uint)
+			if b == 0 || b >= s.p {
+				t.Errorf("invalid input=%v, p=%v, inv=%v", a, s.p, b)
+				continue
+			}
+			uu := b.mul_mod(a, s.p)
+			if u, ok := uu.(Uint); ok {
+				if u != 1 {
+					t.Errorf("invalid input=%v, p=%v, inv=%v, mul=%v", a, s.p, b, u)
+					continue
+				}
+			} else {
+				t.Errorf("invalid input=%v, p=%v, inv=%v, mul=%v", a, s.p, b, uu)
+			}
 		}
 	}
 }
