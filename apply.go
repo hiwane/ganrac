@@ -4,15 +4,15 @@ import (
 	"fmt"
 )
 
-func (p *AtomT) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, bool) {
+func (p *AtomT) Apply(fn ApplyFunc, arg any, qff bool) (Fof, bool) {
 	return p, false
 }
 
-func (p *AtomF) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, bool) {
+func (p *AtomF) Apply(fn ApplyFunc, arg any, qff bool) (Fof, bool) {
 	return p, false
 }
 
-func (p *ForAll) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, bool) {
+func (p *ForAll) Apply(fn ApplyFunc, arg any, qff bool) (Fof, bool) {
 	if qff {
 		fmt.Printf("ForAll: %v\n", p)
 		panic("!")
@@ -25,7 +25,7 @@ func (p *ForAll) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof,
 	return NewQuantifier(true, p.q, fml), true
 }
 
-func (p *Exists) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, bool) {
+func (p *Exists) Apply(fn ApplyFunc, arg any, qff bool) (Fof, bool) {
 	if qff {
 		fmt.Printf("Exists: %v\n", p)
 		panic("!")
@@ -38,7 +38,7 @@ func (p *Exists) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof,
 	return NewQuantifier(false, p.q, fml), true
 }
 
-func (p *FmlAnd) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, bool) {
+func (p *FmlAnd) Apply(fn ApplyFunc, arg any, qff bool) (Fof, bool) {
 	update := false
 	fs := make([]Fof, p.Len())
 	for i, f := range p.Fmls() {
@@ -53,7 +53,7 @@ func (p *FmlAnd) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof,
 	}
 }
 
-func (p *FmlOr) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, bool) {
+func (p *FmlOr) Apply(fn ApplyFunc, arg any, qff bool) (Fof, bool) {
 	update := false
 	fs := make([]Fof, p.Len())
 	for i, f := range p.Fmls() {
@@ -68,6 +68,6 @@ func (p *FmlOr) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, 
 	}
 }
 
-func (atom *Atom) Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, bool) {
+func (atom *Atom) Apply(fn ApplyFunc, arg any, qff bool) (Fof, bool) {
 	return fn(atom, arg)
 }

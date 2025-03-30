@@ -8,6 +8,8 @@ import (
 var trueObj = new(AtomT)
 var falseObj = new(AtomF)
 
+type ApplyFunc func(*Atom, any) (Fof, bool)
+
 // first-order formula
 type Fof interface {
 	GObj
@@ -46,7 +48,7 @@ type Fof interface {
 	 * @arg qff quantifier free formula に対してのみ適用する場合 true
 	 * @returns fml, changed
 	 */
-	Apply(fn func(*Atom, any) (Fof, bool), arg any, qff bool) (Fof, bool)
+	Apply(fn ApplyFunc, arg any, qff bool) (Fof, bool)
 }
 
 type FofQ interface {
