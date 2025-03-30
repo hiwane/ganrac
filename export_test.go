@@ -114,7 +114,8 @@ func (qeopt *QEopt) Qe_evenq(prenex_fof Fof, cond qeCond, maxdeg int) Fof {
 }
 
 func QeQuadEq(a Fof, tbl *fof_quad_eq) Fof {
-	return a.qe_quadeq(qe_quadeq, tbl)
+	f, _ := a.Apply(qe_quadeq, tbl, true)
+	return f
 }
 
 func QeOptQuadEq(a FofQ, qeopt *QEopt, cond *qeCond) Fof {
@@ -122,7 +123,8 @@ func QeOptQuadEq(a FofQ, qeopt *QEopt, cond *qeCond) Fof {
 }
 
 func QeLinEq(a Fof, tbl *fof_quad_eq) Fof {
-	return a.qe_quadeq(qe_lineq, tbl)
+	f, _ := a.Apply(qe_lineq, tbl, true)
+	return f
 }
 
 func QeVS(a Fof, lv Level, m int, g *Ganrac) Fof {

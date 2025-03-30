@@ -40,9 +40,6 @@ type Fof interface {
 	nonPrenex() Fof        // ex([x], A || B) -> ex([x], A) || ex([x], B) とか，自由変数しか含まない部分を外にだすと とか，自由変数しか含まない部分を外にだすとかか
 	varShift(lv Level) Fof // 変数のインデックスを lv だけずらず.
 
-	// QE..
-	fof_quad_eqer // Quadratic Equation
-
 	/**
 	 * @arg arg fn() に渡す引数
 	 * @arg qff quantifier free formula に対してのみ適用する場合 true

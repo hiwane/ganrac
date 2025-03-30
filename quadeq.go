@@ -67,11 +67,6 @@ func (minatom *quadEQ_t) SetAtomIfEasy(fof FofQ, atom *Atom, dmin, dmax, ii int)
 	}
 }
 
-type fof_quad_eqer interface {
-	// ax+b=0 && sgn a > 0 && fof
-	qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof
-}
-
 type fof_quad_eq struct {
 	p       *Poly
 	sgn_lcp int // sign of lc(p)
@@ -117,10 +112,10 @@ func quadeq_isEven(f Fof, lv Level) bool {
 // ///////////////////////////////////////////////
 // 核
 // ///////////////////////////////////////////////
-func qe_lineq(a *Atom, param interface{}) Fof {
+func qe_lineq(a *Atom, param any) (Fof, bool) {
 	t := param.(*fof_quad_eq)
 	if !a.hasVar(t.lv) {
-		return a
+		return a, false
 	}
 	res := make([]RObj, len(a.p))
 	for i, p := range a.p {
@@ -130,7 +125,7 @@ func qe_lineq(a *Atom, param interface{}) Fof {
 	if t.sgn_lcp < 0 && a.Deg(t.lv)%2 != 0 {
 		op = op.neg()
 	}
-	return NewAtoms(res, op)
+	return NewAtoms(res, op), true
 }
 
 func quadeq_getrst(gan *Ganrac, f, g *Poly, lv Level) (RObj, RObj, RObj) {
@@ -140,10 +135,10 @@ func quadeq_getrst(gan *Ganrac, f, g *Poly, lv Level) (RObj, RObj, RObj) {
 	return r, t, s
 }
 
-func qe_quadeq(a *Atom, param interface{}) Fof {
+func qe_quadeq(a *Atom, param interface{}) (Fof, bool) {
 	u := param.(*fof_quad_eq)
 	if !a.hasVar(u.lv) {
-		return a
+		return a, false
 	}
 	f := u.p
 	g := a.getPoly()
@@ -163,7 +158,7 @@ func qe_quadeq(a *Atom, param interface{}) Fof {
 		if a.op == NE {
 			ret = ret.Not()
 		}
-		return ret
+		return ret, true
 	case GT, LE, GE, LT:
 		if aop == GE || aop == LT {
 			aop = aop.neg()
@@ -198,7 +193,7 @@ func qe_quadeq(a *Atom, param interface{}) Fof {
 		if a.op&EQ != 0 {
 			ret = ret.Not()
 		}
-		return ret
+		return ret, true
 	default:
 		panic(fmt.Sprintf("op=%d", a.op))
 	}
@@ -208,42 +203,8 @@ func qe_quadeq(a *Atom, param interface{}) Fof {
 // 共通部分
 /////////////////////////////////////////////////
 
-func (fof *AtomT) qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof {
-	return fof
-}
-
-func (fof *AtomF) qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof {
-	return fof
-}
-
 func (fof *Atom) qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof {
 	return fm(fof, p)
-}
-
-func (fof *FmlAnd) qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof {
-	ret := make([]Fof, fof.Len())
-	for i, q := range fof.Fmls() {
-		ret[i] = q.qe_quadeq(fm, p)
-	}
-	return fof.gen(ret)
-}
-
-func (fof *FmlOr) qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof {
-	ret := make([]Fof, fof.Len())
-	for i, q := range fof.Fmls() {
-		ret[i] = q.qe_quadeq(fm, p)
-	}
-	return fof.gen(ret)
-}
-
-func (fof *ForAll) qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof {
-	fmt.Printf("forall %v\n", fof)
-	panic("invalid......... qe_quadeq(forall)")
-}
-
-func (fof *Exists) qe_quadeq(fm func(a *Atom, p interface{}) Fof, p interface{}) Fof {
-	fmt.Printf("exists %v\n", fof)
-	panic("invalid......... qe_quadeq(exists)")
 }
 
 func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
@@ -318,7 +279,8 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 			} else {
 				aop = sgns.op
 			}
-			opp := NewFmlAnds(fff.qe_quadeq(qe_quadeq, tbl), NewAtom(minatom.z, aop), discrim)
+			ffx, _ := fff.Apply(qe_quadeq, tbl, true)
+			opp := NewFmlAnds(ffx, NewAtom(minatom.z, aop), discrim)
 			if false {
 				cad, _ := funcCAD(qeopt.g, "CAD", []interface{}{opp})
 				fmt.Printf("  opp=%v ==> %v\n", opp, cad)
@@ -346,10 +308,12 @@ func (qeopt QEopt) qe_quadeq(fof FofQ, cond qeCond) Fof {
 	// 1次の等式制約の場合
 	qeopt.log(cond, 2, "eq1", "%v [%v]\n", fff, minatom.p)
 	tbl.sgn_lcp = 1
-	opos := NewFmlAnd(fff.qe_quadeq(qe_lineq, tbl), NewAtom(minatom.z, GT))
+	ffp, _ := fff.Apply(qe_lineq, tbl, true)
+	opos := NewFmlAnd(ffp, NewAtom(minatom.z, GT))
 
 	tbl.sgn_lcp = -1
-	oneg := NewFmlAnd(fff.qe_quadeq(qe_lineq, tbl), NewAtom(minatom.z, LT))
+	ffn, _ := fff.Apply(qe_lineq, tbl, true)
+	oneg := NewFmlAnd(ffn, NewAtom(minatom.z, LT))
 
 	fs := make([]Fof, len(fff.Fmls())+1)
 	copy(fs, fff.Fmls())
