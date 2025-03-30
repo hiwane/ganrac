@@ -586,7 +586,7 @@ func funcSimplNum(g *Ganrac, name string, args []interface{}) (interface{}, erro
 		flag = int(fint.Int64())
 	}
 	if (flag & 0x01) != 0 {
-		c = c.simplFctr(g)
+		c = simplFctr(c, g)
 		fmt.Printf("c1=%v\n", c)
 	}
 	if (flag & 0x02) != 0 {

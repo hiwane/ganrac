@@ -209,7 +209,8 @@ func (p *Atom) simplReduce(g *Ganrac, inf *reduce_info) Fof {
 		} else {
 			a = NewAtom(r, p.op)
 		}
-		return a.simplFctr(g)
+		return simplFctr(a, g)
+		// return a.simplFctr(g)
 	}
 	return p
 }

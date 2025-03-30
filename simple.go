@@ -13,9 +13,9 @@ type reduce_info struct {
 }
 
 type simpler interface {
-	simplBasic(neccon, sufcon Fof) Fof           // 手抜き簡単化
-	simplComm() Fof                              // 共通部分の括りだし
-	simplFctr(g *Ganrac) Fof                     // CA を要求
+	simplBasic(neccon, sufcon Fof) Fof // 手抜き簡単化
+	simplComm() Fof                    // 共通部分の括りだし
+	// simplFctr(g *Ganrac) Fof                     // CA を要求
 	simplReduce(g *Ganrac, inf *reduce_info) Fof // 等式制約による簡約化
 
 	// symbolic-numeric simplification
@@ -49,7 +49,7 @@ func (g *Ganrac) simplFof(c Fof, neccon, sufcon Fof) Fof {
 	c = c.simplReduce(g, inf) // GB の結果により重複因子が生まれる可能性がある
 	logSimplFof(c, neccon, sufcon, g, "@1")
 
-	c = c.simplFctr(g)
+	c = simplFctr(c, g)
 	logSimplFof(c, neccon, sufcon, g, "@2")
 	c.normalize()
 	logSimplFof(c, neccon, sufcon, g, "@3")

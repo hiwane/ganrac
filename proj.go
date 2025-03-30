@@ -220,7 +220,7 @@ func (pl *ProjLink) merge(p *ProjLink) {
 }
 
 func (cad *CAD) getU() []*Interval {
-	fml := cad.fml.simplFctr(cad.g)
+	fml := simplFctr(cad.fml, cad.g)
 	_, t, f := fml.simplNum(cad.g, nil, nil)
 	cad.u = make([]*Interval, len(cad.q))
 	for lv := 0; lv < len(cad.q); lv++ {

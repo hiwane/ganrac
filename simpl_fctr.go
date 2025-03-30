@@ -10,17 +10,15 @@ package ganrac
 
 import "fmt"
 
-func (p *AtomT) simplFctr(g *Ganrac) Fof {
-	return p
+func simplFctr(fof Fof, g *Ganrac) Fof {
+	f, _ := fof.Apply((*Atom).simplFctr, g, false)
+	return f
 }
 
-func (p *AtomF) simplFctr(g *Ganrac) Fof {
-	return p
-}
-
-func (p *Atom) simplFctr(g *Ganrac) Fof {
+func (p *Atom) simplFctr(_g any) (Fof, bool) {
+	g := _g.(*Ganrac)
 	if p.irreducible {
-		return p
+		return p, false
 	}
 	if g.ox == nil {
 		fmt.Printf("g.ox=%p:%p\n", g, g.ox)
@@ -54,8 +52,9 @@ func (p *Atom) simplFctr(g *Ganrac) Fof {
 	}
 	if !up && len(pp[0]) == 0 && len(pp[1]) == len(p.p) {
 		p.irreducible = true
-		return p
+		return p, up
 	}
+
 	var ret Fof
 	switch p.op {
 	case EQ:
@@ -68,7 +67,7 @@ func (p *Atom) simplFctr(g *Ganrac) Fof {
 				ret = NewFmlOr(ret, a)
 			}
 		}
-		return ret
+		return ret, true
 	case NE:
 		ret = trueObj
 		for _, qq := range pp {
@@ -79,7 +78,7 @@ func (p *Atom) simplFctr(g *Ganrac) Fof {
 				ret = NewFmlAnd(ret, a)
 			}
 		}
-		return ret
+		return ret, true
 	}
 	op := p.op
 	if sgn < 0 {
@@ -88,7 +87,7 @@ func (p *Atom) simplFctr(g *Ganrac) Fof {
 
 	if (op & EQ) != 0 { // LE || GE
 		if len(pp[1]) == 0 && op == GE {
-			return trueObj
+			return trueObj, true
 		}
 		ret = falseObj
 		for _, q := range pp[0] {
@@ -107,9 +106,9 @@ func (p *Atom) simplFctr(g *Ganrac) Fof {
 			ret = NewFmlOr(ret, a)
 		}
 	} else if len(pp[1]) == 0 && op == LT {
-		return falseObj
+		return falseObj, true
 	} else if len(pp[1]) == 0 && op == GE {
-		return trueObj
+		return trueObj, true
 	} else { // LT || GT
 		ret = trueObj
 		for _, q := range pp[0] {
@@ -128,39 +127,5 @@ func (p *Atom) simplFctr(g *Ganrac) Fof {
 			ret = NewFmlAnd(ret, a)
 		}
 	}
-	return ret
-}
-
-func (p *FmlAnd) simplFctr(g *Ganrac) Fof {
-	fml := make([]Fof, len(p.fml))
-	for i := 0; i < len(fml); i++ {
-		fml[i] = p.fml[i].simplFctr(g)
-	}
-
-	return NewFmlAnds(fml...)
-}
-
-func (p *FmlOr) simplFctr(g *Ganrac) Fof {
-	fml := make([]Fof, len(p.fml))
-	for i := 0; i < len(fml); i++ {
-		fml[i] = p.fml[i].simplFctr(g)
-	}
-
-	return NewFmlOrs(fml...)
-}
-
-func (p *ForAll) simplFctr(g *Ganrac) Fof {
-	fml := p.fml.simplFctr(g)
-	if fml == p.fml {
-		return p
-	}
-	return NewQuantifier(true, p.q, fml)
-}
-
-func (p *Exists) simplFctr(g *Ganrac) Fof {
-	fml := p.fml.simplFctr(g)
-	if fml == p.fml {
-		return p
-	}
-	return NewQuantifier(false, p.q, fml)
+	return ret, true
 }
