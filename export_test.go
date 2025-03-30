@@ -145,8 +145,8 @@ func SimplBasic(fof, nec, suf Fof) Fof {
 	return fof.simplBasic(nec, suf)
 }
 
-func SimplFctr(fof simpler, g *Ganrac) Fof {
-	return fof.simplFctr(g)
+func SimplFctr(fof Fof, g *Ganrac) Fof {
+	return simplFctr(fof, g)
 }
 
 func SimplReduce(p Fof, g *Ganrac, inf *reduce_info) Fof {
