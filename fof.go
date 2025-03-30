@@ -39,7 +39,6 @@ type Fof interface {
 	varShift(lv Level) Fof // 変数のインデックスを lv だけずらず.
 
 	// QE..
-	fof_vser      // Virtual Substitution
 	fof_quad_eqer // Quadratic Equation
 
 	/**

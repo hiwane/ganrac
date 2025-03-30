@@ -16,10 +16,6 @@ import (
 
 const OPVS_SHIFT = 8
 
-type fof_vser interface {
-	apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof
-}
-
 type vs_sample_point struct {
 	// (num + sqrt(v)) / den
 	num  RObj
@@ -198,50 +194,28 @@ func (es *vs_elimination_set) addAtom(atom *Atom, lv Level) {
 	}
 }
 
-func (fof *AtomT) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
-	return fof
-}
-func (fof *AtomF) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
-	return fof
+type applyVsStruct struct {
+	ptt *vs_sample_point
+	lv  Level
+	fm  func(atom *Atom, p *vs_sample_point, lv Level) Fof
 }
 
-func (fof *Atom) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, ptt *vs_sample_point, lv Level) Fof {
+func applyVs(fof Fof, fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, ptt *vs_sample_point, lv Level) Fof {
+	arg := applyVsStruct{ptt: ptt, lv: lv, fm: fm}
+	f, _ := fof.Apply((*Atom).applyVS, arg, true)
+	return f
+}
+
+func (fof *Atom) applyVS(_arg any) (Fof, bool) {
+	arg := _arg.(applyVsStruct)
+	ptt := arg.ptt
+	lv := arg.lv
+	fm := arg.fm
 	if fof.hasVar(lv) {
-		return fm(fof, ptt, lv)
+		return fm(fof, ptt, lv), true
 	} else {
-		return fof
-
+		return fof, false
 	}
-}
-
-func (fof *FmlAnd) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
-	var r Fof = trueObj
-
-	for _, f := range fof.fml {
-		r = NewFmlAnd(r, f.apply_vs(fm, p, lv))
-	}
-
-	return r
-}
-
-func (fof *FmlOr) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
-	var r Fof = falseObj
-
-	for _, f := range fof.fml {
-		r = NewFmlOr(r, f.apply_vs(fm, p, lv))
-	}
-
-	return r
-}
-
-func (fof *ForAll) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
-	fmt.Printf("forall %v\n", fof)
-	panic("invalid......... apply_vs(forall)")
-}
-
-func (fof *Exists) apply_vs(fm func(atom *Atom, p *vs_sample_point, lv Level) Fof, p *vs_sample_point, lv Level) Fof {
-	fmt.Printf("exists %v\n", fof)
-	panic("invalid......... apply_vs(exists)")
 }
 
 // サンプル点を生成する.
@@ -661,7 +635,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 							goto _NEXT_GT
 						}
 					}
-					sfml := fml.apply_vs(virtual_subst, pt, lv)
+					sfml := applyVs(fml, virtual_subst, pt, lv)
 					gan.log(loglv, 1, "add2:=:%d:%d: {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
@@ -679,7 +653,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 				//   2次の場合.... idx < 0
 				if pp.kind&(OPVS_LT|OPVS_NE) != 0 && (pt.deg == 1 && stbl.sgn < 0 || pt.deg == 2 && pt.idx < 0) {
 					// p < 0 ==> signr < 0
-					sfml := fml.apply_vs(virtual_subst_e, pt, lv)
+					sfml := applyVs(fml, virtual_subst_e, pt, lv)
 					gan.log(loglv, 1, "add6:<e:%d:%d {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
@@ -691,7 +665,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 				}
 				if pp.kind&(OPVS_GT|OPVS_NE) != 0 && (pt.deg == 1 && stbl.sgn > 0 || pt.deg == 2 && pt.idx > 0) {
 					// p > 0 ==> sgnr > 0
-					sfml := fml.apply_vs(virtual_subst_e, pt, lv)
+					sfml := applyVs(fml, virtual_subst_e, pt, lv)
 					gan.log(loglv, 1, "add7:>e:%d:%d {%v}  [lc %v][nec %v]\n", stbl.sgn, pt.idx, sfml, lc, pt.necessaryCondition())
 					if err := sfml.valid(); err != nil {
 						panic(err)
@@ -710,7 +684,7 @@ func vs_main(fof Fof, lv Level, target_deg int, gan *Ganrac) Fof {
 	}
 	if required_minf { // -inf
 		pt := new(vs_sample_point) // ダミー
-		sfml := fml.apply_vs(virtual_subst_i, pt, lv)
+		sfml := applyVs(fml, virtual_subst_i, pt, lv)
 		gan.log(loglv, 1, "j=x, [-inf] {%v}\n", sfml)
 		if err := sfml.valid(); err != nil {
 			panic(err)
