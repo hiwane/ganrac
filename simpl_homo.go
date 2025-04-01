@@ -15,39 +15,18 @@ import (
 	"fmt"
 )
 
-func (p *AtomT) homo_reconstruct(lv Level, lvs Levels, sgn int) Fof {
-	return p
+type homoRecontruct struct {
+	lv  Level
+	lvs Levels
+	sgn int
 }
 
-func (p *AtomF) homo_reconstruct(lv Level, lvs Levels, sgn int) Fof {
-	return p
-}
+func (atom *Atom) homo_reconstruct(_a any) (Fof, bool) {
+	hr := _a.(*homoRecontruct)
+	lv := hr.lv
+	lvs := hr.lvs
+	sgn := hr.sgn
 
-func (p *ForAll) homo_reconstruct(lv Level, lvs Levels, sgn int) Fof {
-	panic("?")
-}
-
-func (p *Exists) homo_reconstruct(lv Level, lvs Levels, sgn int) Fof {
-	panic("?")
-}
-
-func (p *FmlAnd) homo_reconstruct(lv Level, lvs Levels, sgn int) Fof {
-	fs := make([]Fof, p.Len())
-	for i, f := range p.Fmls() {
-		fs[i] = f.homo_reconstruct(lv, lvs, sgn)
-	}
-	return p.gen(fs)
-}
-
-func (p *FmlOr) homo_reconstruct(lv Level, lvs Levels, sgn int) Fof {
-	fs := make([]Fof, p.Len())
-	for i, f := range p.Fmls() {
-		fs[i] = f.homo_reconstruct(lv, lvs, sgn)
-	}
-	return p.gen(fs)
-}
-
-func (atom *Atom) homo_reconstruct(lv Level, lvs Levels, sgn int) Fof {
 	ps := make([]*Poly, len(atom.p))
 	tdeg := 0
 	for i, p := range atom.p {
@@ -65,11 +44,11 @@ func (atom *Atom) homo_reconstruct(lv Level, lvs Levels, sgn int) Fof {
 		}
 	}
 	if tdeg == 0 {
-		return atom
+		return atom, false
 	} else if sgn > 0 || tdeg%2 == 0 {
-		return newAtoms(ps, atom.op)
+		return newAtoms(ps, atom.op), true
 	} else {
-		return newAtoms(ps, atom.op.neg())
+		return newAtoms(ps, atom.op.neg()), true
 	}
 }
 
@@ -315,6 +294,7 @@ func (qeopt QEopt) qe_homo_free(fof FofQ, cond qeCond, d []int, lv Level) Fof {
 	var cond2 qeCond = cond
 	cond2.depth++
 
+	arg := &homoRecontruct{lv: lv, lvs: lvs}
 	var fret Fof = falseObj
 	for _, ss := range []struct {
 		val int
@@ -347,7 +327,8 @@ func (qeopt QEopt) qe_homo_free(fof FofQ, cond qeCond, d []int, lv Level) Fof {
 
 		// 変数を元に戻す..... lv 変数を復旧する
 		if ss.val != 0 {
-			fp = fp.homo_reconstruct(lv, lvs, ss.val)
+			arg.sgn = ss.val
+			fp, _ = fp.Apply((*Atom).homo_reconstruct, arg, true)
 		}
 
 		fp = NewFmlAnd(fp, NewAtom(NewPolyVar(lv), ss.op))

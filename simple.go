@@ -21,7 +21,6 @@ type simpler interface {
 	// symbolic-numeric simplification
 	simplNum(g *Ganrac, true_region, false_region *NumRegion) (Fof, *NumRegion, *NumRegion)
 	get_homo_cond(conds [][]int, c []int) [][]int
-	homo_reconstruct(lv Level, lvs Levels, sgn int) Fof
 }
 
 func logSimplFof(c, neccon, sufcon Fof, g *Ganrac, eyec string) {
