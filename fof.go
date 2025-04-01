@@ -18,11 +18,10 @@ type Fof interface {
 	equaler // 等価まではやらない. 形として同じもの
 	simpler
 	fofTag() uint
-	IsQff() bool         // quantifier free formula
-	IsQuantifier() bool  // ForAll か Exists なら true
-	isPrenex() bool      // prenex normal formula ?
-	isEven(lv Level) int // P(lv) = P(-lv) ? @NOTE: is だが bool 復帰ではない
-	redEven(lv Level, v, sgn int) Fof
+	IsQff() bool              // quantifier free formula
+	IsQuantifier() bool       // ForAll か Exists なら true
+	isPrenex() bool           // prenex normal formula ?
+	isEven(lv Level) int      // P(lv) = P(-lv) ? @NOTE: is だが bool 復帰ではない
 	Not() Fof                 // 否定
 	hasFreeVar(lv Level) bool // has free variable
 	hasVar(lv Level) bool     // has variable (free or quantified)

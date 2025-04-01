@@ -42,6 +42,12 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond, mindeg int) Fof {
 				if v&EVEN_NG != 0 {
 					continue
 				}
+
+				qvsgn := &redEvenStruct{
+					lv: q,
+					v:  v,
+				}
+
 				if v&EVEN_OK != 0 && (deg >= mindeg || v&EVEN_LIN2 == 0) {
 					// 単純に次数を下げればいい．
 					qeopt.log(cond, 3, "evenI", "<%s,%#x> %v\n", VarStr(q), v, fofq)
@@ -65,7 +71,9 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond, mindeg int) Fof {
 							break
 						}
 						f := qff
-						f = f.redEven(q, v, sgn)
+						// f = f.redEven(q, v, sgn)
+						qvsgn.sgn = sgn
+						f, _ = f.Apply((*Atom).redEvenWrap, qvsgn, false)
 						f = NewFmlAnd(f, NewAtom(NewPolyVar(q), GE))
 						f = NewExists(fofq.Qs(), f)
 						qeopt.log(cond, 3, "evenM", "<%s,%#x,%d> %v\n", VarStr(q), v, sgn, f)
@@ -98,6 +106,12 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond, mindeg int) Fof {
 
 				varn := qeopt.varn
 				cond2 := cond
+
+				qvsgn := &redEvenStruct{
+					lv: Level(varn),
+					v:  v,
+				}
+
 				var ret Fof = falseObj
 				for _, sgn := range []int{1, -1} {
 					if sgn < 0 && v&(EVEN_LIN) == 0 {
@@ -108,7 +122,9 @@ func (qeopt *QEopt) qe_evenq(prenex_fof Fof, cond qeCond, mindeg int) Fof {
 
 					// x^2 = y で simplify
 					f := fof.Subst(y, Level(j))
-					f = f.redEven(Level(varn), v, sgn)
+					// f = f.redEven(Level(varn), v, sgn)
+					qvsgn.sgn = sgn
+					f, _ = f.Apply((*Atom).redEvenWrap, qvsgn, false)
 					f = NewFmlAnd(f, NewAtom(y, GE))
 					qeopt.log(cond, 3, "evenFM", "<%s,%#x,%d> %v\n", VarStr(Level(j)), v, sgn, f)
 					qeopt.varn++
@@ -205,35 +221,6 @@ func (p *Exists) isEven(lv Level) int {
 	return p.Fml().isEven(lv)
 }
 
-func (p *FofTFbase) redEven(lv Level, v, sgn int) Fof {
-	return p
-}
-
-func (p *ForAll) redEven(lv Level, v, sgn int) Fof {
-	return p.gen(p.Qs(), p.Fml().redEven(lv, v, sgn))
-}
-
-func (p *Exists) redEven(lv Level, v, sgn int) Fof {
-	return p.gen(p.Qs(), p.Fml().redEven(lv, v, sgn))
-}
-
-func (p *FmlAnd) redEven(lv Level, v, sgn int) Fof {
-	fmls := p.Fmls()
-	fs := make([]Fof, len(fmls))
-	for i, f := range fmls {
-		fs[i] = f.redEven(lv, v, sgn)
-	}
-	return p.gen(fs)
-}
-func (p *FmlOr) redEven(lv Level, v, sgn int) Fof {
-	fmls := p.Fmls()
-	fs := make([]Fof, len(fmls))
-	for i, f := range fmls {
-		fs[i] = f.redEven(lv, v, sgn)
-	}
-	return p.gen(fs)
-}
-
 /*
   - p.Deg() == 1
 
@@ -241,6 +228,7 @@ func (p *FmlOr) redEven(lv Level, v, sgn int) Fof {
 // (a + b*sqrt(x)) / d <= 0 <=> ad <= 0 && a^2 >= b^2*x || bd <= 0 && a^2 <= b^2*x
 // (a + b*sqrt(x)) / d <  0 <=> ad <  0 && a^2 >  b^2*x || bd <= 0 && (a*d < 0 || a^2 < b^2*x)
 */
+
 func (q *Atom) redEvenLin(lv Level, v, sgn int) Fof {
 	if q.Deg(lv) != 1 {
 		panic(fmt.Sprintf("why? %v", q))
@@ -304,6 +292,20 @@ func (q *Atom) redEvenLin(lv Level, v, sgn int) Fof {
 	default:
 		panic(fmt.Sprintf("op=%d: %v", q.p, q))
 	}
+}
+
+type redEvenStruct struct {
+	lv  Level
+	v   int
+	sgn int
+}
+
+func (q *Atom) redEvenWrap(_arg any) (Fof, bool) {
+	arg := _arg.(*redEvenStruct)
+	lv := arg.lv
+	v := arg.v
+	sgn := arg.sgn
+	return q.redEven(lv, v, sgn), true
 }
 
 func (q *Atom) redEven(lv Level, v, sgn int) Fof {
