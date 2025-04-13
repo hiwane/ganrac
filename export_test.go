@@ -43,7 +43,7 @@ func (qeopt QEopt) Qe_tran(fof Fof, cond qeCond) Fof {
 	return qeopt.qe_tran(fof, cond)
 }
 
-func (cad *CAD) Sym_sqfr2(porg *Poly, cell *Cell) []*cadSqfr {
+func (cad *CAD) Sym_sqfr2(porg *Poly, cell *Cell) []*Factor {
 	return cad.sym_sqfr2(porg, cell)
 }
 

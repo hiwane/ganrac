@@ -11,13 +11,13 @@ import (
 	"fmt"
 )
 
-type cadSqfr struct {
+type Factor struct {
 	p *Poly
 	r mult_t
 }
 
-func newCadSqfr(cell *Cell, p *Poly, r mult_t) *cadSqfr {
-	sq := new(cadSqfr)
+func newCadSqfr(cell *Cell, p *Poly, r mult_t) *Factor {
+	sq := &Factor{}
 	sq.p = p.primpart()
 	if cell != nil {
 		sq.p = cell.reduce(sq.p).(*Poly)
@@ -29,11 +29,11 @@ func newCadSqfr(cell *Cell, p *Poly, r mult_t) *cadSqfr {
 	return sq
 }
 
-func (c *cadSqfr) Multi() mult_t {
+func (c *Factor) Multi() mult_t {
 	return c.r
 }
 
-func (c *cadSqfr) Poly() *Poly {
+func (c *Factor) Poly() *Poly {
 	return c.p
 }
 
@@ -829,7 +829,7 @@ func (cad *CAD) symde_gcd(forg, gorg *Poly, cell *Cell, need_t bool) (*Poly, ROb
 	}
 }
 
-func (cad *CAD) sym_sqfr2(porg *Poly, cell *Cell) []*cadSqfr {
+func (cad *CAD) sym_sqfr2(porg *Poly, cell *Cell) []*Factor {
 	// sqfr using modular GCD
 	// p65 Fundamentals of Computer Algebra
 	p := porg
@@ -840,10 +840,10 @@ func (cad *CAD) sym_sqfr2(porg *Poly, cell *Cell) []*cadSqfr {
 	pd := porg.Diff(porg.lv).(*Poly)
 	s0, t0 := cad.symde_gcd2(p, pd, cell, 0)
 	if s0 == nil { // gcd=1 => square-free
-		return []*cadSqfr{newCadSqfr(nil, porg, 1)}
+		return []*Factor{newCadSqfr(nil, porg, 1)}
 	}
 
-	ret := make([]*cadSqfr, 0)
+	ret := make([]*Factor, 0)
 	for i := mult_t(1); t0 != nil; i++ {
 		if s0 == nil {
 			if t0.lv == porg.lv {
@@ -871,7 +871,7 @@ func (cad *CAD) sym_sqfr2(porg *Poly, cell *Cell) []*cadSqfr {
 	return ret
 }
 
-func (cad *CAD) sym_sqfr(porg *Poly, cell *Cell) []*cadSqfr {
+func (cad *CAD) sym_sqfr(porg *Poly, cell *Cell) []*Factor {
 	cad.log(5, "    sym_sqfr(%v) %v\n", cell.Index(), porg)
 	p := porg
 	if !p.isIntPoly() {
@@ -881,14 +881,14 @@ func (cad *CAD) sym_sqfr(porg *Poly, cell *Cell) []*cadSqfr {
 
 	s0, t0, _ := cad.symde_gcd(p, pd, cell, false)
 	if s0 == nil {
-		return []*cadSqfr{newCadSqfr(nil, porg, 1)}
+		return []*Factor{newCadSqfr(nil, porg, 1)}
 	}
 
 	// fmt.Printf("sqfr: in: lv=%d, deg=%d\n", porg.lv, len(porg.c)-1)
 	// fmt.Printf("sqfr: s0: lv=%d, deg=%d\n", s0.lv, len(s0.c)-1)
 	// fmt.Printf("sqfr: t%d: lv=%d, deg=%d\n", 0, t0.(*Poly).lv, len(t0.(*Poly).c)-1)
 
-	ret := make([]*cadSqfr, 0)
+	ret := make([]*Factor, 0)
 	var i mult_t
 	for i = 1; ; i++ {
 		tt, ok := t0.(*Poly)

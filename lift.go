@@ -1353,12 +1353,12 @@ func (cell *Cell) make_cells_i(cad *CAD, pf ProjFactor, porg *Poly) ([]*Cell, si
 		cells = append(cells, c)
 	} else if hmf := pf.hasMultiFctr(cad, cell); hmf != 0 {
 
-		var ps []*cadSqfr
+		var ps []*Factor
 		if hmf == PF_EVAL_YES && p.deg() == 2 {
 			// 2次のときは微分したら良いよ
 			jk := p.Diff(p.lv).(*Poly)
 			jk, _ = jk.pp()
-			ps = []*cadSqfr{newCadSqfr(nil, jk, 2)}
+			ps = []*Factor{newCadSqfr(nil, jk, 2)}
 		} else {
 			ps = cad.sym_sqfr2(p, cell)
 		}
