@@ -235,7 +235,7 @@ func TestSymGcdMod(t *testing.T) {
 		gp := s.g.Mod(s.p).(*Poly)
 
 		// fmt.Printf("<%d>===TestSymGcdMod() ======================================\nf=%v\ng=%v\n", ii, s.f, s.g)
-		cellp, ok := cell1.Mod(cad, s.p)
+		cellp, ok := cell1.Mod(cad.Rootp(), s.p)
 		if !ok {
 			t.Errorf("not ok ii=%d", ii)
 			continue

@@ -47,6 +47,10 @@ func (cad *CAD) Sym_sqfr2(porg *Poly, cell *Cell) []*cadSqfr {
 	return cad.sym_sqfr2(porg, cell)
 }
 
+func (cad *CAD) Rootp() *Cellmod {
+	return cad.rootp
+}
+
 func (cad *CAD) Sym_zero_chk(p *Poly, c *Cell) bool {
 	return cad.sym_zero_chk(p, c)
 }
@@ -80,8 +84,8 @@ func (c *Cell) SetNintv(intv *Interval) {
 	c.nintv = intv
 }
 
-func (cell *Cell) Mod(cad *CAD, p Uint) (*Cellmod, bool) {
-	return cell.mod(cad, p)
+func (cell *Cell) Mod(rootp *Cellmod, p Uint) (*Cellmod, bool) {
+	return cell.mod(rootp, p)
 }
 
 func (z *Poly) LC() RObj {

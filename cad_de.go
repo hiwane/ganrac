@@ -47,10 +47,10 @@ func (cell *Cell) isDE() bool {
 	return n > 1
 }
 
-func (cell *Cellmod) mod_monic(cad *CAD, p Uint) bool {
+func (cell *Cellmod) mod_monic(p Uint) bool {
 	// 定義多項式の主係数を 1 にする
 	if cell.parent != nil && cell.parent.lv >= 0 {
-		if !cell.parent.mod_monic(cad, p) {
+		if !cell.parent.mod_monic(p) {
 			return false
 		}
 	}
@@ -70,19 +70,16 @@ func (cell *Cellmod) mod_monic(cad *CAD, p Uint) bool {
 	return true
 }
 
-func (cell *Cell) mod(cad *CAD, p Uint) (*Cellmod, bool) {
+func (cell *Cell) mod(rootp *Cellmod, p Uint) (*Cellmod, bool) {
 	// mod する. 定義多項式があるところにしか興味がない
 	var cellp, cp, cold *Cellmod
-	if cad.rootp == nil {
-		panic("not initialized rootp")
-	}
 	for c := cell; c.lv >= 0; c = c.parent {
 		if c.defpoly == nil {
 			continue
 		}
 
 		cp = NewCellmod(c)
-		cp.parent = cad.rootp
+		cp.parent = rootp
 		if cellp == nil {
 			cellp = cp
 		}
@@ -102,19 +99,19 @@ func (cell *Cell) mod(cad *CAD, p Uint) (*Cellmod, bool) {
 		cold = cp
 	}
 	if cold == nil {
-		return cad.rootp, true
+		return rootp, true
 	}
-	cold.parent = cad.rootp
+	cold.parent = rootp
 	cold.de = false
 
-	if !cellp.mod_monic(cad, p) {
+	if !cellp.mod_monic(p) {
 		// 定義多項式が因数分解された.
 		return cellp, false
 	}
 	return cellp, true
 }
 
-func (cad *CAD) symsex_zero_chk(p *Poly, cell *Cell) bool {
+func (cell *Cell) symsex_zero_chk(p *Poly) bool {
 	// Simple Extension
 	for c := cell; c.lv >= 0; c = c.parent {
 		if c.defpoly == nil {
@@ -170,7 +167,7 @@ func (cad *CAD) sym_equal(ci, cj *Cell) bool {
 func (cad *CAD) sym_zero_chk(p *Poly, c *Cell) bool {
 	if !c.parent.isDE() {
 		if c.defpoly == nil || c.defpoly.deg() == 1 {
-			return cad.symsex_zero_chk(p, c)
+			return c.symsex_zero_chk(p)
 		}
 	}
 
@@ -625,7 +622,7 @@ func (crt *fctr_cellcrt_t) update(cad *CAD, cell *Cell, cellp *Cellmod, p Uint) 
 	panic("prec")
 }
 
-func (cad *CAD) de_simplify(f *Poly, cell *Cell, pi int) *Poly {
+func (cell *Cell) de_simplify(f *Poly, pi int) *Poly {
 
 	for cell.lv > f.lv {
 		cell = cell.parent
@@ -675,7 +672,7 @@ func (cad *CAD) symde_gcd2(forg, gorg *Poly, cell *Cell, pi int) (*Poly, *Poly) 
 		if !ok || gp.lv != g.lv || gp.deg() != g.deg() { // unlucky
 			continue
 		}
-		cellp, ok := cell.mod(cad, p)
+		cellp, ok := cell.mod(cad.rootp, p)
 		if !ok {
 			if pos >= 2 { // 他の素数では，この段階で共通因子なかった
 				continue
@@ -723,7 +720,7 @@ func (cad *CAD) symde_gcd2(forg, gorg *Poly, cell *Cell, pi int) (*Poly, *Poly) 
 			}
 
 			if ok, q := cad.test_div(forg, gcd_crt.frr, cell, pi+pidx); ok {
-				q = cad.de_simplify(q, cell, pi+1)
+				q = cell.de_simplify(q, pi+1)
 				return gcd_crt.frr, q
 			}
 			fmt.Printf("try failed\n")

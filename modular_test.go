@@ -67,7 +67,7 @@ func TestModularInvPoly(t *testing.T) {
 	} {
 		for _, p := range s.p {
 			a := s.a.mod(p)
-			cellp, ok := cell.mod(cad, p)
+			cellp, ok := cell.mod(cad.rootp, p)
 			if !ok {
 				if p == 151 {
 					continue
@@ -124,7 +124,7 @@ func TestModularInvPoly2(t *testing.T) {
 			cell_adam21,
 		},
 	} {
-		cell, _ := s.cell.mod(cad, s.p)
+		cell, _ := s.cell.mod(cad.rootp, s.p)
 		a := s.a.mod(s.p)
 		inv := a.inv_mod(cell, s.p)
 		u := a.mul_mod(inv, s.p)
@@ -504,7 +504,7 @@ func TestModularMonicize(t *testing.T) {
 	cell0.parent = cad.root
 	cell0.defpoly = NewPolyCoef(0, 2382286350, 0, 747627160, 0, 3145087702, 0, 1880984826, 0, 540819817, 0, 437450036, 0, 1)
 
-	cell0p, ok := cell0.mod(cad, p)
+	cell0p, ok := cell0.mod(cad.rootp, p)
 	if !ok {
 		t.Errorf("cell mod failed")
 		return
