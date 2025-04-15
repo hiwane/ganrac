@@ -9,7 +9,7 @@ import (
 // *Poly, *Int, *Rat, *BinInt, *Interval, Uint
 type RObj interface {
 	GObj
-	equaler
+	Hashable
 	Add(x RObj) RObj // z+x
 	Sub(x RObj) RObj // z-x
 	Mul(x RObj) RObj
@@ -98,6 +98,10 @@ func (z *RObjSample) Div(x NObj) RObj {
 
 func (z *RObjSample) Pow(x *Int) RObj {
 	return z
+}
+
+func (z *RObjSample) Hash() Hash {
+	return Hash(0)
 }
 
 func (z *RObjSample) Equals(x interface{}) bool {

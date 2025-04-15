@@ -7,7 +7,9 @@ package ganrac
 // 係数はリストではなく配列で保持している．
 
 import (
+	"encoding/binary"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"math/big"
 	"math/rand"
@@ -135,6 +137,22 @@ func (z *Poly) valid() error {
 
 	}
 	return nil
+}
+
+func (z *Poly) Hash() Hash {
+	var buf [8]byte
+	h := fnv.New64a()
+	h.Write([]byte("$"))
+	binary.LittleEndian.PutUint64(buf[:], uint64(z.lv))
+	h.Write(buf[:])
+	binary.LittleEndian.PutUint64(buf[:], uint64(len(z.c)))
+	h.Write(buf[:])
+	for _, c := range z.c {
+		h.Write([]byte("^"))
+		binary.LittleEndian.PutUint64(buf[:], uint64(c.Hash()))
+		h.Write(buf[:])
+	}
+	return Hash(h.Sum64())
 }
 
 func (z *Poly) Equals(x interface{}) bool {

@@ -353,6 +353,11 @@ func (x *Interval) Abs() NObj {
 func (x *Interval) subst_poly(p *Poly, lv Level) RObj {
 	return x
 }
+
+func (x *Interval) Hash() Hash {
+	return Hash(0)
+}
+
 func (x *Interval) Equals(v interface{}) bool {
 	return false
 }

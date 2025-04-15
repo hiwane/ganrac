@@ -170,6 +170,10 @@ func (p Uint) CmpAbs(x NObj) int                 { panic("no!") }
 func (p Uint) Abs() NObj                         { return p }
 func (p Uint) subst_poly(f *Poly, lv Level) RObj { panic("no!") }
 
+func (p Uint) Hash() Hash {
+	return Hash(p)
+}
+
 func (p Uint) Equals(v interface{}) bool {
 	if vv, ok := v.(Uint); ok {
 		return vv == p

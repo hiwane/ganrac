@@ -2,6 +2,7 @@ package ganrac
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math/big"
 )
 
@@ -50,6 +51,12 @@ func ParseInt(s string, base int) *Int {
 
 func (x *Int) numTag() uint {
 	return NTAG_INT
+}
+
+func (x *Int) Hash() Hash {
+	h := fnv.New64a()
+	h.Write(x.n.Bytes())
+	return Hash(h.Sum64())
 }
 
 func (x *Int) Equals(y interface{}) bool {

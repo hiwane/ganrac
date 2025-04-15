@@ -2,6 +2,7 @@ package ganrac
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math/big"
 )
 
@@ -40,6 +41,14 @@ func NewRatFrac(num, den *Int) *Rat {
 
 func (x *Rat) numtag() uint {
 	return NTAG_RAT
+}
+
+func (x *Rat) Hash() Hash {
+	h := fnv.New64a()
+	h.Write(x.n.Num().Bytes())
+	h.Write([]byte("/"))
+	h.Write(x.n.Denom().Bytes())
+	return Hash(h.Sum64())
 }
 
 func (x *Rat) Equals(y interface{}) bool {
