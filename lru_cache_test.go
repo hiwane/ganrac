@@ -26,7 +26,7 @@ func (h *testHash) String() string {
 
 func TestLRUCache(t *testing.T) {
 
-	lru := NewLRUCache(3)
+	lru := NewLRUCache[string](3)
 
 	////////////////////////////////////////
 	// 1つ目の要素を追加
@@ -232,7 +232,7 @@ func TestLRUCacheMap(t *testing.T) {
 		key   *testHash
 	}
 
-	lru := NewLRUCache(10)
+	lru := NewLRUCache[string](10)
 
 	vx := []Pair{
 		{"a0", &testHash{v: 1}},

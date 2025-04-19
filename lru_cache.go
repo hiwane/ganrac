@@ -10,14 +10,14 @@ import (
 )
 
 // LRUCache.(queue|map) に格納する要素の型
-type LRUCacheValue struct {
+type LRUCacheValue[T any] struct {
 	key    Hashable
-	value  any
+	value  T
 	queptr *ll.Element
 	mapptr *ll.Element
 }
 
-type LRUCache struct {
+type LRUCache[T any] struct {
 	capacity int
 	m        map[Hash]*ll.List
 	queue    *ll.List // front: recently used ==> back: least recently used
@@ -28,18 +28,18 @@ type LRUCache struct {
 	cntPut  int
 }
 
-func NewLRUCache(capacity int) *LRUCache {
-	lru := &LRUCache{capacity: capacity}
+func NewLRUCache[T any](capacity int) *LRUCache[T] {
+	lru := &LRUCache[T]{capacity: capacity}
 	lru.m = make(map[Hash]*ll.List, capacity*2)
 	lru.queue = ll.New()
 	return lru
 }
 
-func (lru *LRUCache) Len() int {
+func (lru *LRUCache[T]) Len() int {
 	return lru.queue.Len()
 }
 
-func (lru *LRUCache) lenMapList() int {
+func (lru *LRUCache[T]) lenMapList() int {
 	n := 0
 	for _, v := range lru.m {
 		n += v.Len()
@@ -47,11 +47,11 @@ func (lru *LRUCache) lenMapList() int {
 	return n
 }
 
-func (lru *LRUCache) Capacity() int {
+func (lru *LRUCache[T]) Capacity() int {
 	return lru.capacity
 }
 
-func (lru *LRUCache) Put(key Hashable, value any) {
+func (lru *LRUCache[T]) Put(key Hashable, value T) {
 	if l := lru.queue.Len(); l >= lru.capacity {
 		lru.removeN(l - lru.capacity + 1)
 	}
@@ -59,12 +59,12 @@ func (lru *LRUCache) Put(key Hashable, value any) {
 	lru.cntPut++
 }
 
-func (lru *LRUCache) Get(key Hashable) (any, bool) {
+func (lru *LRUCache[T]) Get(key Hashable) (T, bool) {
 	h := key.Hash()
 	if v, ok := lru.m[h]; ok {
 		// v を走査
 		for e := v.Front(); e != nil; e = e.Next() {
-			u := e.Value.(*LRUCacheValue)
+			u := e.Value.(*LRUCacheValue[T])
 			if key.Equals(u.key) {
 				lru.queue.MoveToFront(u.queptr)
 				lru.cntHit++
@@ -73,20 +73,21 @@ func (lru *LRUCache) Get(key Hashable) (any, bool) {
 		}
 	}
 	lru.cntMiss++
-	return nil, false
+	var v T
+	return v, false
 }
 
-func (lru *LRUCache) removeN(n int) {
+func (lru *LRUCache[T]) removeN(n int) {
 	for i := 0; i < n; i++ {
 		lru.remove()
 	}
 }
 
-func (lru *LRUCache) remove() {
+func (lru *LRUCache[T]) remove() {
 	elem := lru.queue.Back() // lru element
 	lru.queue.Remove(elem)
 
-	node := elem.Value.(*LRUCacheValue)
+	node := elem.Value.(*LRUCacheValue[T])
 	h := node.key.Hash()
 	if mp, ok := lru.m[h]; ok {
 		if mp.Len() <= 1 {
@@ -101,9 +102,9 @@ func (lru *LRUCache) remove() {
 	lru.cntDel++
 }
 
-func (lru *LRUCache) add(key Hashable, value any) {
+func (lru *LRUCache[T]) add(key Hashable, value T) {
 	h := key.Hash()
-	vv := &LRUCacheValue{key: key, value: value}
+	vv := &LRUCacheValue[T]{key: key, value: value}
 	vv.queptr = lru.queue.PushFront(vv)
 	if _, ok := lru.m[h]; !ok {
 		lru.m[h] = ll.New()
@@ -111,11 +112,11 @@ func (lru *LRUCache) add(key Hashable, value any) {
 	vv.mapptr = lru.m[h].PushBack(vv)
 }
 
-func (v *LRUCacheValue) String() string {
+func (v *LRUCacheValue[T]) String() string {
 	return fmt.Sprintf("LRUCacheValue{k=%v, v=%v}", v.key.Hash(), v.value)
 }
 
-func (lru *LRUCache) String() string {
+func (lru *LRUCache[T]) String() string {
 	return fmt.Sprintf("LRUCache{#=%v/%v, #map=%v, hit=%d/%d=%.2f, del=%d, put=%d}",
 		lru.Len(), lru.capacity,
 		len(lru.m),
@@ -129,10 +130,10 @@ func (lru *LRUCache) String() string {
 ////////////////////////////////////////
 
 // テスト用: キューの状態を文字列で返す
-func (lru *LRUCache) queueString() string {
+func (lru *LRUCache[T]) queueString() string {
 	str := ""
 	for e := lru.queue.Front(); e != nil; e = e.Next() {
-		v := e.Value.(*LRUCacheValue)
+		v := e.Value.(*LRUCacheValue[T])
 		str += fmt.Sprintf("%x ", v.key.Hash())
 	}
 	return str
