@@ -1,5 +1,9 @@
 package ganrac
 
+import (
+	"fmt"
+)
+
 type Cacher[T any] interface {
 	Put(key Hashable, value T)
 	Get(key Hashable) (T, bool)
@@ -25,4 +29,8 @@ func (nc NoCache[T]) Len() int {
 
 func (nc NoCache[T]) GetCount() int {
 	return nc.cnt
+}
+
+func (nc NoCache[T]) String() string {
+	return fmt.Sprintf("NoCache{cnt=%d}", nc.cnt)
 }
