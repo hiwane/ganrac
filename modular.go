@@ -2,6 +2,7 @@ package ganrac
 
 import (
 	"fmt"
+	"github.com/hiwane/ganrac/cache"
 	"math/big"
 )
 
@@ -170,8 +171,8 @@ func (p Uint) CmpAbs(x NObj) int                 { panic("no!") }
 func (p Uint) Abs() NObj                         { return p }
 func (p Uint) subst_poly(f *Poly, lv Level) RObj { panic("no!") }
 
-func (p Uint) Hash() Hash {
-	return Hash(p)
+func (p Uint) Hash() cache.Hash {
+	return cache.Hash(p)
 }
 
 func (p Uint) Equals(v interface{}) bool {

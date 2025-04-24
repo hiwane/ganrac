@@ -1,6 +1,7 @@
 package ganrac
 
 import (
+	"github.com/hiwane/ganrac/cache"
 	"testing"
 	// "fmt"
 )
@@ -8,7 +9,7 @@ import (
 func TestMatDeterminant(t *testing.T) {
 	funcname := "TestMatDeterminant"
 
-	cache := &NoCache[RObj]{}
+	cache := &cache.NoCache[RObj]{}
 
 	for ii, tbl := range []struct {
 		matrix [][]int64
@@ -159,7 +160,7 @@ func TestMatrixSetUsedMask(t *testing.T) {
 	m := NewMatrix(3, 3)
 
 	for rowcol := 0; rowcol < 1; rowcol++ {
-		mask1 := Hash(0)
+		mask1 := cache.Hash(0)
 
 		mask1 = m.setUsedMask(mask1, 2, rowcol)
 		if x := mask1.NumSetBits(0, 1); x != 1 {
@@ -181,7 +182,7 @@ func TestMatrixSetUsedMask(t *testing.T) {
 			continue
 		}
 
-		mask2 := Hash(0)
+		mask2 := cache.Hash(0)
 		mask2 = m.setUsedMask(mask2, 0, rowcol)
 		if x := mask2.NumSetBits(0, 1); x != 1 {
 			t.Errorf("A1: Expected mask2 (%d)  x=%d", mask2, x)
@@ -207,11 +208,11 @@ func TestMatrixSetUsedMask(t *testing.T) {
 			continue
 		}
 
-		mask1 = Hash(0)
+		mask1 = cache.Hash(0)
 		mask1 = m.setUsedMask(mask1, 1, rowcol)
 		mask1 = m.setUsedMask(mask1, 0, rowcol)
 
-		mask2 = Hash(0)
+		mask2 = cache.Hash(0)
 		mask2 = m.setUsedMask(mask2, 0, rowcol)
 		mask2 = m.setUsedMask(mask2, 0, rowcol)
 
@@ -220,5 +221,4 @@ func TestMatrixSetUsedMask(t *testing.T) {
 			continue
 		}
 	}
-
 }

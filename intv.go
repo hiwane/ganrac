@@ -3,6 +3,7 @@ package ganrac
 // I/F は big.Int に揃える
 import (
 	"fmt"
+	"github.com/hiwane/ganrac/cache"
 	"math/big"
 )
 
@@ -354,8 +355,8 @@ func (x *Interval) subst_poly(p *Poly, lv Level) RObj {
 	return x
 }
 
-func (x *Interval) Hash() Hash {
-	return Hash(0)
+func (x *Interval) Hash() cache.Hash {
+	return cache.Hash(0)
 }
 
 func (x *Interval) Equals(v interface{}) bool {

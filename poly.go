@@ -9,6 +9,7 @@ package ganrac
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/hiwane/ganrac/cache"
 	"hash/fnv"
 	"io"
 	"math/big"
@@ -139,7 +140,7 @@ func (z *Poly) valid() error {
 	return nil
 }
 
-func (z *Poly) Hash() Hash {
+func (z *Poly) Hash() cache.Hash {
 	var buf [8]byte
 	h := fnv.New64a()
 	h.Write([]byte("$"))
@@ -152,7 +153,7 @@ func (z *Poly) Hash() Hash {
 		binary.LittleEndian.PutUint64(buf[:], uint64(c.Hash()))
 		h.Write(buf[:])
 	}
-	return Hash(h.Sum64())
+	return cache.Hash(h.Sum64())
 }
 
 func (z *Poly) Equals(x interface{}) bool {

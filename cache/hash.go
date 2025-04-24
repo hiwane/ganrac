@@ -1,4 +1,4 @@
-package ganrac
+package cache
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ type Hash uint64
 
 type Hashable interface {
 	Hash() Hash
-	equaler
+	Equals(v any) bool
 }
 
 func (h Hash) String() string {

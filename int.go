@@ -2,6 +2,7 @@ package ganrac
 
 import (
 	"fmt"
+	"github.com/hiwane/ganrac/cache"
 	"hash/fnv"
 	"math/big"
 )
@@ -53,10 +54,10 @@ func (x *Int) numTag() uint {
 	return NTAG_INT
 }
 
-func (x *Int) Hash() Hash {
+func (x *Int) Hash() cache.Hash {
 	h := fnv.New64a()
 	h.Write(x.n.Bytes())
-	return Hash(h.Sum64())
+	return cache.Hash(h.Sum64())
 }
 
 func (x *Int) Equals(y interface{}) bool {

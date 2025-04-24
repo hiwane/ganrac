@@ -3,6 +3,7 @@ package ganrac
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/hiwane/ganrac/cache"
 	"hash/fnv"
 	"math/big"
 )
@@ -35,14 +36,14 @@ func NewBinInt(n *big.Int, m int) *BinInt {
 	return v
 }
 
-func (x *BinInt) Hash() Hash {
+func (x *BinInt) Hash() cache.Hash {
 	h := fnv.New64a()
 	h.Write(x.n.Bytes())
 	h.Write([]byte("@"))
 	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], uint64(x.m))
 	h.Write(buf[:])
-	return Hash(h.Sum64())
+	return cache.Hash(h.Sum64())
 }
 
 func (x *BinInt) Equals(yy interface{}) bool {

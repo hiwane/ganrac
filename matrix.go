@@ -2,6 +2,7 @@ package ganrac
 
 import (
 	"fmt"
+	"github.com/hiwane/ganrac/cache"
 )
 
 type Matrix struct {
@@ -48,11 +49,11 @@ func (m *Matrix) Determinant() (RObj, error) {
 		return nil, fmt.Errorf("Matrix must be square to calculate determinant; got %dx%d", m.row, m.col)
 	}
 
-	var lru Cacher[RObj]
+	var lru cache.Cacher[RObj]
 	if m.row <= 3 {
-		lru = &NoCache[RObj]{}
+		lru = &cache.NoCache[RObj]{}
 	} else {
-		lru = NewLRUCache[RObj](100)
+		lru = cache.NewLRUCache[RObj](100)
 	}
 
 	d := m.det(0, lru)
@@ -60,7 +61,7 @@ func (m *Matrix) Determinant() (RObj, error) {
 	return d, nil
 }
 
-func (m *Matrix) det(usedMask Hash, cache Cacher[RObj]) RObj {
+func (m *Matrix) det(usedMask cache.Hash, cache cache.Cacher[RObj]) RObj {
 	// fmt.Printf("        det(%#x=%d,%v)\n", uint64(usedMask), uint64(usedMask), m)
 
 	// Base case for 2x2 matrix
@@ -109,7 +110,7 @@ func (m *Matrix) det(usedMask Hash, cache Cacher[RObj]) RObj {
 // usedMask: 元の行列での取り除いた場所を表すビットマスク
 //
 //	pos は 1 行目を取り除いたあとに 3 行目を取り除く場合は，元の行列の４行目を表している点に注意
-func (m *Matrix) setUsedMask(usedMask Hash, _pos, rowcol int) Hash {
+func (m *Matrix) setUsedMask(usedMask cache.Hash, _pos, rowcol int) cache.Hash {
 	c := uint(rowcol)
 	pos := _pos
 	mask := uint64(usedMask)
@@ -122,7 +123,7 @@ func (m *Matrix) setUsedMask(usedMask Hash, _pos, rowcol int) Hash {
 		}
 	}
 
-	ret := Hash(mask | (1 << uint(c)))
+	ret := cache.Hash(mask | (1 << uint(c)))
 	// fmt.Printf("           setUsedMask: ipt=%#x, pos=%d, rowcol=%d => c=%d: ret=%#x\n", uint64(usedMask), _pos, rowcol, c, uint64(ret))
 	if ret.NumSetBits(0, 1) != 1+usedMask.NumSetBits(0, 1) {
 		m.printMinor(-1, -1, usedMask)
@@ -137,7 +138,7 @@ func (m *Matrix) setUsedMask(usedMask Hash, _pos, rowcol int) Hash {
 	return ret
 }
 
-func (m *Matrix) validUsedMask(usedMask Hash) bool {
+func (m *Matrix) validUsedMask(usedMask cache.Hash) bool {
 	n := usedMask.NumSetBits(0, 1)
 	if n%2 != 0 {
 		panic(fmt.Sprintf("stop1; %x", usedMask))
@@ -149,7 +150,7 @@ func (m *Matrix) validUsedMask(usedMask Hash) bool {
 	return true
 }
 
-func (m *Matrix) printMinor(i, j int, usedMask Hash) {
+func (m *Matrix) printMinor(i, j int, usedMask cache.Hash) {
 	fmt.Printf("%#02x  ", uint64(usedMask))
 	for c := m.row; c < 4; c++ {
 		fmt.Printf("  ")
@@ -158,7 +159,7 @@ func (m *Matrix) printMinor(i, j int, usedMask Hash) {
 }
 
 // 行 row で小行列展開
-func (m *Matrix) detRow(_usedMask Hash, row int, cache Cacher[RObj]) RObj {
+func (m *Matrix) detRow(_usedMask cache.Hash, row int, lcache cache.Cacher[RObj]) RObj {
 	sign := 1
 	if row%2 == 0 {
 		sign = -1
@@ -177,18 +178,18 @@ func (m *Matrix) detRow(_usedMask Hash, row int, cache Cacher[RObj]) RObj {
 		// m.printMinor(row, j, usedMaskC)
 		m.validUsedMask(usedMaskC)
 		var subDet RObj
-		if v, ok := cache.Get(usedMaskC); ok {
+		if v, ok := lcache.Get(usedMaskC); ok {
 			subDet = v
 
-			vv := subMat.det(0, &NoCache[RObj]{})
+			vv := subMat.det(0, &cache.NoCache[RObj]{})
 			if !vv.Equals(subDet) {
 				fmt.Printf("detRow: %v != %v\n", vv, subDet)
 				panic("stop")
 			}
 
 		} else {
-			subDet = subMat.det(usedMaskC, cache)
-			cache.Put(subMat, subDet)
+			subDet = subMat.det(usedMaskC, lcache)
+			lcache.Put(subMat, subDet)
 		}
 
 		s = Mul(s, subDet)
@@ -202,7 +203,7 @@ func (m *Matrix) detRow(_usedMask Hash, row int, cache Cacher[RObj]) RObj {
 }
 
 // 列 col で小行列展開
-func (m *Matrix) detCol(usedMask Hash, col int, cache Cacher[RObj]) RObj {
+func (m *Matrix) detCol(usedMask cache.Hash, col int, lcache cache.Cacher[RObj]) RObj {
 	sign := 1
 	if col%2 == 0 {
 		sign = -1
@@ -220,17 +221,17 @@ func (m *Matrix) detCol(usedMask Hash, col int, cache Cacher[RObj]) RObj {
 		// m.printMinor(i, col, usedMaskR)
 		m.validUsedMask(usedMaskR)
 		var subDet RObj
-		if v, ok := cache.Get(usedMaskR); ok {
+		if v, ok := lcache.Get(usedMaskR); ok {
 			subDet = v
 
-			vv := subMat.det(0, &NoCache[RObj]{})
+			vv := subMat.det(0, &cache.NoCache[RObj]{})
 			if !vv.Equals(subDet) {
 				fmt.Printf("detCol: %v != %v; %v; %s\n", vv, subDet, usedMaskR, subMat)
 				panic("stop")
 			}
 		} else {
-			subDet = subMat.det(usedMaskR, cache)
-			cache.Put(usedMaskR, subDet)
+			subDet = subMat.det(usedMaskR, lcache)
+			lcache.Put(usedMaskR, subDet)
 		}
 
 		s = Mul(s, subDet)
@@ -290,8 +291,8 @@ func (m *Matrix) String() string {
 
 }
 
-func (m *Matrix) Hash() Hash {
-	h := Hash(0)
+func (m *Matrix) Hash() cache.Hash {
+	h := cache.Hash(0)
 	for i := 0; i < m.row; i++ {
 		for j := 0; j < m.col; j++ {
 			h = h*31 + m.get(i, j).Hash()

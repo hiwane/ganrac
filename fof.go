@@ -15,7 +15,8 @@ type Fof interface {
 	GObj
 	fmt.Formatter
 	indeter
-	equaler // 等価まではやらない. 形として同じもの
+	// 等価ではなく，形として同じもの (x=0 or x=1 と x*(x-1)=0 の比較は false).
+	equaler
 	simpler
 	fofTag() uint
 	IsQff() bool              // quantifier free formula
