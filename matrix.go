@@ -180,13 +180,6 @@ func (m *Matrix) detRow(_usedMask cache.Hash, row int, lcache cache.Cacher[RObj]
 		var subDet RObj
 		if v, ok := lcache.Get(usedMaskC); ok {
 			subDet = v
-
-			vv := subMat.det(0, &cache.NoCache[RObj]{})
-			if !vv.Equals(subDet) {
-				fmt.Printf("detRow: %v != %v\n", vv, subDet)
-				panic("stop")
-			}
-
 		} else {
 			subDet = subMat.det(usedMaskC, lcache)
 			lcache.Put(subMat, subDet)
@@ -223,12 +216,6 @@ func (m *Matrix) detCol(usedMask cache.Hash, col int, lcache cache.Cacher[RObj])
 		var subDet RObj
 		if v, ok := lcache.Get(usedMaskR); ok {
 			subDet = v
-
-			vv := subMat.det(0, &cache.NoCache[RObj]{})
-			if !vv.Equals(subDet) {
-				fmt.Printf("detCol: %v != %v; %v; %s\n", vv, subDet, usedMaskR, subMat)
-				panic("stop")
-			}
 		} else {
 			subDet = subMat.det(usedMaskR, lcache)
 			lcache.Put(usedMaskR, subDet)
