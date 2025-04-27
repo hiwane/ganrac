@@ -415,26 +415,6 @@ func (f *Poly) mul_uint_mod(g Uint, p Uint) Moder {
 	return z
 }
 
-func (f *Poly) karatsuba_divide_mod(d int) (Moder, Moder) {
-	f1, f0 := f.karatsuba_divide(d)
-	var p1, p0 Moder
-	if x, ok := f1.(Moder); ok {
-		p1 = x
-	} else if f1 == zero {
-		p1 = Uint(0)
-	} else {
-		panic(fmt.Sprintf("internal error %v", f1))
-	}
-	if x, ok := f0.(Moder); ok {
-		p0 = x
-	} else if f0 == zero {
-		p0 = Uint(0)
-	} else {
-		panic(fmt.Sprintf("internal error %v", f0))
-	}
-	return p1, p0
-}
-
 func (f *Poly) karatsuba_mod(g *Poly, p Uint) Moder {
 	// returns f*g mod p
 	// assert f.lv = g.lv
@@ -446,8 +426,10 @@ func (f *Poly) karatsuba_mod(g *Poly, p Uint) Moder {
 	} else {
 		d = len(g.c) / 2
 	}
-	f1, f0 := f.karatsuba_divide_mod(d)
-	g1, g0 := g.karatsuba_divide_mod(d)
+	f1x, f0x := f.karatsuba_divide(d, Uint(0))
+	g1x, g0x := g.karatsuba_divide(d, Uint(0))
+	f1, f0 := f1x.(Moder), f0x.(Moder)
+	g1, g0 := g1x.(Moder), g0x.(Moder)
 
 	f1g1 := f1.mul_mod(g1, p)
 	f0g0 := f0.mul_mod(g0, p)

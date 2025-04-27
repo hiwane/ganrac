@@ -437,7 +437,7 @@ func TestModularKaratsubaDivide(t *testing.T) {
 		}
 
 		for d := 1; d <= len(f.c)+1; d++ {
-			f1, f0 := f.karatsuba_divide_mod(d)
+			f1, f0 := f.karatsuba_divide(d, Uint(0))
 			if err := f1.valid(); err != nil {
 				t.Errorf("invalid f1. %v, <%d,%d,%d>\nf =%v\nf1=%v\nf0=%v\n", err, d, seed, p, f, f1, f0)
 				break
@@ -481,8 +481,8 @@ func TestModularKaratsubaDivide(t *testing.T) {
 				xd.c[j] = Uint(0)
 			}
 			xd.c[d] = Uint(1)
-			v := f1.mul_mod(xd, p)
-			v = v.add_mod(f0, p)
+			v := f1.(Moder).mul_mod(xd, p)
+			v = v.add_mod(f0.(Moder), p)
 			y = v.sub_mod(f, p)
 			if !y.IsZero() {
 				t.Errorf("zero.2 <%d,%d,%d>\nf =%v\nf1=%v\nf0=%v\nv =%v\ny =%v\n", d, seed, p, f, f1, f0, v, y)

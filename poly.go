@@ -578,8 +578,8 @@ func (f *Poly) mulKaratsuba(g *Poly) RObj {
 	} else {
 		d = n / 2
 	}
-	f1, f0 := f.karatsuba_divide(d)
-	g1, g0 := g.karatsuba_divide(d)
+	f1, f0 := f.karatsuba_divide(d, zero)
+	g1, g0 := g.karatsuba_divide(d, zero)
 
 	var f1g1, f0g0, f10g01 RObj
 	if true {
@@ -2025,7 +2025,7 @@ func (p *Poly) discrim2(lv Level) RObj {
 	return Sub(Mul(b, b), Mul(four, Mul(a, c)))
 }
 
-func (f *Poly) karatsuba_divide(d int) (RObj, RObj) {
+func (f *Poly) karatsuba_divide(d int, zero NObj) (RObj, RObj) {
 	// returns f = f1 * x^d + f0 where deg(f0) < d
 	// assert len(f.c) > d
 	// assert d > 1
